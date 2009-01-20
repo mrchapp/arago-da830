@@ -1,5 +1,5 @@
 DESCRIPTION = "Basic task to get a device booting"
-PR = "r2"
+PR = "r3"
 
 inherit task
 
@@ -16,19 +16,38 @@ DISTRO_LOGIN_MANAGER ?= "tinylogin"
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS ?= ""
 MACHINE_ESSENTIAL_EXTRA_RRECOMMENDS ?= ""
 
-DEPENDS = "\
+ARAGO_ALSA = "\
     alsa-lib \
-    tslib \
-    zlib \
+    alsa-conf \
+    alsa-conf-base \
+    alsa-server \
+    alsa-utils \
+    alsa-utils-aconnect \
+    alsa-utils-alsaconf \
+    alsa-utils-alsactl \
+    alsa-utils-alsamixer \
+    alsa-utils-amixer \
+    alsa-utils-aplay \
+    alsa-utils-iecset \
+    alsa-utils-midi \
+    alsa-utils-speakertest \
+    "
+
+# ncurses-terminfo is rarely needed and won't fit in 16MB
+ARAGO_NCURSES = "\
     ncurses \
-    libpng \
-    jpeg \
-    freetype \
+#    ncurses-terminfo \
+    ncurses-tools \
+    "
+
+ARAGO_BASE = "\
+    ${ARAGO_ALSA} \
+    ${ARAGO_NCURSES} \
+    zlib \
     mtd-utils \
-    thttpd \
     gdbserver \
     opkg-nogpg \
-    cppstub \
+    arago-feed-configs \
     "
 
 # minimal set of packages - needed to boot
@@ -40,6 +59,7 @@ RDEPENDS_task-arago-base = "\
     modutils-initscripts \
     netbase \
     update-alternatives \
+    ${ARAGO_BASE} \
     ${DISTRO_DEV_MANAGER} \
     ${DISTRO_INIT_MANAGER} \
     ${DISTRO_LOGIN_MANAGER} \
