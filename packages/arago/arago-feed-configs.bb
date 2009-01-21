@@ -1,44 +1,76 @@
 DESCRIPTION = "Configuration files for online package repositories aka feeds"
 
-#PV = "${DISTRO_VERSION}"
-PR = "r1"
+RRECOMMENDS_${PN} += "opkg-nogpg"
 
-COMPATIBLE_MACHINE = "arago|beagleboard|omap3evm"
+#PV = "${DISTRO_VERSION}"
+PR = "r2"
+
+# Here is the deal - since we build a common filesystem for several platforms,
+# we need to add all their respective feeds manually, hence next line is out
+#PACKAGE_ARCH = "${MACHINE_ARCH}"
+
+COMPATIBLE_MACHINE = "arago|omap3evm|beagleboard|davinci-dvevm"
 
 # This gets set in the distro/local configuration
-FEED_BASEPATH ?= "feeds/"
+ARAGO_FEED_BASEPATH ?= "feeds/"
 
 do_compile() {
-        mkdir -p ${S}/${sysconfdir}/opkg
+        mkdir -p ${S}/${sysconfdir}/opkg/angstrom
 
-	echo "src/gz arago ${ARAGO_URI}/${FEED_BASEPATH}arago" > ${S}/${sysconfdir}/opkg/arago-feed.conf
-        echo "src/gz ${FEED_ARCH} ${ARAGO_URI}/${FEED_BASEPATH}${FEED_ARCH}" >  ${S}/${sysconfdir}/opkg/${FEED_ARCH}-feed.conf
-        echo "src/gz omap3evm ${ARAGO_URI}/${FEED_BASEPATH}omap3evm" >  ${S}/${sysconfdir}/opkg/omap3evm-feed.conf.sample
-        echo "src/gz beagleboard ${ARAGO_URI}/${FEED_BASEPATH}beagleboard" >  ${S}/${sysconfdir}/opkg/beagleboard-feed.conf.sample
-        echo "src/gz davinci-dvevm ${ARAGO_URI}/${FEED_BASEPATH}davinci-dvevm" >  ${S}/${sysconfdir}/opkg/davinci-dvevm-feed.conf.sample
-	echo "src/gz no-arch ${ARAGO_URI}/${FEED_BASEPATH}all" > ${S}/${sysconfdir}/opkg/noarch-feed.conf
+# Populate the list of supported architectures
+	rm ${S}/${sysconfdir}/opkg/arch.conf || true
+#	ipkgarchs="${PACKAGE_ARCHS}"
+	ipkgarchs="all any noarch arm armv4 armv4t armv5te #armv6 #armv7 #armv7a arago #omap3evm #beagleboard #davinci-dvevm"
+	priority=1
+	for arch in $ipkgarchs; do
+		disable=`echo $arch|cut -c1`
+		if [ ${disable} == "#" ]; then
+			newarch=`echo $arch|cut -c2-`
+			echo "#arch $newarch $priority" >> ${S}/${sysconfdir}/opkg/arch.conf
+		else
+			echo "arch $arch $priority" >> ${S}/${sysconfdir}/opkg/arch.conf
+		fi
+		priority=$(expr $priority + 5)
+	done
+
+# Add all Arago supported feeds
+	echo "src/gz no-arch ${ARAGO_URI}/${ARAGO_FEED_BASEPATH}all" > ${S}/${sysconfdir}/opkg/arago-noarch-feed.conf
+	echo "src/gz arago ${ARAGO_URI}/${ARAGO_FEED_BASEPATH}arago" > ${S}/${sysconfdir}/opkg/arago-mach-feed.conf
+	echo "src/gz armv5te ${ARAGO_URI}/${ARAGO_FEED_BASEPATH}armv5te" >  ${S}/${sysconfdir}/opkg/arago-armv5te-feed.conf
+
+	echo "src/gz armv6 ${ARAGO_URI}/${ARAGO_FEED_BASEPATH}armv6" >  ${S}/${sysconfdir}/opkg/arago-armv6-feed.conf.sample
+	echo "src/gz armv7a ${ARAGO_URI}/${ARAGO_FEED_BASEPATH}armv7a" >  ${S}/${sysconfdir}/opkg/arago-armv7a-feed.conf.sample
+
+	for mach in omap3evm beagleboard davinci-dvevm; do
+		echo "src/gz $mach ${ARAGO_URI}/${ARAGO_FEED_BASEPATH}$mach" >  ${S}/${sysconfdir}/opkg/arago-$mach-feed.conf.sample
+	done
+
+# Add Angstrom feeds as backup
+	for arch in armv5te armv6 armv7a; do
+		for feed in base debug perl python gstreamer ; do
+			echo "src/gz ${feed} ${ANGSTROM_URI}/${FEED_BASEPATH}${arch}/${feed}" > ${S}/${sysconfdir}/opkg/angstrom/angstrom-${arch}-${feed}-feed.conf.sample
+		done
+	done
+	echo "src/gz omap3evm ${ANGSTROM_URI}/${FEED_BASEPATH}armv7a/machine/omap3evm" >  ${S}/${sysconfdir}/opkg/angstrom/angstrom-omap3evm-feed.conf.sample
+	echo "src/gz beagleboard ${ANGSTROM_URI}/${FEED_BASEPATH}armv7a/machine/beagleboard" >  ${S}/${sysconfdir}/opkg/angstrom/angstrom-beagleboard-feed.conf.sample
+	echo "src/gz davinci-dvevm ${ANGSTROM_URI}/${FEED_BASEPATH}armv5te/machine/davinci-dvevm" >  ${S}/${sysconfdir}/opkg/angstrom/angstrom-davinci-dvevm-feed.conf.sample
+
+	echo "src/gz no-arch ${ANGSTROM_URI}/${FEED_BASEPATH}all" > ${S}/${sysconfdir}/opkg/angstrom/angstrom-noarch-feed.conf.sample
 }
-
 
 do_install () {
 	install -d ${D}${sysconfdir}/opkg
-	install -m 0644  ${S}/${sysconfdir}/opkg/* ${D}${sysconfdir}/opkg/
+	install -d ${D}${sysconfdir}/opkg/angstrom
+	install -m 0644 ${S}/${sysconfdir}/opkg/*.conf* ${D}${sysconfdir}/opkg/
+	install -m 0644 ${S}/${sysconfdir}/opkg/angstrom/*.conf* ${D}${sysconfdir}/opkg/angstrom/
 }
 
 FILES_${PN} = " \
-	${sysconfdir}/opkg/arago-feed.conf \
-	${sysconfdir}/opkg/omap3evm-feed.conf.sample \
-	${sysconfdir}/opkg/beagleboard-feed.conf.sample \
-	${sysconfdir}/opkg/davinci-dvevm-feed.conf.sample \
-	${sysconfdir}/opkg/${FEED_ARCH}-feed.conf \
-	${sysconfdir}/opkg/noarch-feed.conf \
+	${sysconfdir}/opkg/* \
+	${sysconfdir}/opkg/angstrom/* \
 "
 
 CONFFILES_${PN} += " \
-	${sysconfdir}/opkg/arago-feed.conf \
-	${sysconfdir}/opkg/omap3evm-feed.conf.sample \
-	${sysconfdir}/opkg/beagleboard-feed.conf.sample \
-	${sysconfdir}/opkg/davinci-dvevm-feed.conf.sample \
-	${sysconfdir}/opkg/${FEED_ARCH}-feed.conf \
-	${sysconfdir}/opkg/noarch-feed.conf \
+	${sysconfdir}/opkg/* \
+	${sysconfdir}/opkg/angstrom/* \
 "
