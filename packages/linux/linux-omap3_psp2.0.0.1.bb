@@ -1,5 +1,6 @@
+KVER = "2.6.26"
 PSPREL = "2.0.0.1"
-PR = "r1"
+PR = "r2"
 
 require linux-omap3_psp2.inc
 
