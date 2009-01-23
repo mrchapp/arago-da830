@@ -1,0 +1,28 @@
+From a36ef6bb6a5f759e2bf7061d954921c642324fe9 Mon Sep 17 00:00:00 2001
+From: Manikandan Pillai <mani.pillai@ti.com>
+Date: Fri, 16 Jan 2009 11:51:42 +0530
+Subject: [PATCH 1/5] Patch for booting Linux using NFS filesystem.
+
+eth_halt() was being called after a successful TFTP
+which caused the NFS boot to hang while trying to mount
+the NFS filesystem. The offending eth_halt() has been removed
+from net/net.c.
+---
+ net/net.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/net/net.c b/net/net.c
+index 77e83b5..96ef626 100644
+--- a/net/net.c
++++ b/net/net.c
+@@ -560,7 +560,6 @@ restart:
+ 				sprintf(buf, "%lX", (unsigned long)load_addr);
+ 				setenv("fileaddr", buf);
+ 			}
+-			eth_halt();
+ 			return NetBootFileXferSize;
+ 
+ 		case NETLOOP_FAIL:
+-- 
+1.5.6
+
