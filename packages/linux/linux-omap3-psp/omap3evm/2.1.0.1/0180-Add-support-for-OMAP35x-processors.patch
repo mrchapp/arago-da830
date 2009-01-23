@@ -1,0 +1,75 @@
+From 76690ac4bd3a9427d2f2d46bd93f86457d251169 Mon Sep 17 00:00:00 2001
+From: Sanjeev Premi <premi@ti.com>
+Date: Fri, 16 Jan 2009 20:49:56 +0530
+Subject: [PATCH 180/193] Add support for OMAP35x processors
+
+This patch adds basic support for the OMAP35x Applications
+Processors: OMAP3503, OMAP3515, OMAP3525 and OMAP3530
+(See: http://focus.ti.com/general/docs/gencontent.tsp?contentId=46725)
+---
+ arch/arm/mach-omap2/Kconfig |   28 +++++++++++++++++++++++-----
+ 1 files changed, 23 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index 0a86a88..1362830 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -28,6 +28,23 @@ config ARCH_OMAP3430
+ 	select ARCH_OMAP_OTG
+ 	select CPU_V7
+ 
++config ARCH_OMAP35XX
++	bool "OMAP35x Family"
++	select ARCH_OMAP3
++	select ARCH_OMAP34XX
++	select ARCH_OMAP3430
++	select NEON
++	help
++	  OMAP35x family of processors based on ARM Cortex-A8
++	  in combination with IVA2.2 core and OpenGL ES2.0
++	  compatible graphics engine.
++	    OMAP3503 - ARM Cortex-A8
++	    OMAP3515 - ARM Cortex-A8 + SGX
++	    OMAP3525 - ARM Cortex-A8 + IVA2.2
++	    OMAP3530 - ARM Cortex-A8 + IVA2.2 + SGX
++
++	  ARM Cortex-A8 contains NEON SIMD coprocessor.
++
+ comment "OMAP Board Type"
+ 	depends on ARCH_OMAP2 || ARCH_OMAP3
+ 
+@@ -105,21 +122,21 @@ config MACH_OMAP_2430SDP
+ 	bool "OMAP 2430 SDP board"
+ 	depends on ARCH_OMAP2 && ARCH_OMAP2430
+ 
+-config MACH_OMAP_LDP
+-	bool "OMAP3 LDP board"
+-	depends on ARCH_OMAP3 && ARCH_OMAP34XX
+-
+ config MACH_OMAP2EVM 
+ 	bool "OMAP 2530 EVM board"
+ 	depends on ARCH_OMAP2 && ARCH_OMAP24XX
+ 
++config MACH_OMAP_LDP
++	bool "OMAP3 LDP board"
++	depends on ARCH_OMAP3 && ARCH_OMAP34XX
++
+ config MACH_OMAP_3430SDP
+ 	bool "OMAP 3430 SDP board"
+ 	depends on ARCH_OMAP3 && ARCH_OMAP34XX
+ 
+ config MACH_OMAP3EVM
+ 	bool "OMAP 3530 EVM board"
+-	depends on ARCH_OMAP3 && ARCH_OMAP34XX
++	depends on ARCH_OMAP35XX
+ 
+ config MACH_OMAP3_BEAGLE
+ 	bool "OMAP3 BEAGLE board"
+@@ -132,3 +149,4 @@ config MACH_OVERO
+ config MACH_OMAP3_PANDORA
+ 	bool "OMAP3 Pandora"
+ 	depends on ARCH_OMAP3 && ARCH_OMAP34XX
++
+-- 
+1.5.6
+

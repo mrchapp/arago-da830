@@ -1,0 +1,37 @@
+From c687ff70ff0811a06f318260399282d52ab59270 Mon Sep 17 00:00:00 2001
+From: Tero Kristo <tero.kristo@nokia.com>
+Date: Wed, 29 Oct 2008 13:31:22 +0200
+Subject: [PATCH 070/193] OMAP: PM debug: do not print out status for meta powerdomains (dpll*)
+
+Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
+---
+ arch/arm/mach-omap2/pm-debug.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm-debug.c b/arch/arm/mach-omap2/pm-debug.c
+index f5f3990..63b6d9f 100644
+--- a/arch/arm/mach-omap2/pm-debug.c
++++ b/arch/arm/mach-omap2/pm-debug.c
+@@ -197,7 +197,8 @@ static int clkdm_dbg_show_counter(struct clockdomain *clkdm, void *user)
+ 	struct seq_file *s = (struct seq_file *)user;
+ 
+ 	if (strcmp(clkdm->name, "emu_clkdm") == 0 ||
+-		strcmp(clkdm->name, "wkup_clkdm") == 0)
++		strcmp(clkdm->name, "wkup_clkdm") == 0 ||
++		strncmp(clkdm->name, "dpll", 4) == 0)
+ 		return 0;
+ 
+ 	seq_printf(s, "%s->%s (%d)", clkdm->name,
+@@ -214,7 +215,8 @@ static int pwrdm_dbg_show_counter(struct powerdomain *pwrdm, void *user)
+ 	int i;
+ 
+ 	if (strcmp(pwrdm->name, "emu_pwrdm") == 0 ||
+-		strcmp(pwrdm->name, "wkup_pwrdm") == 0)
++		strcmp(pwrdm->name, "wkup_pwrdm") == 0 ||
++		strncmp(pwrdm->name, "dpll", 4) == 0)
+ 		return 0;
+ 
+ 	if (pwrdm->state != pwrdm_read_pwrst(pwrdm))
+-- 
+1.5.6
+

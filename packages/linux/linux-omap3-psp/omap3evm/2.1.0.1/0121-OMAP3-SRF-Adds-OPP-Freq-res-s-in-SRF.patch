@@ -1,0 +1,217 @@
+From e5c627abdd5aa4dc2c2c8dfcb792c736524f2a63 Mon Sep 17 00:00:00 2001
+From: Rajendra Nayak <rnayak@ti.com>
+Date: Mon, 10 Nov 2008 16:58:39 +0530
+Subject: [PATCH 121/193] OMAP3 SRF: Adds OPP/Freq res's in SRF
+
+This patch implements the OPP and Frequency resources
+on OMAP3 platform.
+
+Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+---
+ arch/arm/mach-omap2/resource34xx.c |   93 ++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/resource34xx.h |   73 ++++++++++++++++++++++++++++
+ 2 files changed, 166 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/resource34xx.c b/arch/arm/mach-omap2/resource34xx.c
+index 5aa7184..c4c6c17 100644
+--- a/arch/arm/mach-omap2/resource34xx.c
++++ b/arch/arm/mach-omap2/resource34xx.c
+@@ -130,3 +130,96 @@ int set_pd_latency(struct shared_resource *resp, u32 latency)
+ 	set_pwrdm_state(pwrdm, pd_lat_level);
+ 	return 0;
+ }
++
++static struct clk *vdd1_clk;
++static struct clk *vdd2_clk;
++static struct device dummy_srf_dev;
++
++/**
++ * init_opp - Initialize the OPP resource
++ */
++void init_opp(struct shared_resource *resp)
++{
++	resp->no_of_users = 0;
++	/* Initialize the current level of the OPP resource
++	* to the  opp set by u-boot.
++	*/
++	if (strcmp(resp->name, "vdd1_opp") == 0) {
++		resp->curr_level = curr_vdd1_prcm_set->opp_id;
++		vdd1_clk = clk_get(NULL, "virt_vdd1_prcm_set");
++	} else if (strcmp(resp->name, "vdd2_opp") == 0) {
++		resp->curr_level = curr_vdd2_prcm_set->opp_id;
++		vdd2_clk = clk_get(NULL, "virt_vdd2_prcm_set");
++	}
++	return;
++}
++
++int set_opp(struct shared_resource *resp, u32 target_level)
++{
++	unsigned long mpu_freq;
++	if (strcmp(resp->name, "vdd1_opp") == 0) {
++		mpu_freq = get_freq(mpu_opps + MAX_VDD1_OPP,
++					target_level);
++		clk_set_rate(vdd1_clk, mpu_freq);
++		resp->curr_level = curr_vdd1_prcm_set->opp_id;
++	} else if (strcmp(resp->name, "vdd2_opp") == 0) {
++		/* Not supported yet */
++	}
++	return 0;
++}
++
++/**
++ * validate_opp - Validates if valid VDD1 OPP's are passed as the
++ * target_level.
++ * VDD2 OPP levels are passed as L3 throughput, which are then mapped
++ * to an appropriate OPP.
++ */
++int validate_opp(struct shared_resource *resp, u32 target_level)
++{
++	return 0;
++}
++
++/**
++ * init_freq - Initialize the frequency resource.
++ */
++void init_freq(struct shared_resource *resp)
++{
++	char *linked_res_name;
++	resp->no_of_users = 0;
++
++	linked_res_name = (char *)resp->resource_data;
++	/* Initialize the current level of the Freq resource
++	* to the frequency set by u-boot.
++	*/
++	if (strcmp(resp->name, "mpu_freq") == 0)
++		/* MPU freq in Mhz */
++		resp->curr_level = curr_vdd1_prcm_set->rate;
++	else if (strcmp(resp->name, "dsp_freq") == 0)
++		/* DSP freq in Mhz */
++		resp->curr_level = get_freq(dsp_opps + MAX_VDD2_OPP,
++						curr_vdd1_prcm_set->opp_id);
++	return;
++}
++
++int set_freq(struct shared_resource *resp, u32 target_level)
++{
++	unsigned int vdd1_opp;
++
++	if (strcmp(resp->name, "mpu_freq") == 0)
++		vdd1_opp = get_opp(mpu_opps + MAX_VDD1_OPP, target_level);
++	else if (strcmp(resp->name, "dsp_freq") == 0)
++		vdd1_opp = get_opp(dsp_opps + MAX_VDD1_OPP, target_level);
++
++	if (vdd1_opp == MIN_VDD1_OPP)
++		resource_release("vdd1_opp", &dummy_srf_dev);
++	else
++		resource_request("vdd1_opp", &dummy_srf_dev, vdd1_opp);
++
++	resp->curr_level = target_level;
++	return 0;
++}
++
++int validate_freq(struct shared_resource *resp, u32 target_level)
++{
++	return 0;
++}
+diff --git a/arch/arm/mach-omap2/resource34xx.h b/arch/arm/mach-omap2/resource34xx.h
+index a042875..f1953b9 100644
+--- a/arch/arm/mach-omap2/resource34xx.h
++++ b/arch/arm/mach-omap2/resource34xx.h
+@@ -22,7 +22,15 @@
+ #define __ARCH_ARM_MACH_OMAP2_RESOURCE_H
+ 
+ #include <mach/resource.h>
++#include <linux/clk.h>
++#include <mach/clock.h>
+ #include <mach/powerdomain.h>
++#include <mach/omap-pm.h>
++
++extern struct omap_opp *curr_vdd1_prcm_set;
++extern struct omap_opp *curr_vdd2_prcm_set;
++extern unsigned long get_freq(struct  omap_opp *, unsigned short);
++extern unsigned short get_opp(struct omap_opp *, unsigned long);
+ 
+ /*
+  * mpu_latency/core_latency are used to control the cpuidle C state.
+@@ -222,6 +230,66 @@ static struct shared_resource emu_pwrdm_latency = {
+ 	.ops		= &pd_lat_res_ops,
+ };
+ 
++void init_opp(struct shared_resource *resp);
++int set_opp(struct shared_resource *resp, u32 target_level);
++int validate_opp(struct shared_resource *resp, u32 target_level);
++void init_freq(struct shared_resource *resp);
++int set_freq(struct shared_resource *resp, u32 target_level);
++int validate_freq(struct shared_resource *resp, u32 target_level);
++
++struct bus_throughput_db {
++	/* Throughput for each OPP/Freq of the bus */
++	unsigned long throughput[3];
++};
++
++static struct shared_resource_ops opp_res_ops = {
++	.init           = init_opp,
++	.change_level   = set_opp,
++	.validate_level = validate_opp,
++};
++
++static struct shared_resource vdd1_opp = {
++	.name           = "vdd1_opp",
++	.omap_chip      = OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
++	.ops            = &opp_res_ops,
++};
++
++/* Throughput in KiB/s */
++static struct bus_throughput_db l3_throughput_db = {
++	.throughput[0] = 0,
++	.throughput[1] = 2656000,
++	.throughput[2] = 5312000,
++};
++
++static struct shared_resource vdd2_opp = {
++	.name           = "vdd2_opp",
++	.omap_chip      = OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
++	.resource_data  = &l3_throughput_db,
++	.ops            = &opp_res_ops,
++};
++
++static char linked_res[] = "vdd1_opp";
++
++static struct shared_resource_ops freq_res_ops = {
++	.init           = init_freq,
++	.change_level   = set_freq,
++	.validate_level = validate_freq,
++};
++
++static struct shared_resource mpu_freq = {
++	.name           = "mpu_freq",
++	.omap_chip      = OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
++	.resource_data  = &linked_res,
++	.ops            = &freq_res_ops,
++};
++
++static struct shared_resource dsp_freq = {
++	.name           = "dsp_freq",
++	.omap_chip      = OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
++	.resource_data  = &linked_res,
++	.ops            = &freq_res_ops,
++};
++
+ struct shared_resource *resources_omap[] __initdata = {
+ 	&mpu_latency,
+ 	&core_latency,
+@@ -236,6 +304,11 @@ struct shared_resource *resources_omap[] __initdata = {
+ 	&neon_pwrdm_latency,
+ 	&usbhost_pwrdm_latency,
+ 	&emu_pwrdm_latency,
++	/* OPP/frequency resources */
++	&vdd1_opp,
++	&vdd2_opp,
++	&mpu_freq,
++	&dsp_freq,
+ 	NULL
+ };
+ 
+-- 
+1.5.6
+

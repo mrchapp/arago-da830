@@ -1,0 +1,25 @@
+From dffce96585205c0553d62c47a0680708b723713a Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Fri, 9 Jan 2009 13:21:26 +0530
+Subject: [PATCH 023/193] 019-fix-bug-in-musbhsdma.patch
+
+---
+ drivers/usb/musb/musbhsdma.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/musb/musbhsdma.c b/drivers/usb/musb/musbhsdma.c
+index ae71798..d9a9f80 100644
+--- a/drivers/usb/musb/musbhsdma.c
++++ b/drivers/usb/musb/musbhsdma.c
+@@ -225,7 +225,7 @@ static void configure_channel(struct dma_channel *channel,
+ 			csr |= MUSB_HSDMA_BURSTMODE_INCR4;
+ 
+ 		csr |= (musb_channel->epnum << MUSB_HSDMA_ENDPOINT_SHIFT)
+-			| MUSB_HSDMA_MODE1
++			| (mode ? MUSB_HSDMA_MODE1 : 0)
+ 			| MUSB_HSDMA_ENABLE
+ 			| MUSB_HSDMA_IRQENABLE
+ 			| (musb_channel->transmit
+-- 
+1.5.6
+

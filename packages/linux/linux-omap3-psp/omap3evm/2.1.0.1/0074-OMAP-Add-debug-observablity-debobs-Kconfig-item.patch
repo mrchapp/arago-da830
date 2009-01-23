@@ -1,0 +1,46 @@
+From 2f0354d13fd7d273db1dbaf63d93da546163743b Mon Sep 17 00:00:00 2001
+From: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+Date: Wed, 1 Oct 2008 18:11:13 +0300
+Subject: [PATCH 074/193] OMAP: Add debug observablity (debobs) Kconfig item
+
+Signed-off-by: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+---
+ arch/arm/mach-omap2/Makefile |    3 +++
+ arch/arm/plat-omap/Kconfig   |    7 +++++++
+ 2 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index ae8296c..80b6cd6 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -40,6 +40,9 @@ obj-$(CONFIG_OMAP_MBOX_FWK)	+= mailbox_mach.o
+ mailbox_mach-objs		:= mailbox.o
+ mmu_mach-objs			:= mmu.o
+ 
++# Debobs
++obj-$(CONFIG_OMAP3_DEBOBS)	+= debobs.o
++
+ # Specific board support
+ obj-$(CONFIG_MACH_OMAP_GENERIC)		+= board-generic.o
+ obj-$(CONFIG_MACH_OMAP_H4)		+= board-h4.o board-h4-mmc.o
+diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
+index 2892d67..29eb05d 100644
+--- a/arch/arm/plat-omap/Kconfig
++++ b/arch/arm/plat-omap/Kconfig
+@@ -205,6 +205,13 @@ config OMAP_32K_TIMER
+ 
+ endchoice
+ 
++config OMAP3_DEBOBS
++	bool "OMAP 3430 Debug observability support"
++	depends on ARCH_OMAP3 && DEBUG_FS
++	default n
++	help
++	  Use ETK pads for debug observability
++
+ config OMAP_32K_TIMER_HZ
+        int "Kernel internal timer frequency for 32KHz timer"
+        range 32 1024
+-- 
+1.5.6
+

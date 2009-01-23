@@ -1,0 +1,24 @@
+From 4f33edb3fc3bffce1bb60dbebc4b727e60ef62d5 Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Fri, 9 Jan 2009 13:19:07 +0530
+Subject: [PATCH 016/193] 012-fix-compilation-error.patch
+
+---
+ drivers/usb/musb/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
+index 669acbe..764e362 100644
+--- a/drivers/usb/musb/Kconfig
++++ b/drivers/usb/musb/Kconfig
+@@ -11,6 +11,7 @@ config USB_MUSB_HDRC
+ 	depends on (USB || USB_GADGET) && HAVE_CLK
+ 	depends on !SUPERH
+ 	select TWL4030_USB if MACH_OMAP_3430SDP
++	select USB_OTG_UTILS if ARCH_OMAP34XX
+ 	tristate 'Inventra Highspeed Dual Role Controller (TI, ADI, ...)'
+ 	help
+ 	  Say Y here if your system has a dual role high speed USB
+-- 
+1.5.6
+

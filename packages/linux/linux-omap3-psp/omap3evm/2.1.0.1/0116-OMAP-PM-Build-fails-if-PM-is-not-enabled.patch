@@ -1,0 +1,110 @@
+From 341663bdcd53c3d0b593b1c56fd09eb32ce251ad Mon Sep 17 00:00:00 2001
+From: Jouni Hogander <jouni.hogander@nokia.com>
+Date: Tue, 18 Nov 2008 14:42:37 +0200
+Subject: [PATCH 116/193] OMAP: PM: Build fails if PM is not enabled
+
+This patch fixes build in case if PM is not enabled
+
+Signed-off-by: Jouni Hogander <jouni.hogander@nokia.com>
+---
+ arch/arm/mach-omap2/control.c          |    6 ++++--
+ arch/arm/plat-omap/Kconfig             |    3 ++-
+ arch/arm/plat-omap/include/mach/sram.h |    5 +++++
+ arch/arm/plat-omap/sram.c              |    2 ++
+ 4 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/control.c b/arch/arm/mach-omap2/control.c
+index 743b57e..d28b823 100644
+--- a/arch/arm/mach-omap2/control.c
++++ b/arch/arm/mach-omap2/control.c
+@@ -26,6 +26,7 @@
+ 
+ static void __iomem *omap2_ctrl_base;
+ 
++#if defined(CONFIG_ARCH_OMAP3) && defined(CONFIG_PM)
+ struct omap3_scratchpad {
+ 	u32 boot_config_ptr;
+ 	u32 public_restore_ptr;
+@@ -133,6 +134,7 @@ struct omap3_control_regs {
+ };
+ 
+ static struct omap3_control_regs control_context;
++#endif /* CONFIG_ARCH_OMAP3 && CONFIG_PM */
+ 
+ #define OMAP_CTRL_REGADDR(reg)		(omap2_ctrl_base + (reg))
+ 
+@@ -176,7 +178,7 @@ void omap_ctrl_writel(u32 val, u16 offset)
+ 	__raw_writel(val, OMAP_CTRL_REGADDR(offset));
+ }
+ 
+-#ifdef CONFIG_ARCH_OMAP3
++#if defined(CONFIG_ARCH_OMAP3) && defined(CONFIG_PM)
+ /*
+  * Clears the scratchpad contents in case of cold boot-
+  * called during bootup
+@@ -425,4 +427,4 @@ void omap3_control_restore_context(void)
+ 	omap_ctrl_writel(control_context.csi, OMAP343X_CONTROL_CSI);
+ 	return;
+ }
+-#endif /* CONFIG_ARCH_OMAP3 */
++#endif /* CONFIG_ARCH_OMAP3 && CONFIG_PM */
+diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
+index 408ace0..b29f49a 100644
+--- a/arch/arm/plat-omap/Kconfig
++++ b/arch/arm/plat-omap/Kconfig
+@@ -58,7 +58,7 @@ config OMAP_DEBUG_CLOCKDOMAIN
+ 
+ config OMAP_SMARTREFLEX
+ 	bool "SmartReflex support"
+-	depends on ARCH_OMAP34XX && TWL4030_CORE
++	depends on ARCH_OMAP34XX && TWL4030_CORE && PM
+ 	help
+ 	  Say Y if you want to enable SmartReflex.
+ 
+@@ -279,6 +279,7 @@ config OMAP_PM_NOOP
+ 	bool "No-op/debug PM layer"
+ 
+ config OMAP_PM_SRF
++	depends on PM
+ 	bool "PM layer implemented using SRF"
+ 
+ endchoice
+diff --git a/arch/arm/plat-omap/include/mach/sram.h b/arch/arm/plat-omap/include/mach/sram.h
+index 87f4567..0c0b45f 100644
+--- a/arch/arm/plat-omap/include/mach/sram.h
++++ b/arch/arm/plat-omap/include/mach/sram.h
+@@ -63,6 +63,11 @@ extern u32 omap3_sram_configure_core_dpll(u32 sdrc_rfr_ctrl,
+ 					  u32 sdrc_actim_ctrla,
+ 					  u32 sdrc_actim_ctrlb, u32 m2);
+ extern unsigned long omap3_sram_configure_core_dpll_sz;
++
++#ifdef CONFIG_PM
+ extern void omap_push_sram_idle(void);
++#else
++static inline void omap_push_sram_idle(void) {}
++#endif /* CONFIG_PM */
+ 
+ #endif
+diff --git a/arch/arm/plat-omap/sram.c b/arch/arm/plat-omap/sram.c
+index 6a2ba51..9946f82 100755
+--- a/arch/arm/plat-omap/sram.c
++++ b/arch/arm/plat-omap/sram.c
+@@ -374,6 +374,7 @@ u32 omap3_configure_core_dpll(u32 sdrc_rfr_ctrl, u32 sdrc_actim_ctrla,
+ 					       sdrc_actim_ctrlb, m2);
+  }
+ 
++#ifdef CONFIG_PM
+ void omap3_sram_restore_context(void)
+ {
+ 	omap_sram_ceil = omap_sram_base + omap_sram_size;
+@@ -383,6 +384,7 @@ void omap3_sram_restore_context(void)
+ 			       omap3_sram_configure_core_dpll_sz);
+ 	omap_push_sram_idle();
+ }
++#endif /* CONFIG_PM */
+ 
+ int __init omap3_sram_init(void)
+ {
+-- 
+1.5.6
+

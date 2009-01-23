@@ -1,0 +1,30 @@
+From 75955f1932915d4e4871ff8cfd29c93093d66647 Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Mon, 19 Jan 2009 14:18:01 +0530
+Subject: [PATCH 187/193] 023-fix-ehci-while-loop-stuck-when-insmod.patch
+
+---
+ drivers/usb/host/ehci-omap.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index d870617..a9e3d78 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -198,11 +198,13 @@ static int omap_start_ehc(struct platform_device *dev, struct usb_hcd *hcd)
+ 			(7 << OMAP3430ES2_EN_PERIPH2_DPLL_SHIFT),
+ 			PLL_MOD, OMAP3430ES2_CM_CLKEN2);
+ 
++#if 0 /* initialization stucks here when EHCI built as module */
+ 	while (!(cm_read_mod_reg(PLL_MOD, CM_IDLEST2) &
+ 				OMAP3430ES2_ST_PERIPH2_CLK_MASK))
+ 		dev_dbg(hcd->self.controller,
+ 			"idlest2 = 0x%x\n",
+ 			cm_read_mod_reg(PLL_MOD, CM_IDLEST2));
++#endif
+ 	/* End DPLL5 programming */
+ 
+ 
+-- 
+1.5.6
+

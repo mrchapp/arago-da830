@@ -1,0 +1,65 @@
+From 418f70a345ff35926822036045e9a807cf60895c Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Fri, 9 Jan 2009 13:15:13 +0530
+Subject: [PATCH 007/193] 003-fix-ep-allocation-logic.patch
+
+---
+ drivers/usb/musb/musb_core.h |    3 ++-
+ drivers/usb/musb/musb_host.c |   13 ++++++++++---
+ 2 files changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
+index 630946a..85e2551 100644
+--- a/drivers/usb/musb/musb_core.h
++++ b/drivers/usb/musb/musb_core.h
+@@ -331,7 +331,8 @@ struct musb {
+ 	struct list_head	control;	/* of musb_qh */
+ 	struct list_head	in_bulk;	/* of musb_qh */
+ 	struct list_head	out_bulk;	/* of musb_qh */
+-	struct musb_qh		*periodic[32];	/* tree of interrupt+iso */
++	struct musb_qh	*in[16];
++	struct musb_qh	*out[16];
+ #endif
+ 
+ 	/* called with IRQs blocked; ON/nonzero implies starting a session,
+diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
+index 5a68f94..110944e 100644
+--- a/drivers/usb/musb/musb_host.c
++++ b/drivers/usb/musb/musb_host.c
+@@ -400,7 +400,10 @@ musb_giveback(struct musb_qh *qh, struct urb *urb, int status)
+ 			 * de-allocated if it's tracked and allocated;
+ 			 * and where we'd update the schedule tree...
+ 			 */
+-			musb->periodic[ep->epnum] = NULL;
++			if (is_in)
++				musb->in[ep->epnum] = NULL;
++			else
++				musb->out[ep->epnum] = NULL;
+ 			kfree(qh);
+ 			qh = NULL;
+ 			break;
+@@ -1798,7 +1801,8 @@ static int musb_schedule(
+ 	for (epnum = 1; epnum < musb->nr_endpoints; epnum++) {
+ 		int	diff;
+ 
+-		if (musb->periodic[epnum])
++		if ((is_in && musb->in[epnum]) ||
++			(!is_in && musb->out[epnum]))
+ 			continue;
+ 		hw_ep = &musb->endpoints[epnum];
+ 		if (hw_ep == musb->bulk_ep)
+@@ -1839,7 +1843,10 @@ static int musb_schedule(
+ 	idle = 1;
+ 	qh->mux = 0;
+ 	hw_ep = musb->endpoints + best_end;
+-	musb->periodic[best_end] = qh;
++	if (is_in)
++		musb->in[best_end] = qh;
++	else
++		musb->out[best_end] = qh;
+ 	DBG(4, "qh %p periodic slot %d\n", qh, best_end);
+ success:
+ 	if (head) {
+-- 
+1.5.6
+

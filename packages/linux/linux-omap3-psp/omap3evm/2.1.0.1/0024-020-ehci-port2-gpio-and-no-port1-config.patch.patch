@@ -1,0 +1,111 @@
+From 1dbb35b00dc786bce4906951c69c8f74927480df Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Mon, 12 Jan 2009 10:35:41 +0530
+Subject: [PATCH 024/193] 020-ehci-port2-gpio-and-no-port1-config.patch
+
+---
+ arch/arm/mach-omap2/usb-ehci.c |    2 ++
+ drivers/usb/host/ehci-omap.c   |   23 +++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/usb-ehci.c b/arch/arm/mach-omap2/usb-ehci.c
+index 489439d..68660f9 100644
+--- a/arch/arm/mach-omap2/usb-ehci.c
++++ b/arch/arm/mach-omap2/usb-ehci.c
+@@ -67,6 +67,7 @@ static void setup_ehci_io_mux(void)
+ 	 * Do Func Mux setting for 12-pin ULPI PHY mode
+ 	 */
+ 
++#ifndef CONFIG_MACH_OMAP3EVM_DC
+ 	/* Port1 */
+ 	omap_cfg_reg(Y9_3430_USB1HS_PHY_STP);
+ 	omap_cfg_reg(Y8_3430_USB1HS_PHY_CLK);
+@@ -80,6 +81,7 @@ static void setup_ehci_io_mux(void)
+ 	omap_cfg_reg(Y12_3430_USB1HS_PHY_DATA5);
+ 	omap_cfg_reg(W8_3430_USB1HS_PHY_DATA6);
+ 	omap_cfg_reg(Y13_3430_USB1HS_PHY_DATA7);
++#endif
+ 
+ 	/* Port2 */
+ 	omap_cfg_reg(AA10_3430_USB2HS_PHY_STP);
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index 6152f18..ae9c2f1 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -38,6 +38,8 @@
+ /* External USB connectivity board: 750-2083-001
+  * Connected to OMAP3430 SDP
+  * The board has Port1 and Port2 connected to ISP1504 in 12-pin ULPI mode
++ * Mistral/Multimedia daughter card connected to OMAP3EVM
++ * The board has only Port2 connected to SMSC USB83320 in 12-pin ULPI mode
+  */
+ 
+ /* ISSUE1:
+@@ -46,18 +48,31 @@
+  *	Then start the 60Mhz clock input to PHY
+  *	Release the reset after a delay -
+  *		to get the PHY state machine in working state
++ * 	On Mistral/Multimedia daughter card we didn't see this issue, so
++ *	disabling it.
+  */
++#ifndef CONFIG_MACH_OMAP3EVM_DC
+ #define EXTERNAL_PHY_RESET
++#endif
++
++#ifdef CONFIG_MACH_OMAP3EVM_DC
++#define	EXT_PHY_RESET_GPIO_PORT2	(135)
++#else
+ #define	EXT_PHY_RESET_GPIO_PORT1	(57)
+ #define	EXT_PHY_RESET_GPIO_PORT2	(61)
++#endif
++
+ #define	EXT_PHY_RESET_DELAY		(10)
+ 
+ /* ISSUE2:
+  * USBHOST supports External charge pump PHYs only
+  * Use the VBUS from Port1 to power VBUS of Port2 externally
+  * So use Port2 as the working ULPI port
++ * This is not required for Mistral/Multimedia daughter card on OMAP3EVM.
+  */
++#ifndef CONFIG_MACH_OMAP3EVM_DC
+ #define VBUS_INTERNAL_CHARGEPUMP_HACK
++#endif
+ 
+ #endif /* CONFIG_OMAP_EHCI_PHY_MODE */
+ 
+@@ -225,8 +240,11 @@ static int omap_start_ehc(struct platform_device *dev, struct usb_hcd *hcd)
+ 
+ #ifdef EXTERNAL_PHY_RESET
+ 	/* Refer: ISSUE1 */
++
++#ifndef CONFIG_MACH_OMAP3EVM_DC
+ 	gpio_request(EXT_PHY_RESET_GPIO_PORT1, "USB1 PHY reset");
+ 	gpio_direction_output(EXT_PHY_RESET_GPIO_PORT1, 0);
++#endif
+ 	gpio_request(EXT_PHY_RESET_GPIO_PORT2, "USB2 PHY reset");
+ 	gpio_direction_output(EXT_PHY_RESET_GPIO_PORT2, 0);
+ 	/* Hold the PHY in RESET for enough time till DIR is high */
+@@ -307,7 +325,10 @@ static int omap_start_ehc(struct platform_device *dev, struct usb_hcd *hcd)
+ 	 * Hold the PHY in RESET for enough time till PHY is settled and ready
+ 	 */
+ 	udelay(EXT_PHY_RESET_DELAY);
++
++#ifndef CONFIG_MACH_OMAP3EVM_DC
+ 	gpio_set_value(EXT_PHY_RESET_GPIO_PORT1, 1);
++#endif
+ 	gpio_set_value(EXT_PHY_RESET_GPIO_PORT2, 1);
+ #endif
+ 
+@@ -393,7 +414,9 @@ static void omap_stop_ehc(struct platform_device *dev, struct usb_hcd *hcd)
+ 
+ 
+ #ifdef EXTERNAL_PHY_RESET
++#ifndef CONFIG_MACH_OMAP3EVM_DC
+ 	gpio_free(EXT_PHY_RESET_GPIO_PORT1);
++#endif
+ 	gpio_free(EXT_PHY_RESET_GPIO_PORT2);
+ #endif
+ 
+-- 
+1.5.6
+

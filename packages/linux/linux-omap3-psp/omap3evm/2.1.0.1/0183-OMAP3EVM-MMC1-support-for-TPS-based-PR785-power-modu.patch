@@ -1,0 +1,1089 @@
+From 1eb6d78fc7d5024a4af02ef8964a1d79a934349f Mon Sep 17 00:00:00 2001
+From: Manikandan Pillai <mani.pillai@ti.com>
+Date: Mon, 19 Jan 2009 13:09:17 +0530
+Subject: [PATCH 183/193] OMAP3EVM-MMC1 support for TPS based PR785 power modules
+
+This patch allows the MMC1 support on OMAP2 EVM board with
+TPS6235x based PR785 boards. Files mmc-pr785.* contain the
+drivers. Card detect interrupt level issue has been fixed.
+The common part of the code between TWL and PR785 has been
+moved to a new file hsmmc.c. The header file
+mmc-twl4030.h have been deleted.
+---
+ arch/arm/mach-omap2/Makefile         |   12 ++-
+ arch/arm/mach-omap2/board-omap3evm.c |  124 +++++++++---------
+ arch/arm/mach-omap2/hsmmc.c          |  226 +++++++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/hsmmc.h          |   78 +++++++++++
+ arch/arm/mach-omap2/mmc-pr785.c      |  170 +++++++++++++++++++++++++
+ arch/arm/mach-omap2/mmc-twl4030.c    |  233 ++++------------------------------
+ arch/arm/mach-omap2/mmc-twl4030.h    |   29 ----
+ 7 files changed, 574 insertions(+), 298 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/hsmmc.c
+ create mode 100644 arch/arm/mach-omap2/hsmmc.h
+ create mode 100644 arch/arm/mach-omap2/mmc-pr785.c
+ delete mode 100644 arch/arm/mach-omap2/mmc-twl4030.h
+
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index 902af2b..c147f07 100755
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -60,10 +60,18 @@ obj-$(CONFIG_MACH_OMAP_3430SDP)		+= board-3430sdp.o \
+ 					   usb-ehci.o \
+ 					   board-3430sdp-flash.o
+ obj-$(CONFIG_MACH_OMAP3EVM)		+= board-omap3evm.o \
+-					   mmc-twl4030.o \
+ 					   usb-musb.o usb-ehci.o \
+ 					   board-omap3evm-flash.o \
+-					   twl4030-generic-scripts.o
++					   twl4030-generic-scripts.o \
++					   hsmmc.o
++
++ifeq ($(CONFIG_OMAP3EVM_PR785),y)
++obj-$(CONFIG_MACH_OMAP3EVM)             += mmc-pr785.o
++endif
++ifeq ($(CONFIG_TWL4030_CORE),y)
++obj-$(CONFIG_MACH_OMAP3EVM)             += mmc-twl4030.o
++endif
++
+ obj-$(CONFIG_MACH_OMAP3EVM_DC)		+= board-omap3evm-dc.o
+ obj-$(CONFIG_MACH_OMAP3_BEAGLE)		+= board-omap3beagle.o \
+ 					   usb-musb.o usb-ehci.o \
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index 93067e6..be8903c 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -41,9 +41,9 @@
+ 
+ #include "sdram-micron-mt46h32m32lf-6.h"
+ #include "twl4030-generic-scripts.h"
+-#include "mmc-twl4030.h"
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/driver.h>
++#include "hsmmc.h"
+ 
+ #define TPS6235X_REG_MAX	3
+ 
+@@ -435,63 +435,6 @@ static struct omap_display_data omap3_evm_display_data_dvi = {
+ 	.panel_disable = omap3_evm_panel_disable_dvi,
+ };
+ 
+-#if defined(CONFIG_OMAP3EVM_PR785)
+-/*
+- * Read a value from a register in an tps_6235x device.
+- * The value is returned in 'val'.
+- * Returns zero if successful, or non-zero otherwise.
+- */
+-int tps_6235x_read_reg(struct i2c_client *client, u8 reg, u8 *val)
+-{
+-	u8 data;
+-
+-	if (!client->adapter)
+-		return -ENODEV;
+-
+-	if (reg > TPS6235X_REG_MAX)
+-		return -1;
+-
+-	data = i2c_smbus_read_byte_data(client, reg);
+-	*val = data;
+-	return 0;
+-}
+-
+-/*
+- * Write a value to a register in an tps_6235x device.
+- * Returns zero if successful, or non-zero otherwise.
+- */
+-int tps_6235x_write_reg(struct i2c_client *client, u8 reg, u8 val)
+-{
+-	int err;
+-	int retry = 0;
+-
+-	if (!client->adapter)
+-		return -ENODEV;
+-
+-	if (reg > TPS6235X_REG_MAX)
+-		return -1;
+-
+-again:
+-	err = i2c_smbus_write_byte_data(client, reg, val);
+-	if (err >= 0)
+-		return 0;
+-
+-	dev_err(&client->dev,
+-		"wrote 0x%.2x to offset 0x%.2x error %d\n", val, reg, err);
+-
+-	/* Try 3 times */
+-	if (retry <= 3) {
+-		dev_info(&client->dev, "retry ... %d\n", retry);
+-		retry++;
+-		schedule_timeout(msecs_to_jiffies(20));
+-		goto again;
+-	}
+-	return err;
+-}
+-#endif
+-
+-/*-------------------------------------------------------------------*/
+-
+ static struct platform_device omap3_evm_lcd_device = {
+ 	.name		= "omap3evm_lcd",
+ 	.id		= -1,
+@@ -594,17 +537,75 @@ static struct platform_device *omap3_evm_devices[] __initdata = {
+ 
+ };
+ 
+-#if defined(CONFIG_TWL4030_CORE)
+-static struct twl4030_hsmmc_info mmc[] __initdata = {
++#if defined(CONFIG_OMAP3EVM_PR785)
++/*
++ * Read a value from a register in an tps_6235x device.
++ * The value is returned in 'val'.
++ * Returns zero if successful, or non-zero otherwise.
++ */
++int tps_6235x_read_reg(struct i2c_client *client, u8 reg, u8 *val)
++{
++	u8 data;
++
++	if (!client->adapter)
++		return -ENODEV;
++
++	if (reg > TPS6235X_REG_MAX)
++		return -1;
++
++	data = i2c_smbus_read_byte_data(client, reg);
++	*val = data;
++	return 0;
++}
++
++/*
++ * Write a value to a register in an tps_6235x device.
++ * Returns zero if successful, or non-zero otherwise.
++ */
++int tps_6235x_write_reg(struct i2c_client *client, u8 reg, u8 val)
++{
++	int err;
++	int retry = 0;
++
++	if (!client->adapter)
++		return -ENODEV;
++
++	if (reg > TPS6235X_REG_MAX)
++		return -1;
++
++again:
++	err = i2c_smbus_write_byte_data(client, reg, val);
++	if (err >= 0)
++		return 0;
++
++	dev_err(&client->dev,
++		"wrote 0x%.2x to offset 0x%.2x error %d\n", val, reg, err);
++
++	/* Try 3 times */
++	if (retry <= 3) {
++		dev_info(&client->dev, "retry ... %d\n", retry);
++		retry++;
++		schedule_timeout(msecs_to_jiffies(20));
++		goto again;
++	}
++	return err;
++}
++#endif
++
++static struct hsmmc_info mmc[] __initdata = {
+ 	{
+ 		.mmc		= 1,
+ 		.wires		= 4,
++#if defined(CONFIG_OMAP3EVM_PR785)
++		.gpio_cd	= 140,
++#endif
++#if defined(CONFIG_TWL4030_CORE)
+ 		.gpio_cd	= -EINVAL,
++#endif
+ 		.gpio_wp	= -EINVAL,
+ 	},
+ 	{}	/* Terminator */
+ };
+-#endif
+ 
+ #if defined(CONFIG_OMAP3EVM_PR785)
+ static void omap_init_pr785(void)
+@@ -638,6 +639,7 @@ static void __init omap3_evm_init(void)
+ #endif
+ #if defined(CONFIG_OMAP3EVM_PR785)
+ 	omap_init_pr785();
++	pr785_hsmmc_init(mmc);
+ #endif
+ 	usb_musb_init();
+ 	usb_ehci_init();
+diff --git a/arch/arm/mach-omap2/hsmmc.c b/arch/arm/mach-omap2/hsmmc.c
+new file mode 100644
+index 0000000..6c30b14
+--- /dev/null
++++ b/arch/arm/mach-omap2/hsmmc.c
+@@ -0,0 +1,226 @@
++/*
++ * linux/arch/arm/mach-omap2/hsmmc.c
++ *
++ * Copyright (C) 2007-2008 Texas Instruments
++ * Copyright (C) 2008 Nokia Corporation
++ * Author: Texas Instruments
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/delay.h>
++#include <linux/gpio.h>
++
++#include <mach/hardware.h>
++#include <mach/control.h>
++#include <mach/mmc.h>
++#include <mach/board.h>
++
++#include "hsmmc.h"
++
++#if (defined(CONFIG_MMC_OMAP_HS) || defined(CONFIG_MMC_OMAP_HS_MODULE))
++
++extern struct hsmmc_controller hsmmc[OMAP_NO_OF_MMC_CTRL];
++extern u16 control_pbias_offset;
++extern u16 control_devconf1_offset;
++int pr785_mmc_set_voltage(struct hsmmc_controller *c, int vdd);
++int twl_mmc_set_voltage(struct hsmmc_controller *c, int vdd);
++
++int hsmmc_card_detect(int irq)
++{
++	unsigned i;
++
++	for (i = 0; i < OMAP_NO_OF_MMC_CTRL; i++) {
++		struct omap_mmc_platform_data *mmc;
++
++		mmc = hsmmc[i].mmc;
++		if (!mmc)
++			continue;
++		if (irq != mmc->slots[0].card_detect_irq)
++			continue;
++
++		/* NOTE: assumes card detect signal is active-low */
++		return !gpio_get_value_cansleep(mmc->slots[0].switch_pin);
++	}
++	return -ENOSYS;
++}
++
++int hsmmc_get_ro(struct device *dev, int slot)
++{
++	struct omap_mmc_platform_data *mmc = dev->platform_data;
++
++	/* NOTE: assumes write protect signal is active-high */
++	return gpio_get_value_cansleep(mmc->slots[0].gpio_wp);
++}
++
++/*
++ * MMC Slot Initialization.
++ */
++int hsmmc_late_init(struct device *dev)
++{
++	struct omap_mmc_platform_data *mmc = dev->platform_data;
++	int ret = 0;
++	int i;
++
++	ret = gpio_request(mmc->slots[0].switch_pin, "mmc_cd");
++	if (ret)
++		goto done;
++	ret = gpio_direction_input(mmc->slots[0].switch_pin);
++	if (ret)
++		goto err;
++
++	for (i = 0; i < ARRAY_SIZE(hsmmc); i++) {
++		if (hsmmc[i].name == mmc->slots[0].name) {
++			hsmmc[i].mmc = mmc;
++			break;
++		}
++	}
++
++	return 0;
++
++err:
++	gpio_free(mmc->slots[0].switch_pin);
++done:
++	mmc->slots[0].card_detect_irq = 0;
++	mmc->slots[0].card_detect = NULL;
++
++	dev_err(dev, "err %d configuring card detect\n", ret);
++	return ret;
++}
++
++void hsmmc_cleanup(struct device *dev)
++{
++	struct omap_mmc_platform_data *mmc = dev->platform_data;
++
++	gpio_free(mmc->slots[0].switch_pin);
++}
++
++#ifdef CONFIG_PM
++
++int hsmmc_suspend(struct device *dev, int slot)
++{
++	struct omap_mmc_platform_data *mmc = dev->platform_data;
++
++	disable_irq(mmc->slots[0].card_detect_irq);
++	return 0;
++}
++
++int hsmmc_resume(struct device *dev, int slot)
++{
++	struct omap_mmc_platform_data *mmc = dev->platform_data;
++
++	enable_irq(mmc->slots[0].card_detect_irq);
++	return 0;
++}
++
++#else
++#define hsmmc_suspend	NULL
++#define hsmmc_resume	NULL
++#endif
++
++int hsmmc1_set_power(struct device *dev, int slot, int power_on,
++				int vdd)
++{
++	u32 reg;
++	int ret = 0;
++	struct hsmmc_controller *c = &hsmmc[0];
++	struct omap_mmc_platform_data *mmc = dev->platform_data;
++
++	if (power_on) {
++		if (cpu_is_omap2430()) {
++			reg = omap_ctrl_readl(OMAP243X_CONTROL_DEVCONF1);
++			if ((1 << vdd) >= MMC_VDD_30_31)
++				reg |= OMAP243X_MMC1_ACTIVE_OVERWRITE;
++			else
++				reg &= ~OMAP243X_MMC1_ACTIVE_OVERWRITE;
++			omap_ctrl_writel(reg, OMAP243X_CONTROL_DEVCONF1);
++		}
++
++		if (mmc->slots[0].internal_clock) {
++			reg = omap_ctrl_readl(OMAP2_CONTROL_DEVCONF0);
++			reg |= OMAP2_MMCSDIO1ADPCLKISEL;
++			omap_ctrl_writel(reg, OMAP2_CONTROL_DEVCONF0);
++		}
++
++		reg = omap_ctrl_readl(control_pbias_offset);
++		reg |= OMAP2_PBIASSPEEDCTRL0;
++		reg &= ~OMAP2_PBIASLITEPWRDNZ0;
++		omap_ctrl_writel(reg, control_pbias_offset);
++
++#if defined(CONFIG_TWL4030_CORE)
++		ret = twl_mmc_set_voltage(c, vdd);
++#endif
++#if defined(CONFIG_OMAP3EVM_PR785)
++		ret = pr785_mmc_set_voltage(c, vdd);
++#endif
++		/* 100ms delay required for PBIAS configuration */
++		msleep(100);
++		reg = omap_ctrl_readl(control_pbias_offset);
++		reg |= (OMAP2_PBIASLITEPWRDNZ0 | OMAP2_PBIASSPEEDCTRL0);
++		if ((1 << vdd) <= MMC_VDD_165_195)
++			reg &= ~OMAP2_PBIASLITEVMODE0;
++		else
++			reg |= OMAP2_PBIASLITEVMODE0;
++		omap_ctrl_writel(reg, control_pbias_offset);
++	} else {
++		reg = omap_ctrl_readl(control_pbias_offset);
++		reg &= ~OMAP2_PBIASLITEPWRDNZ0;
++		omap_ctrl_writel(reg, control_pbias_offset);
++
++#if defined(CONFIG_TWL4030_CORE)
++		ret = twl_mmc_set_voltage(c, 0);
++#endif
++#if defined(CONFIG_OMAP3EVM_PR785)
++		ret = pr785_mmc_set_voltage(c, 0);
++#endif
++
++		/* 100ms delay required for PBIAS configuration */
++		msleep(100);
++		reg = omap_ctrl_readl(control_pbias_offset);
++		reg |= (OMAP2_PBIASSPEEDCTRL0 | OMAP2_PBIASLITEPWRDNZ0 |
++			OMAP2_PBIASLITEVMODE0);
++		omap_ctrl_writel(reg, control_pbias_offset);
++	}
++
++	return ret;
++}
++
++int hsmmc2_set_power(struct device *dev, int slot, int power_on, int vdd)
++{
++	int ret;
++	struct hsmmc_controller *c = &hsmmc[1];
++	struct omap_mmc_platform_data *mmc = dev->platform_data;
++
++	if (power_on) {
++		if (mmc->slots[0].internal_clock) {
++			u32 reg;
++
++			reg = omap_ctrl_readl(control_devconf1_offset);
++			reg |= OMAP2_MMCSDIO2ADPCLKISEL;
++			omap_ctrl_writel(reg, control_devconf1_offset);
++		}
++#if defined(CONFIG_TWL4030_CORE)
++		ret = twl_mmc_set_voltage(c, vdd);
++#endif
++#if defined(CONFIG_OMAP3EVM_PR785)
++		ret = pr785_mmc_set_voltage(c, vdd);
++#endif
++	} else {
++#if defined(CONFIG_TWL4030_CORE)
++		ret = twl_mmc_set_voltage(c, 0);
++#endif
++#if defined(CONFIG_OMAP3EVM_PR785)
++		ret = pr785_mmc_set_voltage(c, 0);
++#endif
++	}
++
++	return ret;
++}
++
++#endif
+diff --git a/arch/arm/mach-omap2/hsmmc.h b/arch/arm/mach-omap2/hsmmc.h
+new file mode 100644
+index 0000000..105e60a
+--- /dev/null
++++ b/arch/arm/mach-omap2/hsmmc.h
+@@ -0,0 +1,78 @@
++/*
++ * linux/arch/arm/mach-omap2/hsmmc.h
++ *
++ * Copyright (C) 2007-2008 Texas Instruments
++ * Author:
++ * 	Manikandan Pillai <mani.pillai@ti.com>
++ *
++ * MMC definitions for OMAP2
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __HSMMC_H
++#define __HSMMC_H
++
++#define OMAP_NO_OF_MMC_CTRL	2
++
++struct hsmmc_info {
++	u8	mmc;		/* controller 1/2/3 */
++	u8	wires;		/* 1/4/8 wires */
++	int	gpio_cd;	/* or -EINVAL */
++	int	gpio_wp;	/* or -EINVAL */
++	int     ext_clock:1;    /* use external pin for input clock */
++};
++
++#define HSMMC_NAME_LEN		9
++struct hsmmc_controller {
++	struct          omap_mmc_platform_data  *mmc;
++	u32             devconf_loopback_clock;
++	u16             control_devconf_offset;
++	u8              hsmmc_dev_grp;
++	u8              hsmmc_dedicated;
++	char            name[HSMMC_NAME_LEN];
++};
++
++#if     defined(CONFIG_TWL4030_CORE) && \
++	(defined(CONFIG_MMC_OMAP) || defined(CONFIG_MMC_OMAP_MODULE) || \
++	defined(CONFIG_MMC_OMAP_HS) || defined(CONFIG_MMC_OMAP_HS_MODULE))
++
++void twl4030_mmc_init(struct hsmmc_info *);
++
++#else
++
++static inline void twl4030_mmc_init(struct hsmmc_info *info)
++{
++}
++
++#endif
++
++#if 	defined(CONFIG_OMAP3EVM_PR785) && \
++	defined(CONFIG_MMC_OMAP) || defined(CONFIG_MMC_OMAP_MODULE) || \
++	defined(CONFIG_MMC_OMAP_HS) || defined(CONFIG_MMC_OMAP_HS_MODULE)
++
++void pr785_hsmmc_init(struct hsmmc_info *);
++
++#else
++
++static inline void pr785_hsmmc_init(struct hsmmc_info *info)
++{
++}
++
++#endif
++
++int hsmmc_card_detect(int irq);
++int hsmmc_get_ro(struct device *dev, int slot);
++int hsmmc_late_init(struct device *dev);
++void hsmmc_cleanup(struct device *dev);
++#ifdef CONFIG_PM
++int hsmmc_suspend(struct device *dev, int slot);
++int hsmmc_resume(struct device *dev, int slot);
++#endif
++
++int hsmmc1_set_power(struct device *dev, int slot, int power_on, int vdd);
++int hsmmc2_set_power(struct device *dev, int slot, int power_on, int vdd);
++
++#endif /*__HSMMC_H */
+diff --git a/arch/arm/mach-omap2/mmc-pr785.c b/arch/arm/mach-omap2/mmc-pr785.c
+new file mode 100644
+index 0000000..06ff46c
+--- /dev/null
++++ b/arch/arm/mach-omap2/mmc-pr785.c
+@@ -0,0 +1,170 @@
++/*
++ * linux/arch/arm/mach-omap2/mmc-pr785.c
++ *
++ * Copyright (C) 2007-2008 Texas Instruments
++ * Author:
++ * 	Manikandan Pillai <mani.pillai@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/delay.h>
++#include <linux/gpio.h>
++
++#include <mach/hardware.h>
++#include <mach/control.h>
++#include <mach/mmc.h>
++#include <mach/board.h>
++
++#include "hsmmc.h"
++
++#if	defined(CONFIG_OMAP3EVM_PR785) &&\
++	(defined(CONFIG_MMC_OMAP_HS) || defined(CONFIG_MMC_OMAP_HS_MODULE))
++
++#define	VMMC1_DEV_GRP		0x27
++#define	VMMC1_DEDICATED		0x2A
++
++#define	VMMC2_DEV_GRP		0x2B
++#define	VMMC2_DEDICATED		0x2E
++
++#define	OMAP_PR785_MMC1_VSET	0
++#define	OMAP_PR785_MMC1_CD	140
++#define	OMAP_PR785_MMC1_EN	9
++#define	OMAP_PR785_MMC1_CD_MSK	((1<<12))
++
++u16 control_pbias_offset;
++u16 control_devconf1_offset;
++
++struct hsmmc_controller hsmmc[OMAP_NO_OF_MMC_CTRL] = {
++	{
++		.hsmmc_dev_grp		= VMMC1_DEV_GRP,
++		.hsmmc_dedicated	= VMMC1_DEDICATED,
++	},
++	{
++		/* control_devconf_offset set dynamically */
++		.hsmmc_dev_grp		= VMMC2_DEV_GRP,
++		.hsmmc_dedicated	= VMMC2_DEDICATED,
++	},
++};
++
++/*
++ * Sets the MMC voltage
++ * The MMC voltage on PR785 can only be set to 3.15 V due to hardware bug
++ */
++int pr785_mmc_set_voltage(struct hsmmc_controller *c, int vdd)
++{
++	if (vdd)
++		gpio_direction_output(OMAP_PR785_MMC1_VSET, 1);
++	else
++		gpio_direction_output(OMAP_PR785_MMC1_VSET, 0);
++	return 0;
++}
++
++static struct omap_mmc_platform_data *hsmmc_data[OMAP34XX_NR_MMC] __initdata;
++
++void __init pr785_hsmmc_init(struct hsmmc_info *controllers)
++{
++	struct hsmmc_info *c;
++	int nr_hsmmc = ARRAY_SIZE(hsmmc_data);
++
++	if (cpu_is_omap2430()) {
++		control_pbias_offset = OMAP243X_CONTROL_PBIAS_LITE;
++		hsmmc[1].control_devconf_offset = OMAP243X_CONTROL_DEVCONF1;
++		nr_hsmmc = 2;
++	} else {
++		control_pbias_offset = OMAP343X_CONTROL_PBIAS_LITE;
++		hsmmc[1].control_devconf_offset = OMAP343X_CONTROL_DEVCONF1;
++	}
++
++#if defined(CONFIG_MACH_OMAP3EVM) && defined(CONFIG_OMAP3EVM_PR785)
++	/* setup the GPIO for MMC for PR785 Rev ES2 power module */
++	/* Setup GPIO 0 - MMC1_VSET */
++	gpio_direction_output(OMAP_PR785_MMC1_VSET, 1);
++	/* Setup GPIO 9 - MMC1_EN */
++	gpio_direction_output(OMAP_PR785_MMC1_EN, 1);
++
++	/* Setup GPIO 140 - MMC1_CD as input */
++	if (gpio_request(OMAP_PR785_MMC1_CD, "AF6_34XX_GPIO140_UP") < 0) {
++		printk(KERN_ERR "Failed to request MMC IRQ %d \n",
++			OMAP_PR785_MMC1_CD);
++		return ;
++	}
++	gpio_direction_input(OMAP_PR785_MMC1_CD);
++#endif
++
++
++	for (c = controllers; c->mmc; c++) {
++		struct hsmmc_controller *pr785 = hsmmc + c->mmc - 1;
++		struct omap_mmc_platform_data *mmc = hsmmc_data[c->mmc - 1];
++
++		if (!c->mmc || c->mmc > nr_hsmmc) {
++			pr_debug("MMC%d: no such controller\n", c->mmc);
++			continue;
++		}
++		if (mmc) {
++			pr_debug("MMC%d: already configured\n", c->mmc);
++			continue;
++		}
++
++		mmc = kzalloc(sizeof(struct omap_mmc_platform_data),
++				GFP_KERNEL);
++		if (!mmc) {
++			pr_err("Cannot allocate memory for mmc device!\n");
++			return;
++		}
++
++		sprintf(pr785->name, "mmc%islot%i", c->mmc, 1);
++		mmc->slots[0].name = pr785->name;
++		mmc->nr_slots = 1;
++		mmc->slots[0].ocr_mask = MMC_VDD_165_195 |
++					MMC_VDD_26_27 | MMC_VDD_27_28 |
++					MMC_VDD_29_30 |
++					MMC_VDD_30_31 | MMC_VDD_31_32;
++		mmc->slots[0].wires = c->wires;
++		mmc->dma_mask = 0xffffffff;
++
++		if (c->gpio_cd != -EINVAL) {
++			mmc->init = hsmmc_late_init;
++			mmc->cleanup = hsmmc_cleanup;
++			mmc->suspend = hsmmc_suspend;
++			mmc->resume = hsmmc_resume;
++
++			mmc->slots[0].switch_pin = OMAP_PR785_MMC1_CD;
++			mmc->slots[0].card_detect_irq = gpio_to_irq(c->gpio_cd);
++			mmc->slots[0].card_detect = hsmmc_card_detect;
++		} else
++			mmc->slots[0].switch_pin = -EINVAL;
++
++		/* write protect normally uses an OMAP gpio */
++		if (c->gpio_wp != -EINVAL) {
++			gpio_request(c->gpio_wp, "mmc_wp");
++			gpio_direction_input(c->gpio_wp);
++
++			mmc->slots[0].gpio_wp = c->gpio_wp;
++			mmc->slots[0].get_ro = hsmmc_get_ro;
++		} else
++			mmc->slots[0].gpio_wp = -EINVAL;
++
++		switch (c->mmc) {
++		case 1:
++			mmc->slots[0].set_power = hsmmc1_set_power;
++			break;
++		case 2:
++			mmc->slots[0].set_power = hsmmc2_set_power;
++			break;
++		default:
++			pr_err("MMC%d configuration not supported!\n", c->mmc);
++			continue;
++		}
++		hsmmc_data[c->mmc - 1] = mmc;
++	}
++	omap2_init_mmc(hsmmc_data, OMAP34XX_NR_MMC);
++}
++
++#endif
+diff --git a/arch/arm/mach-omap2/mmc-twl4030.c b/arch/arm/mach-omap2/mmc-twl4030.c
+index d907889..88ae1bf 100644
+--- a/arch/arm/mach-omap2/mmc-twl4030.c
++++ b/arch/arm/mach-omap2/mmc-twl4030.c
+@@ -23,7 +23,7 @@
+ #include <mach/mmc.h>
+ #include <mach/board.h>
+ 
+-#include "mmc-twl4030.h"
++#include "hsmmc.h"
+ 
+ #if defined(CONFIG_TWL4030_CORE) && \
+ 	(defined(CONFIG_MMC_OMAP_HS) || defined(CONFIG_MMC_OMAP_HS_MODULE))
+@@ -50,123 +50,25 @@
+ 
+ #define VMMC_DEV_GRP_P1		0x20
+ 
+-static u16 control_pbias_offset;
+-static u16 control_devconf1_offset;
++u16 control_pbias_offset;
++u16 control_devconf1_offset;
+ 
+-#define HSMMC_NAME_LEN	9
+ 
+-static struct twl_mmc_controller {
+-	struct omap_mmc_platform_data	*mmc;
+-	u8		twl_vmmc_dev_grp;
+-	u8		twl_mmc_dedicated;
+-	char		name[HSMMC_NAME_LEN];
+-} hsmmc[] = {
++struct hsmmc_controller hsmmc[OMAP_NO_OF_MMC_CTRL] = {
+ 	{
+-		.twl_vmmc_dev_grp		= VMMC1_DEV_GRP,
+-		.twl_mmc_dedicated		= VMMC1_DEDICATED,
++		.hsmmc_dev_grp		= VMMC1_DEV_GRP,
++		.hsmmc_dedicated	= VMMC1_DEDICATED,
+ 	},
+ 	{
+-		.twl_vmmc_dev_grp		= VMMC2_DEV_GRP,
+-		.twl_mmc_dedicated		= VMMC2_DEDICATED,
++		.hsmmc_dev_grp		= VMMC2_DEV_GRP,
++		.hsmmc_dedicated	= VMMC2_DEDICATED,
+ 	},
+ };
+ 
+-static int twl_mmc_card_detect(int irq)
+-{
+-	unsigned i;
+-
+-	for (i = 0; i < ARRAY_SIZE(hsmmc); i++) {
+-		struct omap_mmc_platform_data *mmc;
+-
+-		mmc = hsmmc[i].mmc;
+-		if (!mmc)
+-			continue;
+-		if (irq != mmc->slots[0].card_detect_irq)
+-			continue;
+-
+-		/* NOTE: assumes card detect signal is active-low */
+-		return !gpio_get_value_cansleep(mmc->slots[0].switch_pin);
+-	}
+-	return -ENOSYS;
+-}
+-
+-static int twl_mmc_get_ro(struct device *dev, int slot)
+-{
+-	struct omap_mmc_platform_data *mmc = dev->platform_data;
+-
+-	/* NOTE: assumes write protect signal is active-high */
+-	return gpio_get_value_cansleep(mmc->slots[0].gpio_wp);
+-}
+-
+-/*
+- * MMC Slot Initialization.
+- */
+-static int twl_mmc_late_init(struct device *dev)
+-{
+-	struct omap_mmc_platform_data *mmc = dev->platform_data;
+-	int ret = 0;
+-	int i;
+-
+-	ret = gpio_request(mmc->slots[0].switch_pin, "mmc_cd");
+-	if (ret)
+-		goto done;
+-	ret = gpio_direction_input(mmc->slots[0].switch_pin);
+-	if (ret)
+-		goto err;
+-
+-	for (i = 0; i < ARRAY_SIZE(hsmmc); i++) {
+-		if (hsmmc[i].name == mmc->slots[0].name) {
+-			hsmmc[i].mmc = mmc;
+-			break;
+-		}
+-	}
+-
+-	return 0;
+-
+-err:
+-	gpio_free(mmc->slots[0].switch_pin);
+-done:
+-	mmc->slots[0].card_detect_irq = 0;
+-	mmc->slots[0].card_detect = NULL;
+-
+-	dev_err(dev, "err %d configuring card detect\n", ret);
+-	return ret;
+-}
+-
+-static void twl_mmc_cleanup(struct device *dev)
+-{
+-	struct omap_mmc_platform_data *mmc = dev->platform_data;
+-
+-	gpio_free(mmc->slots[0].switch_pin);
+-}
+-
+-#ifdef CONFIG_PM
+-
+-static int twl_mmc_suspend(struct device *dev, int slot)
+-{
+-	struct omap_mmc_platform_data *mmc = dev->platform_data;
+-
+-	disable_irq(mmc->slots[0].card_detect_irq);
+-	return 0;
+-}
+-
+-static int twl_mmc_resume(struct device *dev, int slot)
+-{
+-	struct omap_mmc_platform_data *mmc = dev->platform_data;
+-
+-	enable_irq(mmc->slots[0].card_detect_irq);
+-	return 0;
+-}
+-
+-#else
+-#define twl_mmc_suspend	NULL
+-#define twl_mmc_resume	NULL
+-#endif
+-
+ /*
+  * Sets the MMC voltage in twl4030
+  */
+-static int twl_mmc_set_voltage(struct twl_mmc_controller *c, int vdd)
++int twl_mmc_set_voltage(struct hsmmc_controller *c, int vdd)
+ {
+ 	int ret = 0;
+ 	u8 vmmc, dev_grp_val;
+@@ -178,20 +80,20 @@ static int twl_mmc_set_voltage(struct twl_mmc_controller *c, int vdd)
+ 	case MMC_VDD_32_33:
+ 	case MMC_VDD_31_32:
+ 	case MMC_VDD_30_31:
+-		if (c->twl_vmmc_dev_grp == VMMC1_DEV_GRP)
++		if (c->hsmmc_dev_grp == VMMC1_DEV_GRP)
+ 			vmmc = VMMC1_315V;
+ 		else
+ 			vmmc = VMMC2_315V;
+ 		break;
+ 	case MMC_VDD_29_30:
+-		if (c->twl_vmmc_dev_grp == VMMC1_DEV_GRP)
++		if (c->hsmmc_dev_grp == VMMC1_DEV_GRP)
+ 			vmmc = VMMC1_315V;
+ 		else
+ 			vmmc = VMMC2_300V;
+ 		break;
+ 	case MMC_VDD_27_28:
+ 	case MMC_VDD_26_27:
+-		if (c->twl_vmmc_dev_grp == VMMC1_DEV_GRP)
++		if (c->hsmmc_dev_grp == VMMC1_DEV_GRP)
+ 			vmmc = VMMC1_285V;
+ 		else
+ 			vmmc = VMMC2_285V;
+@@ -202,13 +104,13 @@ static int twl_mmc_set_voltage(struct twl_mmc_controller *c, int vdd)
+ 	case MMC_VDD_22_23:
+ 	case MMC_VDD_21_22:
+ 	case MMC_VDD_20_21:
+-		if (c->twl_vmmc_dev_grp == VMMC1_DEV_GRP)
++		if (c->hsmmc_dev_grp == VMMC1_DEV_GRP)
+ 			vmmc = VMMC1_285V;
+ 		else
+ 			vmmc = VMMC2_260V;
+ 		break;
+ 	case MMC_VDD_165_195:
+-		if (c->twl_vmmc_dev_grp == VMMC1_DEV_GRP)
++		if (c->hsmmc_dev_grp == VMMC1_DEV_GRP)
+ 			vmmc = VMMC1_185V;
+ 		else
+ 			vmmc = VMMC2_185V;
+@@ -225,102 +127,21 @@ static int twl_mmc_set_voltage(struct twl_mmc_controller *c, int vdd)
+ 
+ #if defined(CONFIG_TWL4030_CORE)
+ 	ret = twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+-					dev_grp_val, c->twl_vmmc_dev_grp);
++					dev_grp_val, c->hsmmc_dev_grp);
+ 	if (ret)
+ 		return ret;
+ 
+ 	ret = twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+-					vmmc, c->twl_mmc_dedicated);
+-
++					vmmc, c->hsmmc_dedicated);
+ #endif
+ 	return ret;
+ }
+ 
+-static int twl_mmc1_set_power(struct device *dev, int slot, int power_on,
+-				int vdd)
+-{
+-	u32 reg;
+-	int ret = 0;
+-	struct twl_mmc_controller *c = &hsmmc[0];
+-	struct omap_mmc_platform_data *mmc = dev->platform_data;
+-
+-	if (power_on) {
+-		if (cpu_is_omap2430()) {
+-			reg = omap_ctrl_readl(OMAP243X_CONTROL_DEVCONF1);
+-			if ((1 << vdd) >= MMC_VDD_30_31)
+-				reg |= OMAP243X_MMC1_ACTIVE_OVERWRITE;
+-			else
+-				reg &= ~OMAP243X_MMC1_ACTIVE_OVERWRITE;
+-			omap_ctrl_writel(reg, OMAP243X_CONTROL_DEVCONF1);
+-		}
+-
+-		if (mmc->slots[0].internal_clock) {
+-			reg = omap_ctrl_readl(OMAP2_CONTROL_DEVCONF0);
+-			reg |= OMAP2_MMCSDIO1ADPCLKISEL;
+-			omap_ctrl_writel(reg, OMAP2_CONTROL_DEVCONF0);
+-		}
+-
+-		reg = omap_ctrl_readl(control_pbias_offset);
+-		reg |= OMAP2_PBIASSPEEDCTRL0;
+-		reg &= ~OMAP2_PBIASLITEPWRDNZ0;
+-		omap_ctrl_writel(reg, control_pbias_offset);
+-
+-		ret = twl_mmc_set_voltage(c, vdd);
+-
+-		/* 100ms delay required for PBIAS configuration */
+-		msleep(100);
+-		reg = omap_ctrl_readl(control_pbias_offset);
+-		reg |= (OMAP2_PBIASLITEPWRDNZ0 | OMAP2_PBIASSPEEDCTRL0);
+-		if ((1 << vdd) <= MMC_VDD_165_195)
+-			reg &= ~OMAP2_PBIASLITEVMODE0;
+-		else
+-			reg |= OMAP2_PBIASLITEVMODE0;
+-		omap_ctrl_writel(reg, control_pbias_offset);
+-	} else {
+-		reg = omap_ctrl_readl(control_pbias_offset);
+-		reg &= ~OMAP2_PBIASLITEPWRDNZ0;
+-		omap_ctrl_writel(reg, control_pbias_offset);
+-
+-		ret = twl_mmc_set_voltage(c, 0);
+-
+-		/* 100ms delay required for PBIAS configuration */
+-		msleep(100);
+-		reg = omap_ctrl_readl(control_pbias_offset);
+-		reg |= (OMAP2_PBIASSPEEDCTRL0 | OMAP2_PBIASLITEPWRDNZ0 |
+-			OMAP2_PBIASLITEVMODE0);
+-		omap_ctrl_writel(reg, control_pbias_offset);
+-	}
+-
+-	return ret;
+-}
+-
+-static int twl_mmc2_set_power(struct device *dev, int slot, int power_on, int vdd)
+-{
+-	int ret;
+-	struct twl_mmc_controller *c = &hsmmc[1];
+-	struct omap_mmc_platform_data *mmc = dev->platform_data;
+-
+-	if (power_on) {
+-		if (mmc->slots[0].internal_clock) {
+-			u32 reg;
+-
+-			reg = omap_ctrl_readl(control_devconf1_offset);
+-			reg |= OMAP2_MMCSDIO2ADPCLKISEL;
+-			omap_ctrl_writel(reg, control_devconf1_offset);
+-		}
+-		ret = twl_mmc_set_voltage(c, vdd);
+-	} else {
+-		ret = twl_mmc_set_voltage(c, 0);
+-	}
+-
+-	return ret;
+-}
+-
+ static struct omap_mmc_platform_data *hsmmc_data[OMAP34XX_NR_MMC] __initdata;
+ 
+-void __init twl4030_mmc_init(struct twl4030_hsmmc_info *controllers)
++void __init twl4030_mmc_init(struct hsmmc_info *controllers)
+ {
+-	struct twl4030_hsmmc_info *c;
++	struct hsmmc_info *c;
+ 	int nr_hsmmc = ARRAY_SIZE(hsmmc_data);
+ 
+ 	if (cpu_is_omap2430()) {
+@@ -333,7 +154,7 @@ void __init twl4030_mmc_init(struct twl4030_hsmmc_info *controllers)
+ 	}
+ 
+ 	for (c = controllers; c->mmc; c++) {
+-		struct twl_mmc_controller *twl = hsmmc + c->mmc - 1;
++		struct hsmmc_controller *twl = hsmmc + c->mmc - 1;
+ 		struct omap_mmc_platform_data *mmc = hsmmc_data[c->mmc - 1];
+ 
+ 		if (!c->mmc || c->mmc > nr_hsmmc) {
+@@ -364,14 +185,14 @@ void __init twl4030_mmc_init(struct twl4030_hsmmc_info *controllers)
+ 
+ 		/* note: twl4030 card detect GPIOs normally switch VMMCx ... */
+ 		if (gpio_is_valid(c->gpio_cd)) {
+-			mmc->init = twl_mmc_late_init;
+-			mmc->cleanup = twl_mmc_cleanup;
+-			mmc->suspend = twl_mmc_suspend;
+-			mmc->resume = twl_mmc_resume;
++			mmc->init = hsmmc_late_init;
++			mmc->cleanup = hsmmc_cleanup;
++			mmc->suspend = hsmmc_suspend;
++			mmc->resume = hsmmc_resume;
+ 
+ 			mmc->slots[0].switch_pin = c->gpio_cd;
+ 			mmc->slots[0].card_detect_irq = gpio_to_irq(c->gpio_cd);
+-			mmc->slots[0].card_detect = twl_mmc_card_detect;
++			mmc->slots[0].card_detect = hsmmc_card_detect;
+ 		} else
+ 			mmc->slots[0].switch_pin = -EINVAL;
+ 
+@@ -381,7 +202,7 @@ void __init twl4030_mmc_init(struct twl4030_hsmmc_info *controllers)
+ 			gpio_direction_input(c->gpio_wp);
+ 
+ 			mmc->slots[0].gpio_wp = c->gpio_wp;
+-			mmc->slots[0].get_ro = twl_mmc_get_ro;
++			mmc->slots[0].get_ro = hsmmc_get_ro;
+ 		} else
+ 			mmc->slots[0].gpio_wp = -EINVAL;
+ 
+@@ -392,10 +213,10 @@ void __init twl4030_mmc_init(struct twl4030_hsmmc_info *controllers)
+ 
+ 		switch (c->mmc) {
+ 		case 1:
+-			mmc->slots[0].set_power = twl_mmc1_set_power;
++			mmc->slots[0].set_power = hsmmc1_set_power;
+ 			break;
+ 		case 2:
+-			mmc->slots[0].set_power = twl_mmc2_set_power;
++			mmc->slots[0].set_power = hsmmc2_set_power;
+ 			break;
+ 		default:
+ 			pr_err("MMC%d configuration not supported!\n", c->mmc);
+diff --git a/arch/arm/mach-omap2/mmc-twl4030.h b/arch/arm/mach-omap2/mmc-twl4030.h
+deleted file mode 100644
+index e1c8076..0000000
+--- a/arch/arm/mach-omap2/mmc-twl4030.h
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/*
+- * MMC definitions for OMAP2
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-struct twl4030_hsmmc_info {
+-	u8	mmc;		/* controller 1/2/3 */
+-	u8	wires;		/* 1/4/8 wires */
+-	int	gpio_cd;	/* or -EINVAL */
+-	int	gpio_wp;	/* or -EINVAL */
+-	int	ext_clock:1;	/* use external pin for input clock */
+-};
+-
+-#if	defined(CONFIG_TWL4030_CORE) && \
+-	(defined(CONFIG_MMC_OMAP) || defined(CONFIG_MMC_OMAP_MODULE) || \
+-	 defined(CONFIG_MMC_OMAP_HS) || defined(CONFIG_MMC_OMAP_HS_MODULE))
+-
+-void twl4030_mmc_init(struct twl4030_hsmmc_info *);
+-
+-#else
+-
+-static inline void twl4030_mmc_init(struct twl4030_hsmmc_info *info)
+-{
+-}
+-
+-#endif
+-- 
+1.5.6
+

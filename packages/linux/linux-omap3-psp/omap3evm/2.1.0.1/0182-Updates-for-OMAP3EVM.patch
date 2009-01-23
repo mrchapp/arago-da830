@@ -1,0 +1,41 @@
+From 0971f26679b92afc32e6df977c524f37370cc080 Mon Sep 17 00:00:00 2001
+From: Sanjeev Premi <premi@ti.com>
+Date: Fri, 16 Jan 2009 20:59:55 +0530
+Subject: [PATCH 182/193] Updates for OMAP3EVM
+
+Includes:
+- Updates to default board configuration.
+- Call function omap2_set_globals_35xx()
+---
+ arch/arm/configs/omap3_evm_defconfig |    1 +
+ arch/arm/mach-omap2/board-omap3evm.c |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/configs/omap3_evm_defconfig b/arch/arm/configs/omap3_evm_defconfig
+index f276c3a..6f67996 100644
+--- a/arch/arm/configs/omap3_evm_defconfig
++++ b/arch/arm/configs/omap3_evm_defconfig
+@@ -206,6 +206,7 @@ CONFIG_OMAP_LL_DEBUG_UART1=y
+ CONFIG_OMAP_SERIAL_WAKE=y
+ CONFIG_ARCH_OMAP34XX=y
+ CONFIG_ARCH_OMAP3430=y
++CONFIG_ARCH_OMAP35XX=y
+ 
+ #
+ # OMAP Board Type
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index e4e60e2..7fb3eef 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -264,7 +264,7 @@ static void __init omap3_evm_init(void)
+ 
+ static void __init omap3_evm_map_io(void)
+ {
+-	omap2_set_globals_343x();
++	omap2_set_globals_35xx();
+ 	omap2_map_common_io();
+ }
+ 
+-- 
+1.5.6
+

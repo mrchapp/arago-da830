@@ -1,0 +1,30 @@
+From f5826146ea79b19589f2bb1f5fbb6ca82752f688 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Mon, 19 Jan 2009 16:26:18 +0530
+Subject: [PATCH 186/193] Warning fixed
+
+There was one warning coming due to merging of Mani's code
+in board-omap3evm.c file for "omap3_evm_lcd_device".
+---
+ arch/arm/mach-omap2/board-omap3evm.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index a5e6d4a..54a1568 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -435,11 +435,6 @@ static struct omap_display_data omap3_evm_display_data_dvi = {
+ 	.panel_disable = omap3_evm_panel_disable_dvi,
+ };
+ 
+-static struct platform_device omap3_evm_lcd_device = {
+-	.name		= "omap3evm_lcd",
+-	.id		= -1,
+-};
+-
+ static struct omap_dss_platform_data omap3_evm_dss_data = {
+ 	.num_displays = 3,
+ 	.displays = {
+-- 
+1.5.6
+

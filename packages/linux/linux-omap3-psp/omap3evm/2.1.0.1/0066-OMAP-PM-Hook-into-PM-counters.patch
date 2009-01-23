@@ -1,0 +1,84 @@
+From f37742549bad12c8f5789fa1aac2e58027861e27 Mon Sep 17 00:00:00 2001
+From: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+Date: Wed, 15 Oct 2008 17:48:44 +0300
+Subject: [PATCH 066/193] OMAP: PM: Hook into PM counters
+
+This patch modifies the clock, clockdomain and OMAP3 specific
+powerdomain code to call the PM counter infrastructure whenever one or
+more powerdomains might have changed state.
+
+Signed-off-by: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+---
+ arch/arm/mach-omap2/clock.c       |    2 ++
+ arch/arm/mach-omap2/clockdomain.c |    3 +++
+ arch/arm/mach-omap2/pm34xx.c      |    6 ++++++
+ 3 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clock.c b/arch/arm/mach-omap2/clock.c
+index 21361ad..2dbe768 100644
+--- a/arch/arm/mach-omap2/clock.c
++++ b/arch/arm/mach-omap2/clock.c
+@@ -1133,6 +1133,8 @@ void omap2_clk_disable_unused(struct clk *clk)
+ 		omap2_clk_disable(clk);
+ 	} else
+ 		_omap2_clk_disable(clk);
++	if (clk->clkdm.ptr != NULL)
++		pwrdm_clkdm_state_switch(clk->clkdm.ptr);
+ }
+ #endif
+ 
+diff --git a/arch/arm/mach-omap2/clockdomain.c b/arch/arm/mach-omap2/clockdomain.c
+index a7c2d87..6650d44 100644
+--- a/arch/arm/mach-omap2/clockdomain.c
++++ b/arch/arm/mach-omap2/clockdomain.c
+@@ -570,6 +570,7 @@ int omap2_clkdm_clk_enable(struct clockdomain *clkdm, struct clk *clk)
+ 		omap2_clkdm_wakeup(clkdm);
+ 
+ 	pwrdm_wait_transition(clkdm->pwrdm.ptr);
++	pwrdm_clkdm_state_switch(clkdm);
+ 
+ 	return 0;
+ }
+@@ -622,6 +623,8 @@ int omap2_clkdm_clk_disable(struct clockdomain *clkdm, struct clk *clk)
+ 	else
+ 		omap2_clkdm_sleep(clkdm);
+ 
++	pwrdm_clkdm_state_switch(clkdm);
++
+ 	return 0;
+ }
+ 
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index 43aac5f..5697ddf 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -172,6 +172,8 @@ static void omap_sram_idle(void)
+ 	disable_smartreflex(SR1);
+ 	disable_smartreflex(SR2);
+ 
++	pwrdm_pre_transition();
++
+ 	omap2_gpio_prepare_for_retention();
+ 	omap_uart_prepare_idle(0);
+ 	omap_uart_prepare_idle(1);
+@@ -187,6 +189,9 @@ static void omap_sram_idle(void)
+ 	/* Enable smartreflex after WFI */
+ 	enable_smartreflex(SR1);
+ 	enable_smartreflex(SR2);
++
++	pwrdm_post_transition();
++
+ }
+ 
+ /*
+@@ -280,6 +285,7 @@ static int set_pwrdm_state(struct powerdomain *pwrdm, u32 state)
+ 	if (sleep_switch) {
+ 		omap2_clkdm_allow_idle(pwrdm->pwrdm_clkdms[0]);
+ 		pwrdm_wait_transition(pwrdm);
++		pwrdm_state_switch(pwrdm);
+ 	}
+ 
+ err:
+-- 
+1.5.6
+

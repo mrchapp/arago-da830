@@ -1,0 +1,25 @@
+From 922442ce8836f721a3096e7e0b1a901d4c9a978d Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Fri, 9 Jan 2009 13:16:37 +0530
+Subject: [PATCH 012/193] 008-vbus-off-at-disconnect.patch
+
+---
+ drivers/usb/musb/musb_core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index c0c59ef..a23b4fe 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -768,7 +768,7 @@ static irqreturn_t musb_stage2_irq(struct musb *musb, u8 int_usb,
+ 		case OTG_STATE_A_HOST:
+ 		case OTG_STATE_A_SUSPEND:
+ 			musb_root_disconnect(musb);
+-			if (musb->a_wait_bcon != 0)
++			if (musb->a_wait_bcon != 0 && is_otg_enabled(musb))
+ 				musb_platform_try_idle(musb, jiffies
+ 					+ msecs_to_jiffies(musb->a_wait_bcon));
+ 			break;
+-- 
+1.5.6
+

@@ -1,0 +1,25 @@
+From 8bda3bc4bbf21d196b7d2b347227da8bd050c6e8 Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Fri, 9 Jan 2009 13:19:35 +0530
+Subject: [PATCH 017/193] 013-null-pointer-check.patch
+
+---
+ drivers/usb/musb/omap2430.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index 3f99536..6ddc986 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -232,6 +232,8 @@ int __init musb_platform_init(struct musb *musb)
+ #if defined(CONFIG_ARCH_OMAP2430)
+ 	omap_cfg_reg(AE5_2430_USB0HS_STP);
+ #endif
++	if (!x)
++		return -ENODEV;
+ 
+ 	musb->xceiv = *x;
+ 	musb_platform_resume(musb);
+-- 
+1.5.6
+

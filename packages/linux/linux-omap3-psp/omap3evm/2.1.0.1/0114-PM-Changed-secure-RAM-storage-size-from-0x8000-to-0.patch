@@ -1,0 +1,28 @@
+From 797317d5ad08f39812885e93ebf5bd2d0a086692 Mon Sep 17 00:00:00 2001
+From: Tero Kristo <tero.kristo@nokia.com>
+Date: Thu, 13 Nov 2008 13:41:05 +0200
+Subject: [PATCH 114/193] PM: Changed secure RAM storage size from 0x8000 to 0x803F
+
+Without this, causes some random crashes related to memory management.
+
+Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
+---
+ arch/arm/mach-omap2/pm34xx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index cc162e1..ffb195a 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -925,7 +925,7 @@ int __init omap3_pm_init(void)
+ 
+ 	if (omap_type() != OMAP2_DEVICE_TYPE_GP) {
+ 		omap3_secure_ram_storage =
+-			kmalloc(0x8000, GFP_KERNEL);
++			kmalloc(0x803F, GFP_KERNEL);
+ 		if (!omap3_secure_ram_storage)
+ 			printk(KERN_ERR "Memory allocation failed when"
+ 					"allocating for secure sram context\n");
+-- 
+1.5.6
+

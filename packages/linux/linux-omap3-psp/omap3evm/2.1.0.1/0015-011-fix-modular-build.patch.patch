@@ -1,0 +1,28 @@
+From d49e03ebbbf0199428d0da3e149e2661eab33f9d Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Fri, 9 Jan 2009 13:18:56 +0530
+Subject: [PATCH 015/193] 011-fix-modular-build.patch
+
+---
+ drivers/usb/musb/musb_core.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index f71fab6..2447e3a 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1824,8 +1824,9 @@ static void musb_free(struct musb *musb)
+ 	musb_gadget_cleanup(musb);
+ #endif
+ 
+-	if (musb->nIrq >= 0 && musb->irq_wake) {
+-		disable_irq_wake(musb->nIrq);
++	if (musb->nIrq >= 0) {
++		if (musb->irq_wake)
++			disable_irq_wake(musb->nIrq);
+ 		free_irq(musb->nIrq, musb);
+ 	}
+ 	if (is_dma_capable() && musb->dma_controller) {
+-- 
+1.5.6
+

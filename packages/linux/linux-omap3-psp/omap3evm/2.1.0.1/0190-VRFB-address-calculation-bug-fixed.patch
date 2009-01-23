@@ -1,0 +1,55 @@
+From b3bea80917d9645345cdcefe928f3c852acb7d26 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Tue, 20 Jan 2009 15:39:38 +0530
+Subject: [PATCH 190/193] VRFB address calculation bug fixed
+ While doing sanity testing, we observed that the equation
+ which calculates VRFB address goes wrong for higher contexts.
+
+Fixed under this commit.
+---
+ arch/arm/plat-omap/fb-vrfb.c |   29 +++++++++++++++++++++++++----
+ 1 files changed, 25 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/plat-omap/fb-vrfb.c b/arch/arm/plat-omap/fb-vrfb.c
+index 5ea0279..84c4af6 100644
+--- a/arch/arm/plat-omap/fb-vrfb.c
++++ b/arch/arm/plat-omap/fb-vrfb.c
+@@ -7,10 +7,31 @@
+ #define DBG(format, ...)
+ #endif
+ 
+-#define SMS_ROT_VIRT_BASE(context, rot) \
+-		(((context >= 4) ? 0xD0000000 : 0x70000000) \
+-		| 0x4000000 * (context) \
+-		| 0x1000000 * (rot))
++static unsigned int sms_rot_virt_base(int context, int rot)
++{
++        switch (context)
++        {
++        case 0:
++        case 1:
++        case 2:
++        case 3:
++                return (0x70000000 | 0x4000000 * (context) | 0x1000000 * (rot));
++                break;
++        case 4:
++        case 5:
++        case 6:
++        case 7:
++                return (0xE0000000 | 0x4000000 * (context - 4) | 0x1000000 * (rot));
++                break;
++        case 8:
++        case 9:
++        case 10:
++        case 11:
++                return (0xF0000000 | 0x4000000 * (context - 8) | 0x1000000 * (rot));
++        }
++        return -1;
++}
++#define SMS_ROT_VIRT_BASE(context, rot) sms_rot_virt_base(context, rot)
+ 
+ #define PAGE_WIDTH_EXP         5 /* Assuming SDRAM pagesize= 1024 */
+ #define PAGE_HEIGHT_EXP        5 /* 1024 = 2^5 * 2^5 */
+-- 
+1.5.6
+

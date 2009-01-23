@@ -1,0 +1,46 @@
+From 38141b2baa703fcc7b616d1994d618e5623cff48 Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Fri, 9 Jan 2009 13:16:06 +0530
+Subject: [PATCH 010/193] 006-moduler-fix.patch
+
+---
+ drivers/usb/musb/musb_core.h |    2 +-
+ drivers/usb/musb/musb_regs.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
+index c66e6a5..5a74045 100644
+--- a/drivers/usb/musb/musb_core.h
++++ b/drivers/usb/musb/musb_core.h
+@@ -57,7 +57,6 @@ struct musb_ep;
+ #include "musb_dma.h"
+ 
+ #include "musb_io.h"
+-#include "musb_regs.h"
+ 
+ #include "musb_gadget.h"
+ #include "../core/hcd.h"
+@@ -230,6 +229,7 @@ enum musb_g_ep0_state {
+ 
+ /******************************** TYPES *************************************/
+ 
++#include "musb_regs.h"
+ /*
+  * struct musb_hw_ep - endpoint hardware (bidirectional)
+  *
+diff --git a/drivers/usb/musb/musb_regs.h b/drivers/usb/musb/musb_regs.h
+index de3b2f1..ea6aa45 100644
+--- a/drivers/usb/musb/musb_regs.h
++++ b/drivers/usb/musb/musb_regs.h
+@@ -323,7 +323,7 @@ static inline void  musb_write_rxfifoadd(void __iomem *mbase, u16 c_off)
+ 
+ static inline u8 musb_read_configdata(void __iomem *mbase)
+ {
+-	return musb_readb(mbase, 0x10 + MUSB_CONFIGDATA);
++	return musb_readb(mbase, MUSB_EP_OFFSET(0, MUSB_CONFIGDATA));
+ }
+ 
+ static inline u16 musb_read_hwvers(void __iomem *mbase)
+-- 
+1.5.6
+

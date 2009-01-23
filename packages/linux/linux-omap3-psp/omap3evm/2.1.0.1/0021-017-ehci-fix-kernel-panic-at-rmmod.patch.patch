@@ -1,0 +1,26 @@
+From 8e1a7c7d709eabf4bba9e5a7dbae9891bd85fa57 Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Fri, 9 Jan 2009 13:20:56 +0530
+Subject: [PATCH 021/193] 017-ehci-fix-kernel-panic-at-rmmod.patch
+
+---
+ drivers/usb/host/ehci-omap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index 1b3266c..6152f18 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -499,8 +499,8 @@ static int ehci_hcd_omap_drv_remove(struct platform_device *dev)
+ 
+ 	iounmap(hcd->regs);
+ 	usb_remove_hcd(hcd);
+-	usb_put_hcd(hcd);
+ 	omap_stop_ehc(dev, hcd);
++	usb_put_hcd(hcd);
+ 
+ 	return 0;
+ }
+-- 
+1.5.6
+

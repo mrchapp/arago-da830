@@ -1,0 +1,147 @@
+From 3583354b1666adb33b2b6ef28048846327d91a97 Mon Sep 17 00:00:00 2001
+From: Rajendra Nayak <rnayak@ti.com>
+Date: Fri, 26 Sep 2008 17:50:16 +0530
+Subject: [PATCH 087/193] OMAP3: PM: allow runtime enable/disable of OFF mode
+
+To enable off mode:
+
+  echo 1 > /sys/power/enable_off_mode
+
+to disable:
+
+  echo 0 > /sys/power/enable_off_mode
+
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+---
+ arch/arm/mach-omap2/pm.c     |   21 +++++++++++++++++----
+ arch/arm/mach-omap2/pm.h     |    2 ++
+ arch/arm/mach-omap2/pm34xx.c |   16 ++++++++++++++++
+ arch/arm/mach-omap2/serial.c |    2 --
+ 4 files changed, 35 insertions(+), 6 deletions(-)
+ mode change 100755 => 100644 arch/arm/mach-omap2/pm.h
+
+diff --git a/arch/arm/mach-omap2/pm.c b/arch/arm/mach-omap2/pm.c
+index 4652136..53f69e8 100644
+--- a/arch/arm/mach-omap2/pm.c
++++ b/arch/arm/mach-omap2/pm.c
+@@ -33,6 +33,7 @@
+ 
+ unsigned short enable_dyn_sleep;
+ unsigned short clocks_off_while_idle;
++unsigned short enable_off_mode;
+ atomic_t sleep_block = ATOMIC_INIT(0);
+ 
+ static ssize_t idle_show(struct kobject *, struct kobj_attribute *, char *);
+@@ -45,6 +46,9 @@ static struct kobj_attribute sleep_while_idle_attr =
+ static struct kobj_attribute clocks_off_while_idle_attr =
+ 	__ATTR(clocks_off_while_idle, 0644, idle_show, idle_store);
+ 
++static struct kobj_attribute enable_off_mode_attr =
++	__ATTR(enable_off_mode, 0644, idle_show, idle_store);
++
+ static ssize_t idle_show(struct kobject *kobj, struct kobj_attribute *attr,
+ 			 char *buf)
+ {
+@@ -52,6 +56,8 @@ static ssize_t idle_show(struct kobject *kobj, struct kobj_attribute *attr,
+ 		return sprintf(buf, "%hu\n", enable_dyn_sleep);
+ 	else if (attr == &clocks_off_while_idle_attr)
+ 		return sprintf(buf, "%hu\n", clocks_off_while_idle);
++	else if (attr == &enable_off_mode_attr)
++		return sprintf(buf, "%hu\n", enable_off_mode);
+ 	else
+ 		return -EINVAL;
+ }
+@@ -67,13 +73,16 @@ static ssize_t idle_store(struct kobject *kobj, struct kobj_attribute *attr,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (attr == &sleep_while_idle_attr)
++	if (attr == &sleep_while_idle_attr) {
+ 		enable_dyn_sleep = value;
+-	else if (attr == &clocks_off_while_idle_attr)
++	} else if (attr == &clocks_off_while_idle_attr) {
+ 		clocks_off_while_idle = value;
+-	else
++	} else if (attr == &enable_off_mode_attr) {
++		enable_off_mode = value;
++		omap3_pm_off_mode_enable(enable_off_mode);
++	} else {
+ 		return -EINVAL;
+-
++	}
+ 	return n;
+ }
+ 
+@@ -112,6 +121,10 @@ static int __init omap_pm_init(void)
+ 				  &clocks_off_while_idle_attr.attr);
+ 	if (error)
+ 		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
++	error = sysfs_create_file(power_kobj,
++				  &enable_off_mode_attr.attr);
++	if (error)
++		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
+ 
+ 	return error;
+ }
+diff --git a/arch/arm/mach-omap2/pm.h b/arch/arm/mach-omap2/pm.h
+old mode 100755
+new mode 100644
+index 3a5a2cf..a70fb7b
+--- a/arch/arm/mach-omap2/pm.h
++++ b/arch/arm/mach-omap2/pm.h
+@@ -19,10 +19,12 @@ extern int omap3_pm_init(void);
+ 
+ extern unsigned short enable_dyn_sleep;
+ extern unsigned short clocks_off_while_idle;
++extern unsigned short enable_off_mode;
+ extern atomic_t sleep_block;
+ 
+ extern void omap2_block_sleep(void);
+ extern void omap2_allow_sleep(void);
++extern void omap3_pm_off_mode_enable(int);
+ 
+ 
+ #ifdef CONFIG_PM_DEBUG
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index 62f02e9..28b29d8 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -735,6 +735,22 @@ static void __init prcm_setup_regs(void)
+ 	omap3_iva_idle();
+ }
+ 
++void omap3_pm_off_mode_enable(int enable)
++{
++	struct power_state *pwrst;
++	u32 state;
++
++	if (enable)
++		state = PWRDM_POWER_OFF;
++	else
++		state = PWRDM_POWER_RET;
++
++	list_for_each_entry(pwrst, &pwrst_list, node) {
++		pwrst->next_state = state;
++		set_pwrdm_state(pwrst->pwrdm, state);
++	}
++}
++
+ static int __init pwrdms_setup(struct powerdomain *pwrdm, void *unused)
+ {
+ 	struct power_state *pwrst;
+diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
+index fd5b9f8..90f1c67 100644
+--- a/arch/arm/mach-omap2/serial.c
++++ b/arch/arm/mach-omap2/serial.c
+@@ -138,8 +138,6 @@ static inline void omap_uart_enable_clocks(struct omap_uart_state *uart)
+ #ifdef CONFIG_PM
+ #ifdef CONFIG_ARCH_OMAP3
+ 
+-static int enable_off_mode; /* to be removed by full off-mode patches */
+-
+ static void omap_uart_save_context(struct omap_uart_state *uart)
+ {
+ 	u16 lcr = 0;
+-- 
+1.5.6
+

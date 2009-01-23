@@ -1,0 +1,210 @@
+From a245385e9c6e355af622b093d08e524d033c5957 Mon Sep 17 00:00:00 2001
+From: Manikandan Pillai <mani.pillai@ti.com>
+Date: Mon, 12 Jan 2009 16:26:29 +0530
+Subject: [PATCH 049/193] Fixes for compilation after integration
+
+Changes done on the board-omap3evm.c for merge fixes.
+Also, compilation issues related to PR785 and TWL4030.
+---
+ arch/arm/mach-omap2/Kconfig          |    2 +-
+ arch/arm/mach-omap2/board-omap3evm.c |   20 +++++++++++++++++++-
+ arch/arm/plat-omap/i2c.c             |    6 ++++++
+ 3 files changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index cd9e0a7..44e6511 100755
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -125,7 +125,7 @@ config MACH_OMAP3EVM_DC
+ 	bool "OMAP 3530 EVM daughter card board"
+ 	depends on ARCH_OMAP3 && ARCH_OMAP34XX && MACH_OMAP3EVM
+ 
+-menu 	"Power board selection for OMAP3 EVM"
++menu 	"PR785 Power board selection for OMAP3 EVM"
+ config OMAP3EVM_PR785
+ 	bool "Power board for OMAP3 EVM"
+ 	depends on I2C=y && ARCH_OMAP34XX
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index 15fcbc7..a8d1239 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -303,9 +303,11 @@ static void __init omap3_evm_display_init(void)
+ #define TWL_PWMA_PWMAON         0x00
+ #define TWL_PWMA_PWMAOFF        0x01
+ 
++#if defined(CONFIG_TWL4030_CORE)
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_LED, 0x11, TWL_LED_LEDEN);
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_PWMA, 0x01, TWL_PWMA_PWMAON);
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_PWMA, 0x02, TWL_PWMA_PWMAOFF);
++#endif
+ 
+ 	gpio_direction_output(LCD_PANEL_RESB, 1);
+ 	gpio_direction_output(LCD_PANEL_INI, 1);
+@@ -332,6 +334,7 @@ static int omap3_evm_panel_enable_lcd(struct omap_display *display)
+ 		printk(KERN_ERR "cannot enable LCD, DVI is enabled\n");
+ 		return -EINVAL;
+ 	}
++#if defined(CONFIG_TWL4030_CORE)
+ 	if (omap_rev() > OMAP3430_REV_ES1_0) {
+ 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+ 			ENABLE_VPLL2_DEDICATED, TWL4030_VPLL2_DEDICATED);
+@@ -339,12 +342,14 @@ static int omap3_evm_panel_enable_lcd(struct omap_display *display)
+ 			ENABLE_VPLL2_DEV_GRP, TWL4030_VPLL2_DEV_GRP);
+ 	}
+ 	gpio_direction_output(LCD_PANEL_ENABLE_GPIO, 0);
++#endif
+ 	lcd_enabled = 1;
+ 	return 0;
+ }
+ 
+ static void omap3_evm_panel_disable_lcd(struct omap_display *display)
+ {
++#if defined(CONFIG_TWL4030_CORE)
+ 	if (omap_rev() > OMAP3430_REV_ES1_0) {
+ 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x0,
+ 				TWL4030_VPLL2_DEDICATED);
+@@ -352,6 +357,7 @@ static void omap3_evm_panel_disable_lcd(struct omap_display *display)
+ 				TWL4030_VPLL2_DEV_GRP);
+ 	}
+ 	gpio_direction_output(LCD_PANEL_ENABLE_GPIO, 1);
++#endif
+ 	lcd_enabled = 0;
+ }
+ 
+@@ -366,19 +372,23 @@ static struct omap_display_data omap3_evm_display_data = {
+ 
+ static int omap3_evm_panel_enable_tv(struct omap_display *display)
+ {
++#if defined(CONFIG_TWL4030_CORE)
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+ 			ENABLE_VDAC_DEDICATED, TWL4030_VDAC_DEDICATED);
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+ 			ENABLE_VDAC_DEV_GRP, TWL4030_VDAC_DEV_GRP);
++#endif
+ 	return 0;
+ }
+ 
+ static void omap3_evm_panel_disable_tv(struct omap_display *display)
+ {
++#if defined(CONFIG_TWL4030_CORE)
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x00,
+ 			TWL4030_VDAC_DEDICATED);
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x00,
+ 			TWL4030_VDAC_DEV_GRP);
++#endif
+ }
+ 
+ static struct omap_display_data omap3_evm_display_data_tv = {
+@@ -396,10 +406,12 @@ static int omap3_evm_panel_enable_dvi(struct omap_display *display)
+ 		printk(KERN_ERR "cannot enable DVI, LCD is enabled\n");
+ 		return -EINVAL;
+ 	}
++#if defined(CONFIG_TWL4030_CORE)
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_GPIO, 0x80,
+ 			TWL4030_GPIODATA_IN3);
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_GPIO, 0x80,
+ 			TWL4030_GPIODATA_DIR3);
++#endif
+ 	dvi_enabled = 1;
+ 
+ 	return 0;
+@@ -407,10 +419,12 @@ static int omap3_evm_panel_enable_dvi(struct omap_display *display)
+ 
+ static void omap3_evm_panel_disable_dvi(struct omap_display *display)
+ {
++#if defined(CONFIG_TWL4030_CORE)
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_GPIO, 0x00,
+ 			TWL4030_GPIODATA_IN3);
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_GPIO, 0x00,
+ 			TWL4030_GPIODATA_DIR3);
++#endif
+ 	dvi_enabled = 0;
+ }
+ 
+@@ -422,8 +436,9 @@ static struct omap_display_data omap3_evm_display_data_dvi = {
+ 	.u.dpi.data_lines = 24,
+ 	.panel_enable = omap3_evm_panel_enable_dvi,
+ 	.panel_disable = omap3_evm_panel_disable_dvi,
+-}
++};
+ 
++#if defined(CONFIG_OMAP3EVM_PR785)
+ /*
+  * Read a value from a register in an tps_6235x device.
+  * The value is returned in 'val'.
+@@ -476,6 +491,7 @@ again:
+ 	}
+ 	return err;
+ }
++#endif
+ 
+ /*-------------------------------------------------------------------*/
+ 
+@@ -577,6 +593,7 @@ static struct twl4030_hsmmc_info mmc[] __initdata = {
+ };
+ #endif
+ 
++#if defined(CONFIG_OMAP3EVM_PR785)
+ static void omap_init_pr785(void)
+ {
+ 	/* Initialize the mux settings for PR785 power module board */
+@@ -589,6 +606,7 @@ static void omap_init_pr785(void)
+ 		omap_cfg_reg(AE5_34XX_GPIO143);
+ 	}
+ }
++#endif
+ 
+ static void __init omap3_evm_init(void)
+ {
+diff --git a/arch/arm/plat-omap/i2c.c b/arch/arm/plat-omap/i2c.c
+index bc6b2cc..3bc21bb 100644
+--- a/arch/arm/plat-omap/i2c.c
++++ b/arch/arm/plat-omap/i2c.c
+@@ -99,12 +99,14 @@ static const int omap34xx_pins[][2] = {
+ static const int omap34xx_pins[][2] = {};
+ #endif
+ 
++#if defined(CONFIG_OMAP3EVM_PR785)
+ struct platform_device *vdd2_platform_device;
+ struct platform_device *vdd1_platform_device;
+ extern struct regulator_init_data vdd2_tps_regulator_data;
+ extern struct regulator_init_data vdd1_tps_regulator_data;
+ extern struct regulator_consumer_supply tps62352_core_consumers;
+ extern struct regulator_consumer_supply tps62352_mpu_consumers;
++#endif
+ 
+ static void __init omap_i2c_mux_pins(int bus)
+ {
+@@ -127,6 +129,7 @@ static void __init omap_i2c_mux_pins(int bus)
+ 	omap_cfg_reg(scl);
+ }
+ 
++#if defined(CONFIG_OMAP3EVM_PR785)
+ /* This is the callback function used to find the correct
+  * i2c platform child for the regulator consumer
+ */
+@@ -171,6 +174,7 @@ int omap_i2c_register_child(struct platform_device *pdev_parent,
+ 	}
+ 	return ret;
+ }
++#endif
+ 
+ int __init omap_register_i2c_bus(int bus_id, u32 clkrate,
+ 			  struct i2c_board_info const *info,
+@@ -215,11 +219,13 @@ int __init omap_register_i2c_bus(int bus_id, u32 clkrate,
+ 
+ 	omap_i2c_mux_pins(bus_id - 1);
+ 	platform_device_register(pdev);
++#if defined(CONFIG_OMAP3EVM_PR785)
+ 	if (bus_id == 1) {
+ 		omap_i2c_register_child(pdev, "vdd2_consumer", \
+ 				&vdd2_platform_device);
+ 		omap_i2c_register_child(pdev, "vdd1_consumer", \
+ 				&vdd1_platform_device);
+ 	}
++#endif
+ 	return 0;
+ }
+-- 
+1.5.6
+

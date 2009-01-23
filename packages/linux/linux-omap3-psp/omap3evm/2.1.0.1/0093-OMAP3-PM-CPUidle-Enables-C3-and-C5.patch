@@ -1,0 +1,55 @@
+From 1d7e7ea966f36094587a876e251d4702ad283be8 Mon Sep 17 00:00:00 2001
+From: Rajendra Nayak <rnayak@ti.com>
+Date: Wed, 8 Oct 2008 17:31:32 +0530
+Subject: [PATCH 093/193] OMAP3: PM: CPUidle: Enables C3 and C5
+
+This enables support for MPU OFF.
+Enables states C3 and C5.
+
+Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+---
+ arch/arm/mach-omap2/cpuidle34xx.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
+index 33dee9f..b1fa9ce 100644
+--- a/arch/arm/mach-omap2/cpuidle34xx.c
++++ b/arch/arm/mach-omap2/cpuidle34xx.c
+@@ -26,6 +26,7 @@
+ #include <mach/pm.h>
+ #include <mach/prcm.h>
+ #include <mach/powerdomain.h>
++#include <mach/control.h>
+ 
+ #ifdef CONFIG_CPU_IDLE
+ 
+@@ -177,7 +178,7 @@ void omap_init_power_states(void)
+ 	omap3_power_states[OMAP3_STATE_C2].flags = CPUIDLE_FLAG_TIME_VALID;
+ 
+ 	/* C3 . MPU OFF + Core active */
+-	omap3_power_states[OMAP3_STATE_C3].valid = 0;
++	omap3_power_states[OMAP3_STATE_C3].valid = 1;
+ 	omap3_power_states[OMAP3_STATE_C3].type = OMAP3_STATE_C3;
+ 	omap3_power_states[OMAP3_STATE_C3].sleep_latency = 1500;
+ 	omap3_power_states[OMAP3_STATE_C3].wakeup_latency = 1800;
+@@ -198,7 +199,7 @@ void omap_init_power_states(void)
+ 				CPUIDLE_FLAG_CHECK_BM;
+ 
+ 	/* C5 . MPU OFF + Core CSWR */
+-	omap3_power_states[OMAP3_STATE_C5].valid = 0;
++	omap3_power_states[OMAP3_STATE_C5].valid = 1;
+ 	omap3_power_states[OMAP3_STATE_C5].type = OMAP3_STATE_C5;
+ 	omap3_power_states[OMAP3_STATE_C5].sleep_latency = 3000;
+ 	omap3_power_states[OMAP3_STATE_C5].wakeup_latency = 8500;
+@@ -238,6 +239,8 @@ int omap3_idle_init(void)
+ 	struct cpuidle_state *state;
+ 	struct cpuidle_device *dev;
+ 
++	omap3_save_scratchpad_contents();
++
+ 	omap_init_power_states();
+ 	cpuidle_register_driver(&omap3_idle_driver);
+ 
+-- 
+1.5.6
+

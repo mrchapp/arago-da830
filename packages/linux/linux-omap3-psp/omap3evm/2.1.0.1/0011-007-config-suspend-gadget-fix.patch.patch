@@ -1,0 +1,24 @@
+From 058835add8f5159ab96afcbb0e38629c810d8bb9 Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Fri, 9 Jan 2009 13:16:20 +0530
+Subject: [PATCH 011/193] 007-config-suspend-gadget-fix.patch
+
+---
+ drivers/usb/musb/musb_gadget.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index 3e56582..e714bc3 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -1631,6 +1631,7 @@ int __init musb_gadget_setup(struct musb *musb)
+ 	musb->g.dev.dma_mask = musb->controller->dma_mask;
+ 	musb->g.dev.release = musb_gadget_release;
+ 	musb->g.name = musb_driver_name;
++	musb->gadget_driver = NULL;
+ 
+ 	if (is_otg_enabled(musb))
+ 		musb->g.is_otg = 1;
+-- 
+1.5.6
+

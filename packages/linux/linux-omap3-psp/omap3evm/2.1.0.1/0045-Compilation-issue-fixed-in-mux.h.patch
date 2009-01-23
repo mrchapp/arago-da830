@@ -1,0 +1,25 @@
+From afc05986477326e4b495eca928506137687a47a1 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Mon, 12 Jan 2009 13:05:00 +0530
+Subject: [PATCH 045/193] Compilation issue fixed in mux.h
+
+---
+ arch/arm/plat-omap/include/mach/mux.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/plat-omap/include/mach/mux.h b/arch/arm/plat-omap/include/mach/mux.h
+index f69e13e..63c0812 100755
+--- a/arch/arm/plat-omap/include/mach/mux.h
++++ b/arch/arm/plat-omap/include/mach/mux.h
+@@ -795,7 +795,7 @@ enum omap34xx_index {
+ 	AF6_34XX_GPIO140_UP,
+ 	AE6_34XX_GPIO141,
+ 	AF5_34XX_GPIO142,
+-	AE5_34XX_GPIO143
++	AE5_34XX_GPIO143,
+ 
+ 	GPIO134_VDIN_SEL_Y,
+ 	GPIO54_VDIN_SEL_EXP_CAM,
+-- 
+1.5.6
+

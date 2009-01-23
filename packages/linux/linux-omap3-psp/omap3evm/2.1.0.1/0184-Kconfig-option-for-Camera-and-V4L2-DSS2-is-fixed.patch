@@ -1,0 +1,227 @@
+From 0b0789b24da0a9e705073b0a0e9e7ecb0c8c557e Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Mon, 19 Jan 2009 12:29:29 +0530
+Subject: [PATCH 184/193] Kconfig option for Camera and V4L2-DSS2 is fixed
+
+Under this commit the Kconfig option for Camera driver and V4L2-DSS2
+driver fixed.
+
+Now the cyclic dependancy for old FBDEV and New FBDEV with DSS2 library is also
+fixed.
+VIDEO_OMAP3_ISP option created for disabling resizer driver's
+dependancy on Camera driver.
+---
+ arch/arm/mach-omap2/board-3430sdp.c     |    4 ++--
+ arch/arm/mach-omap2/board-omap3evm-dc.c |   12 ++++++------
+ arch/arm/mach-omap2/devices.c           |    2 +-
+ drivers/media/video/Kconfig             |   27 +++++++++++++++++----------
+ drivers/media/video/Makefile            |    4 +++-
+ drivers/media/video/isp/Kconfig         |    2 ++
+ drivers/media/video/isp/Makefile        |    2 +-
+ drivers/video/omap2/Kconfig             |    7 ++++---
+ 8 files changed, 36 insertions(+), 24 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
+index 611fb81..03cc2e0 100644
+--- a/arch/arm/mach-omap2/board-3430sdp.c
++++ b/arch/arm/mach-omap2/board-3430sdp.c
+@@ -43,7 +43,7 @@
+ #include <mach/omap-pm.h>
+ #include <mach/display.h>
+ 
+-#ifdef CONFIG_VIDEO_OMAP3
++#ifdef CONFIG_VIDEO_OMAP3_CAM
+ #include <media/v4l2-int-device.h>
+ #include <../drivers/media/video/omap34xxcam.h>
+ #include <../drivers/media/video/isp/ispreg.h>
+@@ -313,7 +313,7 @@ static struct spi_board_info sdp3430_spi_board_info[] __initdata = {
+ 	},
+ };
+ 
+-#ifdef CONFIG_VIDEO_OMAP3
++#ifdef CONFIG_VIDEO_OMAP3_CAM
+ static void __iomem *fpga_map_addr;
+ 
+ static void enable_fpga_vio_1v8(u8 enable)
+diff --git a/arch/arm/mach-omap2/board-omap3evm-dc.c b/arch/arm/mach-omap2/board-omap3evm-dc.c
+index 233c219..9057fb0 100755
+--- a/arch/arm/mach-omap2/board-omap3evm-dc.c
++++ b/arch/arm/mach-omap2/board-omap3evm-dc.c
+@@ -44,10 +44,10 @@
+ #include <media/v4l2-int-device.h>
+ #include <media/tvp514x.h>
+ /* include V4L2 camera driver related header file */
+-#if defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
++#if defined(CONFIG_VIDEO_OMAP3_CAM) || defined(CONFIG_VIDEO_OMAP3_CAM_MODULE)
+ #include <../drivers/media/video/omap34xxcam.h>
+ #include <../drivers/media/video/isp/ispreg.h>
+-#endif				/* #ifdef CONFIG_VIDEO_OMAP3 */
++#endif				/* #ifdef CONFIG_VIDEO_OMAP3_CAM */
+ #endif				/* #ifdef CONFIG_VIDEO_TVP514X*/
+ 
+ #include "board-omap3evm-dc.h"
+@@ -103,7 +103,7 @@
+ #define BUS_CONTROL2_DEF		(0x010Au)	/* Disable all mux */
+ 
+ #if defined(CONFIG_VIDEO_TVP514X) || defined(CONFIG_VIDEO_TVP514X_MODULE)
+-#if defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
++#if defined(CONFIG_VIDEO_OMAP3_CAM) || defined(CONFIG_VIDEO_OMAP3_CAM_MODULE)
+ static struct omap34xxcam_hw_config decoder_hwc = {
+ 	.dev_index = 0,
+ 	.dev_minor = 0,
+@@ -168,7 +168,7 @@ static int tvp5146_ifparm(struct v4l2_ifparm *p)
+  */
+ static int tvp5146_set_prv_data(void *priv)
+ {
+-#if defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
++#if defined(CONFIG_VIDEO_OMAP3_CAM) || defined(CONFIG_VIDEO_OMAP3_CAM_MODULE)
+ 	struct omap34xxcam_hw_config *hwc = priv;
+ 
+ 	if (priv == NULL)
+@@ -271,7 +271,7 @@ static int tvp5146_power_set(enum v4l2_power power)
+ {
+ 	switch (power) {
+ 	case V4L2_POWER_OFF:
+-#if defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
++#if defined(CONFIG_VIDEO_OMAP3_CAM) || defined(CONFIG_VIDEO_OMAP3_CAM_MODULE)
+ 		if (isp_free_interface(ISP_PARLL_YUV_BT))
+ 			return -ENODEV;
+ #endif
+@@ -288,7 +288,7 @@ static int tvp5146_power_set(enum v4l2_power power)
+ 		if (omap3evmdc_set_mux(MUX_TVP5146, ENABLE_MUX))
+ 			return -ENODEV;
+ 
+-#if defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
++#if defined(CONFIG_VIDEO_OMAP3_CAM) || defined(CONFIG_VIDEO_OMAP3_CAM_MODULE)
+ 		if (isp_request_interface(ISP_PARLL_YUV_BT))
+ 			return -ENODEV;
+ 
+diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
+index d7e848e..fcf79cf 100644
+--- a/arch/arm/mach-omap2/devices.c
++++ b/arch/arm/mach-omap2/devices.c
+@@ -54,7 +54,7 @@ static inline void omap_init_camera(void)
+ 	platform_device_register(&omap_cam_device);
+ }
+ 
+-#elif defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
++#elif defined(CONFIG_VIDEO_OMAP3_CAM) || defined(CONFIG_VIDEO_OMAP3_CAM_MODULE)
+ 
+ static struct resource cam_resources[] = {
+ 	{
+diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
+index 1f85f0d..da49722 100644
+--- a/drivers/media/video/Kconfig
++++ b/drivers/media/video/Kconfig
+@@ -727,24 +727,31 @@ config VIDEO_CAFE_CCIC
+ 	  CMOS camera controller.  This is the controller found on first-
+ 	  generation OLPC systems.
+ 
+-source "drivers/media/video/isp/Kconfig"
++config VIDEO_OMAP3_ISP
++	tristate
++	select VIDEOBUF_GEN
++	select VIDEOBUF_DMA_SG
+ 
+-#config VIDEO_OMAP3
+-#        tristate "OMAP 3 Camera support"
+-#	select VIDEOBUF_GEN
+-#	select VIDEOBUF_DMA_SG
+-#	depends on VIDEO_V4L2 && ARCH_OMAP34XX
+-#	---help---
+-#	  Driver for an OMAP 3 camera controller.
++config VIDEO_OMAP3_CAM
++        tristate "OMAP 3 Camera support"
++	select VIDEOBUF_GEN
++	select VIDEOBUF_DMA_SG
++	select VIDEO_OMAP3_ISP
++	depends on VIDEO_V4L2 && ARCH_OMAP34XX
++	---help---
++	  Driver for an OMAP 3 camera controller.
++
++source "drivers/media/video/isp/Kconfig"
+ 
+ config VIDEO_OMAP3
+-	bool "OMAP2/OMAP3 Camera and V4L2-DSS drivers"
++	bool "OMAP2/OMAP3 V4L2-DSS drivers"
+ 	select VIDEOBUF_GEN
+ 	select VIDEOBUF_DMA_SG
++	select OMAP2_DSS
+ 	depends on VIDEO_DEV && (ARCH_OMAP24XX || ARCH_OMAP34XX)
+ 	default y
+ 	---help---
+-        V4L2 DSS and Camera driver support for OMAP2/3 based boards.
++        V4L2 DSS driver support for OMAP2/3 based boards.
+ 
+ source "drivers/media/video/omap/Kconfig"
+ 
+diff --git a/drivers/media/video/Makefile b/drivers/media/video/Makefile
+index f8a4970..63716a3 100644
+--- a/drivers/media/video/Makefile
++++ b/drivers/media/video/Makefile
+@@ -104,7 +104,9 @@ obj-$(CONFIG_VIDEO_TCM825X) += tcm825x.o
+ obj-$(CONFIG_VIDEO_MT9P012)	+= mt9p012.o
+ obj-$(CONFIG_VIDEO_DW9710) += dw9710.o
+ 
+-obj-$(CONFIG_VIDEO_OMAP3) += omap34xxcam.o isp/ omap/
++obj-$(CONFIG_VIDEO_OMAP3_CAM) += omap34xxcam.o
++obj-$(CONFIG_VIDEO_OMAP3_ISP) += isp/
++obj-$(CONFIG_VIDEO_OMAP3) += omap/
+ 
+ obj-$(CONFIG_USB_DABUSB)        += dabusb.o
+ obj-$(CONFIG_USB_OV511)         += ov511.o
+diff --git a/drivers/media/video/isp/Kconfig b/drivers/media/video/isp/Kconfig
+index eeabc8f..cedf90d 100644
+--- a/drivers/media/video/isp/Kconfig
++++ b/drivers/media/video/isp/Kconfig
+@@ -3,7 +3,9 @@
+ config VIDEO_OMAP34XX_ISP_PREVIEWER
+ 	tristate "OMAP ISP Previewer"
+ 	depends on !ARCH_OMAP3410
++	select VIDEO_OMAP3_ISP
+ 
+ config VIDEO_OMAP34XX_ISP_RESIZER
+ 	tristate "OMAP ISP Resizer"
+ 	depends on !ARCH_OMAP3410
++	select VIDEO_OMAP3_ISP
+diff --git a/drivers/media/video/isp/Makefile b/drivers/media/video/isp/Makefile
+index ac046a1..ed10a51 100644
+--- a/drivers/media/video/isp/Makefile
++++ b/drivers/media/video/isp/Makefile
+@@ -16,4 +16,4 @@ obj-$(CONFIG_VIDEO_OMAP34XX_ISP_RESIZER) += \
+ 
+ endif
+ 
+-obj-$(CONFIG_VIDEO_OMAP3) += isp-mod.o
++obj-$(CONFIG_VIDEO_OMAP3_ISP) += isp-mod.o
+diff --git a/drivers/video/omap2/Kconfig b/drivers/video/omap2/Kconfig
+index 7753000..2ec38ff 100644
+--- a/drivers/video/omap2/Kconfig
++++ b/drivers/video/omap2/Kconfig
+@@ -1,11 +1,12 @@
+ config FB_OMAP2
+         tristate "OMAP2/3 frame buffer support (EXPERIMENTAL)"
+-        depends on FB && OMAP2_DSS
++        depends on FB && ARCH_OMAP
+ 
+         select FB_CFB_FILLRECT
+         select FB_CFB_COPYAREA
+         select FB_CFB_IMAGEBLIT
+-	default OMAP2_DSS if (FB_OMAP = "n")
++	select OMAP2_DSS
++	default y
+         help
+           Frame buffer driver for OMAP2/3 based boards.
+ 
+@@ -29,7 +30,7 @@ config FB_OMAP2_FORCE_AUTO_UPDATE
+ config FB_OMAP2_NUM_FBS
+ 	int "Number of framebuffers"
+ 	range 1 3
+-	default 3
++	default 1
+ 	depends on FB_OMAP2
+ 	help
+ 	  Select the number of framebuffers created. OMAP2/3 has 3 overlays
+-- 
+1.5.6
+

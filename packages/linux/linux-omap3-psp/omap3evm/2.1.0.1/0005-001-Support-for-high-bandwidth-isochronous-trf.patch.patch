@@ -1,0 +1,130 @@
+From 4694a41f057ae2e1c74e1c8dfd6da1385c0425ca Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Fri, 9 Jan 2009 13:14:39 +0530
+Subject: [PATCH 005/193] 001-Support-for-high-bandwidth-isochronous-trf.patch
+
+---
+ drivers/usb/musb/musb_core.c |   18 +++++++++---------
+ drivers/usb/musb/musb_host.c |   32 +++++++++++++++++++++-----------
+ 2 files changed, 30 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index 251c6d3..28cea0c 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1064,17 +1064,17 @@ static struct fifo_cfg __initdata mode_4_cfg[] = {
+ { .hw_ep_num =  7, .style = FIFO_TX,   .maxpacket = 512, },
+ { .hw_ep_num =  7, .style = FIFO_RX,   .maxpacket = 512, },
+ { .hw_ep_num =  8, .style = FIFO_TX,   .maxpacket = 512, },
+-{ .hw_ep_num =  8, .style = FIFO_RX,   .maxpacket = 512, },
++{ .hw_ep_num =  8, .style = FIFO_RX,   .maxpacket = 64, },
+ { .hw_ep_num =  9, .style = FIFO_TX,   .maxpacket = 512, },
+-{ .hw_ep_num =  9, .style = FIFO_RX,   .maxpacket = 512, },
++{ .hw_ep_num =  9, .style = FIFO_RX,   .maxpacket = 64, },
+ { .hw_ep_num = 10, .style = FIFO_TX,   .maxpacket = 512, },
+-{ .hw_ep_num = 10, .style = FIFO_RX,   .maxpacket = 512, },
+-{ .hw_ep_num = 11, .style = FIFO_TX,   .maxpacket = 512, },
+-{ .hw_ep_num = 11, .style = FIFO_RX,   .maxpacket = 512, },
+-{ .hw_ep_num = 12, .style = FIFO_TX,   .maxpacket = 512, },
+-{ .hw_ep_num = 12, .style = FIFO_RX,   .maxpacket = 512, },
+-{ .hw_ep_num = 13, .style = FIFO_TX,   .maxpacket = 512, },
+-{ .hw_ep_num = 13, .style = FIFO_RX,   .maxpacket = 512, },
++{ .hw_ep_num = 10, .style = FIFO_RX,   .maxpacket = 64, },
++{ .hw_ep_num = 11, .style = FIFO_TX,   .maxpacket = 256, },
++{ .hw_ep_num = 11, .style = FIFO_RX,   .maxpacket = 256, },
++{ .hw_ep_num = 12, .style = FIFO_TX,   .maxpacket = 256, },
++{ .hw_ep_num = 12, .style = FIFO_RX,   .maxpacket = 256, },
++{ .hw_ep_num = 13, .style = FIFO_TX,   .maxpacket = 256, },
++{ .hw_ep_num = 13, .style = FIFO_RX,   .maxpacket = 4096, },
+ { .hw_ep_num = 14, .style = FIFO_RXTX, .maxpacket = 1024, },
+ { .hw_ep_num = 15, .style = FIFO_RXTX, .maxpacket = 1024, },
+ };
+diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
+index b5373a8..0e31aef 100644
+--- a/drivers/usb/musb/musb_host.c
++++ b/drivers/usb/musb/musb_host.c
+@@ -1442,6 +1442,10 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+ 			/* packet error reported later */
+ 			iso_err = true;
+ 		}
++	} else if (rx_csr & MUSB_RXCSR_INCOMPRX) {
++		DBG(3, "end %d Highbandwidth  incomplete ISO packet received\n",
++				epnum);
++		status = -EPROTO;
+ 	}
+ 
+ 	/* faults abort the transfer */
+@@ -1647,7 +1651,13 @@ void musb_host_rx(struct musb *musb, u8 epnum)
+ 				val &= ~MUSB_RXCSR_H_AUTOREQ;
+ 			else
+ 				val |= MUSB_RXCSR_H_AUTOREQ;
+-			val |= MUSB_RXCSR_AUTOCLEAR | MUSB_RXCSR_DMAENAB;
++
++			/* autoclear doesn't work in high bandwidth iso */
++			if (qh->maxpacket & ~0x7ff)
++				val |= MUSB_RXCSR_DMAENAB;
++			else
++				val |= MUSB_RXCSR_AUTOCLEAR
++					| MUSB_RXCSR_DMAENAB;
+ 
+ 			musb_writew(epio, MUSB_RXCSR,
+ 				MUSB_RXCSR_H_WZC_BITS | val);
+@@ -1700,6 +1710,7 @@ static int musb_schedule(
+ 	int			best_end, epnum;
+ 	struct musb_hw_ep	*hw_ep = NULL;
+ 	struct list_head	*head = NULL;
++	u16			maxpacket;
+ 
+ 	/* use fixed hardware for control and bulk */
+ 	if (qh->type == USB_ENDPOINT_XFER_CONTROL) {
+@@ -1729,6 +1740,13 @@ static int musb_schedule(
+ 	best_diff = 4096;
+ 	best_end = -1;
+ 
++	if (qh->maxpacket & (1 << 11))
++		maxpacket = 2 * (qh->maxpacket & 0x7ff);
++	else if (qh->maxpacket & (1 << 12))
++		maxpacket = 3 * (qh->maxpacket & 0x7ff);
++	else
++		maxpacket = (qh->maxpacket & 0x7ff);
++
+ 	for (epnum = 1; epnum < musb->nr_endpoints; epnum++) {
+ 		int	diff;
+ 
+@@ -1739,9 +1757,9 @@ static int musb_schedule(
+ 			continue;
+ 
+ 		if (is_in)
+-			diff = hw_ep->max_packet_sz_rx - qh->maxpacket;
++			diff = hw_ep->max_packet_sz_rx - maxpacket;
+ 		else
+-			diff = hw_ep->max_packet_sz_tx - qh->maxpacket;
++			diff = hw_ep->max_packet_sz_tx - maxpacket;
+ 
+ 		if (diff >= 0 && best_diff > diff) {
+ 			best_diff = diff;
+@@ -1835,13 +1853,6 @@ static int musb_urb_enqueue(
+ 	qh->is_ready = 1;
+ 
+ 	qh->maxpacket = le16_to_cpu(epd->wMaxPacketSize);
+-
+-	/* no high bandwidth support yet */
+-	if (qh->maxpacket & ~0x7ff) {
+-		ret = -EMSGSIZE;
+-		goto done;
+-	}
+-
+ 	qh->epnum = epd->bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
+ 	qh->type = epd->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK;
+ 
+@@ -1939,7 +1950,6 @@ static int musb_urb_enqueue(
+ 	}
+ 	spin_unlock_irqrestore(&musb->lock, flags);
+ 
+-done:
+ 	if (ret != 0) {
+ 		spin_lock_irqsave(&musb->lock, flags);
+ 		usb_hcd_unlink_urb_from_ep(hcd, urb);
+-- 
+1.5.6
+

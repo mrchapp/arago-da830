@@ -1,0 +1,24 @@
+From d33de317cc1437bb4b651a5f989eb97a944cef99 Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Tue, 20 Jan 2009 18:44:54 +0530
+Subject: [PATCH 191/193] added omap_silicon_rev() at "arch/arm/plat-omap/include/mach/cpu.h"
+
+---
+ arch/arm/plat-omap/include/mach/cpu.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/plat-omap/include/mach/cpu.h b/arch/arm/plat-omap/include/mach/cpu.h
+index 447e053..2bd42cc 100644
+--- a/arch/arm/plat-omap/include/mach/cpu.h
++++ b/arch/arm/plat-omap/include/mach/cpu.h
+@@ -424,6 +424,7 @@ IS_OMAP_TYPE(3530, 0x3530)
+ #define OMAP35XX_MASK_ES2_1	0x00002000
+ #define OMAP35XX_MASK_ES3_0	0x00003000
+ 
++#define omap_silicon_rev()	(omap_rev() & 0xf000)
+ /*
+  * omap_chip bits
+  *
+-- 
+1.5.6
+
