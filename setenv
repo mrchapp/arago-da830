@@ -1,5 +1,13 @@
+# Set OEBASE to where Arago overlay and OpenEmbedded repositories reside
 export OEBASE=$HOME/oe
+
+# Set SCRATCH variable accordingly if you want to use scratch area
+# export SCRATCH=/sim/scratch_AID
+
+# Set the paths...
 export BBPATH=$OEBASE/arago:$OEBASE/arago-oe-dev
 export PATH=$OEBASE/arago-bitbake/bin/:$PATH
+
+# The whitelist seems to be broken for now, thus preserve all the vars
 export BB_PRESERVE_ENV=1
-#export BB_ENV_EXTRAWHITE="OEBASE http_proxy ftp_proxy"
+# export BB_ENV_EXTRAWHITE="OEBASE http_proxy ftp_proxy"
