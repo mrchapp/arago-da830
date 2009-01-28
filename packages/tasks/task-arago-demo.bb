@@ -25,6 +25,7 @@ ARAGO_UTILS = "\
     fbset \
     usbutils \
     i2c-tools \
+    gdbserver \
     "
 
 ARAGO_DVSDK_PREREQ = "\

@@ -44,7 +44,6 @@ ARAGO_BASE = "\
     ${ARAGO_ALSA} \
     ${ARAGO_NCURSES} \
     mtd-utils \
-    gdbserver \
     opkg-nogpg \
     arago-feed-configs \
     "
