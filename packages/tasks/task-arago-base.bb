@@ -43,7 +43,6 @@ ARAGO_NCURSES = "\
 ARAGO_BASE = "\
     ${ARAGO_ALSA} \
     ${ARAGO_NCURSES} \
-    zlib \
     mtd-utils \
     gdbserver \
     opkg-nogpg \

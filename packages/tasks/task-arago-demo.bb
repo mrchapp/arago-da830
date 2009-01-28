@@ -28,6 +28,7 @@ ARAGO_UTILS = "\
     "
 
 ARAGO_DVSDK_PREREQ = "\
+    zlib \
     libpng \
     jpeg \
     jpeg-tools \
