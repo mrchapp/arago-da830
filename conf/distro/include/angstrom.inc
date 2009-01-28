@@ -13,14 +13,17 @@ TARGET_VENDOR ?= "-none"
 # Add FEED_ARCH to overrides
 OVERRIDES .= ":${FEED_ARCH}"
 
+# Put links to sources in deploy/sources to make it easier for people to be GPL compliant
+INHERIT += "src_distribute_local"
+SRC_DIST_LOCAL ?= "symlink"
 
 # Can be "glibc", "eglibc" or "uclibc"
-ANGSTROM_MODE ?= "glibc"
-PSTAGE_EXTRAPATH = "${ANGSTROM_MODE}"
+ANGSTROMLIBC ?= "glibc"
+PSTAGE_EXTRAPATH = "${ANGSTROMLIBC}"
 
-CACHE = "${TMPDIR}/cache/${ANGSTROM_MODE}/${MACHINE}"
-DEPLOY_DIR ?= "${TMPDIR}/deploy/${ANGSTROM_MODE}"
-require conf/distro/include/angstrom-${ANGSTROM_MODE}.inc
+CACHE = "${TMPDIR}/cache/${ANGSTROMLIBC}/${MACHINE}"
+DEPLOY_DIR ?= "${TMPDIR}/deploy/${ANGSTROMLIBC}"
+require conf/distro/include/angstrom-${ANGSTROMLIBC}.inc
 
 # ARM920T and up can use thumb mode to decrease binary size at the expense of speed
 # (the complete story is a bit more nuanced due to cache starvation)
@@ -30,6 +33,9 @@ require conf/distro/include/angstrom-${ANGSTROM_MODE}.inc
 # We can't do ARM_INSTRUCTION_SET_armv4t since that will un-overridable in recipes like gcc
 ANGSTROM_ARM_INSTRUCTION_SET ?= "arm"
 ANGSTROM_ARM_INSTRUCTION_SET_armv4t = "thumb"
+ANGSTROM_ARM_INSTRUCTION_SET_armv5te = "thumb"
+ANGSTROM_ARM_INSTRUCTION_SET_armv5teb = "thumb"
+
 
 ARM_INSTRUCTION_SET = "${ANGSTROM_ARM_INSTRUCTION_SET}"
 # "arm" "thumb"
@@ -85,7 +91,8 @@ require conf/distro/include/angstrom-package-${ANGSTROM_PKG_FORMAT}.inc
 # We don't want to keep OABI compat
 ARM_KEEP_OABI = "0"
 # Do keep OABI compat for om-gta01 to keep the gllin binary working
-ARM_KEEP_OABI_pn-linux-openmoko_om-gta01 = "1"
+ARM_KEEP_OABI_pn-linux-openmoko-2.6.24_om-gta01 = "1"
+ARM_KEEP_OABI_pn-linux-openmoko-2.6.28_om-gta01 = "1"
 
 
 #Generate locales on the buildsystem instead of on the target. Speeds up first boot, set to "1" to enable
@@ -97,6 +104,7 @@ LOCALE_UTF8_ONLY = "1"
 
 #qemu doesn't like armv6/eabi/vfp
 ENABLE_BINARY_LOCALE_GENERATION_armv6 = "0"
+ENABLE_BINARY_LOCALE_GENERATION_armv6-novfp = "0"
 ENABLE_BINARY_LOCALE_GENERATION_armv7a = "0"
 
 #qemu has taken a dislike to armeb as well
@@ -110,6 +118,7 @@ TARGET_FPU_ixp4xx ?= "soft"
 TARGET_FPU_ppc405 ?= "soft"
 
 TARGET_FPU_armv6 ?= "hard"
+TARGET_FPU_armv6-novfp ?= "soft"
 TARGET_FPU_armv7a ?= "hard"
 TARGET_FPU_ppc603e ?= "hard"
 
@@ -283,7 +292,7 @@ PACKAGE_EXTRA_ARCHS_htcwallaby = "arm-oabi"
 
 
 #Name the generated images in a sane way
-IMAGE_NAME = "${DISTRO_NAME}-${IMAGE_BASENAME}-${ANGSTROM_MODE}-${ANGSTROM_PKG_FORMAT}-${DISTRO_VERSION}-${MACHINE}"
+IMAGE_NAME = "${DISTRO_NAME}-${IMAGE_BASENAME}-${ANGSTROMLIBC}-${ANGSTROM_PKG_FORMAT}-${DISTRO_VERSION}-${MACHINE}"
 DEPLOY_DIR_IMAGE = "${DEPLOY_DIR}/images/${MACHINE}"
 
 # Angstrom *always* has some form of release config, so error out if someone thinks he knows better 
@@ -295,7 +304,7 @@ DISTRO_CHECK := "${@bb.data.getVar("DISTRO_VERSION",d,1) or bb.fatal('Remove thi
 # in their local.conf 
 
 #Name of the client
-TINDER_MACHINE  = "${MACHINE}-${ANGSTROM_MODE}-build-image"
+TINDER_MACHINE  = "${MACHINE}-${ANGSTROMLIBC}-build-image"
 
 # Which lof file to write to, which tree to report to
 TINDER_LOG        = "${TMPDIR}/tinder.log"
