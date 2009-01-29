@@ -1,7 +1,23 @@
 DESCRIPTION = "Extended task to get more basic and demo apps"
-PR = "r1"
+PR = "r2"
 
 inherit task
+
+# alsa-utils-alsamixer depends on ncurses
+ARAGO_ALSA_EXTRA = "\
+    alsa-conf \
+    alsa-conf-base \
+    alsa-server \
+    alsa-utils \
+    alsa-utils-aconnect \
+    alsa-utils-alsaconf \
+    alsa-utils-alsactl \
+    alsa-utils-alsamixer \
+    alsa-utils-amixer \
+    alsa-utils-iecset \
+    alsa-utils-midi \
+    alsa-utils-speakertest \
+    "
 
 ARAGO_TSLIB = "\
     tslib-conf \
@@ -9,8 +25,10 @@ ARAGO_TSLIB = "\
     tslib-tests \
     "
 
-ARAGO_NCURSES_TERMINFO = "\
+ARAGO_NCURSES = "\
+    ncurses \
     ncurses-terminfo \
+    ncurses-tools \
     "
 
 ARAGO_FSTOOLS = "\
@@ -40,8 +58,9 @@ ARAGO_DVSDK_PREREQ = "\
 
 # cppstub is needed to install libstdc++ in the image
 ARAGO_DEMO = "\
+    ${ARAGO_ALSA_EXTRA} \
     ${ARAGO_TSLIB} \
-    ${ARAGO_NCURSES_TERMINFO} \
+    ${ARAGO_NCURSES} \
     ${ARAGO_FSTOOLS} \
     ${ARAGO_UTILS} \
     ${ARAGO_DVSDK_PREREQ} \

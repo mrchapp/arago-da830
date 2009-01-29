@@ -1,5 +1,5 @@
 DESCRIPTION = "Basic task to get a device booting"
-PR = "r3"
+PR = "r4"
 
 inherit task
 
@@ -16,33 +16,13 @@ DISTRO_LOGIN_MANAGER ?= "tinylogin"
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS ?= ""
 MACHINE_ESSENTIAL_EXTRA_RRECOMMENDS ?= ""
 
-ARAGO_ALSA = "\
+ARAGO_ALSA_BASE = "\
     alsa-lib \
-    alsa-conf \
-    alsa-conf-base \
-    alsa-server \
-    alsa-utils \
-    alsa-utils-aconnect \
-    alsa-utils-alsaconf \
-    alsa-utils-alsactl \
-    alsa-utils-alsamixer \
-    alsa-utils-amixer \
     alsa-utils-aplay \
-    alsa-utils-iecset \
-    alsa-utils-midi \
-    alsa-utils-speakertest \
-    "
-
-# ncurses-terminfo is rarely needed and won't fit in 16MB
-ARAGO_NCURSES = "\
-    ncurses \
-#    ncurses-terminfo \
-    ncurses-tools \
     "
 
 ARAGO_BASE = "\
-    ${ARAGO_ALSA} \
-    ${ARAGO_NCURSES} \
+    ${ARAGO_ALSA_BASE} \
     mtd-utils \
     opkg-nogpg \
     arago-feed-configs \
