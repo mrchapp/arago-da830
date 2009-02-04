@@ -1,5 +1,5 @@
 DESCRIPTION = "Extended task to get more basic and demo apps"
-PR = "r2"
+PR = "r3"
 
 inherit task
 
@@ -58,6 +58,7 @@ ARAGO_DVSDK_PREREQ = "\
 
 # cppstub is needed to install libstdc++ in the image
 ARAGO_DEMO = "\
+    omap-demo \
     ${ARAGO_ALSA_EXTRA} \
     ${ARAGO_TSLIB} \
     ${ARAGO_NCURSES} \
