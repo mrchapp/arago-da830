@@ -1,0 +1,32 @@
+From f72d28b477167477d60d6ede2a3034d82abcd3ca Mon Sep 17 00:00:00 2001
+From: Manikandan Pillai <mani.pillai@ti.com>
+Date: Wed, 11 Feb 2009 16:45:21 +0530
+Subject: [PATCH 7/8] Fix for running examples
+
+Example binary to be downloaded to 0x80300000 for OMAP3 EVMs.
+---
+ examples/Makefile |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/examples/Makefile b/examples/Makefile
+index 927010d..7654c8f 100644
+--- a/examples/Makefile
++++ b/examples/Makefile
+@@ -36,10 +36,14 @@ else
+ ifeq ($(CPU),omap3)
+ LOAD_ADDR = 0x80300000
+ else
++ifeq ($(CPU),arm_cortexa8)
++LOAD_ADDR = 0x80300000
++else
+ LOAD_ADDR = 0xc100000
+ endif
+ endif
+ endif
++endif
+ 
+ ifeq ($(ARCH),mips)
+ LOAD_ADDR = 0x80200000 -T mips.lds
+-- 
+1.5.6
+

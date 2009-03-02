@@ -1,0 +1,38 @@
+From 7275888d398190b993047a288352ee694d00e770 Mon Sep 17 00:00:00 2001
+From: Manikandan Pillai <mani.pillai@ti.com>
+Date: Fri, 16 Jan 2009 11:59:43 +0530
+Subject: [PATCH 3/8] Setting the TFTP MTU size to 512
+
+The TFTP packet size is again set back to 512 from 1468 since
+this fails if wireless connection comes up first on the laptop.
+---
+ net/tftp.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/net/tftp.c b/net/tftp.c
+index ce6ea3d..e387889 100644
+--- a/net/tftp.c
++++ b/net/tftp.c
+@@ -65,8 +65,8 @@ static int	TftpState;
+ #define STATE_BAD_MAGIC	4
+ #define STATE_OACK	5
+ 
+-#define TFTP_BLOCK_SIZE		512		    /* default TFTP block size	*/
+-#define TFTP_SEQUENCE_SIZE	((ulong)(1<<16))    /* sequence number is 16 bit */
++#define TFTP_BLOCK_SIZE		512		/* default TFTP block size */
++#define TFTP_SEQUENCE_SIZE	((ulong)(1<<16))/* sequence number is 16 bit */
+ 
+ #define DEFAULT_NAME_LEN	(8 + 4 + 1)
+ static char default_filename[DEFAULT_NAME_LEN];
+@@ -87,7 +87,7 @@ extern flash_info_t flash_info[];
+  * Minus eth.hdrs thats 1468.  Can get 2x better throughput with
+  * almost-MTU block sizes.  At least try... fall back to 512 if need be.
+  */
+-#define TFTP_MTU_BLOCKSIZE 1468
++#define TFTP_MTU_BLOCKSIZE	512
+ static unsigned short TftpBlkSize=TFTP_BLOCK_SIZE;
+ static unsigned short TftpBlkSizeOption=TFTP_MTU_BLOCKSIZE;
+ 
+-- 
+1.5.6
+

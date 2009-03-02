@@ -1,0 +1,27 @@
+From 3b0c152faa4f7240d32391d8d75c1f6e8f40ffee Mon Sep 17 00:00:00 2001
+From: Manikandan Pillai <mani.pillai@ti.com>
+Date: Tue, 17 Feb 2009 16:16:30 +0530
+Subject: [PATCH 8/8] Fix for DHCP failure.
+
+The timeout was calculated incorrect leading to timeout
+never happening and no retransmissions.
+---
+ net/bootp.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/bootp.h b/net/bootp.h
+index 50625ab..ce25f6c 100644
+--- a/net/bootp.h
++++ b/net/bootp.h
+@@ -88,7 +88,7 @@ typedef enum { INIT,
+ #define DHCP_NAK      6
+ #define DHCP_RELEASE  7
+ 
+-#define SELECT_TIMEOUT 3000UL	/* Milliseconds to wait for offers */
++#define SELECT_TIMEOUT 3UL	/* Milliseconds to wait for offers */
+ 
+ /**********************************************************************/
+ 
+-- 
+1.5.6
+
