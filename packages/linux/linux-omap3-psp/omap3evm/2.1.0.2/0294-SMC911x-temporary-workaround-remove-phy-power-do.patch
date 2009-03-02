@@ -1,0 +1,31 @@
+From 1134a1b25d9a5963f66a59994a61bc87126bfe9a Mon Sep 17 00:00:00 2001
+From: Sriram <srk@ti.com>
+Date: Tue, 17 Feb 2009 10:00:52 +0530
+Subject: [PATCH 294/304] SMC911x : temporary workaround - remove phy power down
+
+As part of the driver close routine, the phy is put into
+powerdown state. With the re-init code, the phy doesnt resume
+properly if put into powerdown state. As a temporary workaround
+disable phy powerdown step.
+---
+ drivers/net/smc911x.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/smc911x.c b/drivers/net/smc911x.c
+index bf3aa2a..15cef82 100644
+--- a/drivers/net/smc911x.c
++++ b/drivers/net/smc911x.c
+@@ -1459,7 +1459,10 @@ static int smc911x_close(struct net_device *dev)
+ 		 * smc911x_phy_configure are pending.
+ 		 */
+ 		cancel_work_sync(&lp->phy_configure);
++		/* Disable the powerdown step as resume is
++		 * not working consistently.
+ 		smc911x_phy_powerdown(dev, lp->mii.phy_id);
++		*/
+ 	}
+ 
+ 	if (lp->pending_tx_skb) {
+-- 
+1.5.6
+

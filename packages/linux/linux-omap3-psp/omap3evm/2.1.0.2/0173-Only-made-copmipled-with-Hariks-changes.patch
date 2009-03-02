@@ -1,0 +1,137 @@
+From cd7e95aa202441e4222810a8aa887cd13f326930 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Sat, 10 Jan 2009 12:07:45 +0530
+Subject: [PATCH 173/304] Only made copmipled with Hariks changes
+
+Frame buffer is not working with this.
+---
+ arch/arm/plat-omap/dss/dispc.c    |   14 +++++++-------
+ drivers/video/omap2/omapfb-main.c |    6 ++++--
+ include/linux/mmzone.h            |    8 ++++----
+ 3 files changed, 15 insertions(+), 13 deletions(-)
+
+diff --git a/arch/arm/plat-omap/dss/dispc.c b/arch/arm/plat-omap/dss/dispc.c
+index 84b4256..31262da 100644
+--- a/arch/arm/plat-omap/dss/dispc.c
++++ b/arch/arm/plat-omap/dss/dispc.c
+@@ -1128,14 +1128,14 @@ static int _dispc_setup_plane(enum omap_plane plane,
+ 	int scaling = 0;
+ 	u32 attr_value;
+ 
+-	//printk("Rotation = %d and mirror = %d\n", rotation, mirror);
++	printk("Rotation = %d and mirror = %d\n", rotation, mirror);
+ 	if (plane == OMAP_DSS_GFX) {
+ 		if (width != out_width || height != out_height)
+ 			return -EINVAL;
+ 	} else {
+ 		/* video plane */
+ 		if (width != out_width || height != out_height) {
+-			//printk("Scaling = 1\n\n\n");
++			printk("Scaling = 1\n\n\n");
+ 			scaling = 1;
+ 		}
+ 		if (out_width < width/2 ||
+@@ -1147,6 +1147,7 @@ static int _dispc_setup_plane(enum omap_plane plane,
+ 			return -EINVAL;
+ 	}
+ 
++	printk("%s: %d\n", __func__, __LINE__);
+ 	switch (color_mode) {
+ 	case OMAP_DSS_COLOR_RGB16:
+ 		bpp = 16;
+@@ -1209,9 +1210,9 @@ static int _dispc_setup_plane(enum omap_plane plane,
+ 	_dispc_set_plane_ba0(plane, paddr);
+ 
+ 	if (fieldmode) {
+-		//printk("FIELDMODE = ON\n");
++		printk("FIELDMODE = ON\n");
+ 		_dispc_set_plane_ba1(plane, paddr + tv_field1_offset);
+-		//printk("Position pos_x = %d pos_y = %d\n", pos_x, pos_y );
++		printk("Position pos_x = %d pos_y = %d\n", pos_x, pos_y );
+ 	}
+ 
+ 	else
+@@ -1225,12 +1226,12 @@ static int _dispc_setup_plane(enum omap_plane plane,
+ 	if (plane != OMAP_DSS_GFX)
+ 		_dispc_set_vid_size(plane, out_width, out_height);
+ 
+-	//printk("Vid size height = %d width = %d\n", out_height, out_width );
++	printk("Vid size height = %d width = %d\n", out_height, out_width );
+ 	_dispc_calc_and_set_row_inc(plane, screen_width, width, 0,
+ 			color_mode, rotation, mirror, fieldmode);
+ 
+ 	attr_value = dispc_read_reg(DISPC_VID_ATTRIBUTES(0));
+-	//printk("Attributes = %x\n", attr_value);
++	printk("Attributes = %x\n", attr_value);
+ 	//dispc_write_reg(DISPC_VID_ATTRIBUTES(0), 0x18172);
+ 	//attr_value = dispc_read_reg(DISPC_VID_ATTRIBUTES(0));
+ 	//printk("Attributes = %x\n", attr_value);
+@@ -1771,7 +1772,6 @@ void *omap_dispc_register_isr(omap_dispc_isr_t isr, void *arg, u32 mask)
+ 		//	ret = -EINVAL;
+ 		//	break;
+ 		//}
+-		printk("%d\n", __LINE__);
+ 		if (registered_isr[i].isr != NULL)
+ 			continue;
+ 
+diff --git a/drivers/video/omap2/omapfb-main.c b/drivers/video/omap2/omapfb-main.c
+index 4c0873f..047ccdc 100644
+--- a/drivers/video/omap2/omapfb-main.c
++++ b/drivers/video/omap2/omapfb-main.c
+@@ -532,9 +532,11 @@ int omapfb_setup_overlay(struct fb_info *fbi, struct omap_overlay *ovl,
+ 
+ 	r = ovl->setup_input(ovl,
+ 			data_start_p, data_start_v,
++			var->xres_virtual*var->bits_per_pixel/8,
+ 			ofbi->rotation == -1 ? var->xres_virtual : VRFB_WIDTH,
+-			xres, yres,
+-			mode);
++			xres, yres, mode,
++			ofbi->rotation == -1 ? ofbi->rotation :ofbi->rotation*90,
++			-1);
+ 
+ 	if (r)
+ 		goto err;
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 09c14e2..e21399c 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -21,7 +21,7 @@
+ 
+ /* Free memory management - zoned buddy allocator.  */
+ #ifndef CONFIG_FORCE_MAX_ZONEORDER
+-#define MAX_ORDER 11
++#define MAX_ORDER 12
+ #else
+ #define MAX_ORDER CONFIG_FORCE_MAX_ZONEORDER
+ #endif
+@@ -322,7 +322,7 @@ struct zone {
+ 	ZONE_PADDING(_pad1_)
+ 
+ 	/* Fields commonly accessed by the page reclaim scanner */
+-	spinlock_t		lru_lock;	
++	spinlock_t		lru_lock;
+ 	struct {
+ 		struct list_head list;
+ 		unsigned long nr_scan;
+@@ -704,7 +704,7 @@ static inline int is_normal_idx(enum zone_type idx)
+ }
+ 
+ /**
+- * is_highmem - helper function to quickly check if a struct zone is a 
++ * is_highmem - helper function to quickly check if a struct zone is a
+  *              highmem zone or not.  This is an attempt to keep references
+  *              to ZONE_{DMA/NORMAL/HIGHMEM/etc} in general code to a minimum.
+  * @zone - pointer to struct zone variable
+@@ -747,7 +747,7 @@ static inline int is_dma(struct zone *zone)
+ /* These two functions are used to setup the per zone pages min values */
+ struct ctl_table;
+ struct file;
+-int min_free_kbytes_sysctl_handler(struct ctl_table *, int, struct file *, 
++int min_free_kbytes_sysctl_handler(struct ctl_table *, int, struct file *,
+ 					void __user *, size_t *, loff_t *);
+ extern int sysctl_lowmem_reserve_ratio[MAX_NR_ZONES-1];
+ int lowmem_reserve_ratio_sysctl_handler(struct ctl_table *, int, struct file *,
+-- 
+1.5.6
+

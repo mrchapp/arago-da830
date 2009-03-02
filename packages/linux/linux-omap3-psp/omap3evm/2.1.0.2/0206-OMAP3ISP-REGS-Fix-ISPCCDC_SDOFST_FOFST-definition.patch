@@ -1,0 +1,27 @@
+From 2030cb97d68ef6fa1c99e888e861a723ddcbed98 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:54 -0600
+Subject: [PATCH 206/304] OMAP3ISP: REGS: Fix ISPCCDC_SDOFST_FOFST definition
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/isp/ispreg.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/video/isp/ispreg.h b/drivers/media/video/isp/ispreg.h
+index 1f86180..a2f78a8 100644
+--- a/drivers/media/video/isp/ispreg.h
++++ b/drivers/media/video/isp/ispreg.h
+@@ -803,7 +803,7 @@
+ #define ISPCCDC_HSIZE_OFF_SHIFT			0
+ 
+ #define ISPCCDC_SDOFST_FINV			(1 << 14)
+-#define ISPCCDC_SDOFST_FOFST_1L			(~(3 << 12))
++#define ISPCCDC_SDOFST_FOFST_1L			0
+ #define ISPCCDC_SDOFST_FOFST_4L			(3 << 12)
+ #define ISPCCDC_SDOFST_LOFST3_SHIFT		0
+ #define ISPCCDC_SDOFST_LOFST2_SHIFT		3
+-- 
+1.5.6
+

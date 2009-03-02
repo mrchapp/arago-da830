@@ -1,0 +1,45 @@
+From 1dca7cc9261638184abf4d6ecfad17c1bba56681 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:41 -0600
+Subject: [PATCH 233/304] OMAP3ISP: Core: Enable Preview Callback
+
+Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/isp/isp.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/media/video/isp/isp.c b/drivers/media/video/isp/isp.c
+index efb3ddb..091881c 100644
+--- a/drivers/media/video/isp/isp.c
++++ b/drivers/media/video/isp/isp.c
+@@ -521,6 +521,13 @@ int isp_set_callback(enum isp_callback_type type, isp_callback_t callback,
+ 					OMAP3_ISP_IOMEM_MAIN,
+ 					ISP_IRQ0ENABLE);
+ 		break;
++	case CBK_PREV_DONE:
++		isp_reg_writel(IRQ0ENABLE_PRV_DONE_IRQ, OMAP3_ISP_IOMEM_MAIN, ISP_IRQ0STATUS);
++		isp_reg_writel(isp_reg_readl(OMAP3_ISP_IOMEM_MAIN, ISP_IRQ0ENABLE) |
++					IRQ0ENABLE_PRV_DONE_IRQ,
++					OMAP3_ISP_IOMEM_MAIN,
++					ISP_IRQ0ENABLE);
++		break;
+ 	default:
+ 		break;
+ 	}
+@@ -575,6 +582,12 @@ int isp_unset_callback(enum isp_callback_type type)
+ 					OMAP3_ISP_IOMEM_MAIN,
+ 					ISP_IRQ0ENABLE);
+ 		break;
++	case CBK_PREV_DONE:
++		isp_reg_writel((isp_reg_readl(OMAP3_ISP_IOMEM_MAIN, ISP_IRQ0ENABLE)) &
++						~IRQ0ENABLE_PRV_DONE_IRQ,
++						OMAP3_ISP_IOMEM_MAIN,
++						ISP_IRQ0ENABLE);
++		break;
+ 	default:
+ 		break;
+ 	}
+-- 
+1.5.6
+

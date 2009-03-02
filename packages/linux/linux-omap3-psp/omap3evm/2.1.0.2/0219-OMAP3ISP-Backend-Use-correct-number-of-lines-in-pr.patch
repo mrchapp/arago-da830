@@ -1,0 +1,26 @@
+From 6a0aff45bbf9a86dcbddcf5409a4bf919bf3becb Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:48 -0600
+Subject: [PATCH 219/304] OMAP3ISP: Backend: Use correct number of lines in preview
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+---
+ drivers/media/video/isp/isppreview.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/video/isp/isppreview.c b/drivers/media/video/isp/isppreview.c
+index 51ebae2..8b5767b 100644
+--- a/drivers/media/video/isp/isppreview.c
++++ b/drivers/media/video/isp/isppreview.c
+@@ -1605,7 +1605,7 @@ int isppreview_config_size(u32 input_w, u32 input_h, u32 output_w, u32 output_h)
+ 					(ispprev_obj.previn_w - 1),
+ 					OMAP3_ISP_IOMEM_PREV, ISPPRV_HORZ_INFO);
+ 	isp_reg_writel((ispprev_obj.slv << ISPPRV_VERT_INFO_SLV_SHIFT) |
+-					(ispprev_obj.previn_h - 1),
++					(ispprev_obj.previn_h - 2),
+ 					OMAP3_ISP_IOMEM_PREV, ISPPRV_VERT_INFO);
+ 
+ 	if (ispprev_obj.cfafmt == CFAFMT_BAYER)
+-- 
+1.5.6
+

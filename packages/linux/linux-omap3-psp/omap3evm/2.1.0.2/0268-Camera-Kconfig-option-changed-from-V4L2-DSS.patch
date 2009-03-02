@@ -1,0 +1,169 @@
+From 35ada0d74a0daf6710bd0621d7cc457267a13f2f Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Thu, 12 Feb 2009 21:27:53 +0530
+Subject: [PATCH 268/304] Camera Kconfig option changed from V4L2-DSS
+
+The Kconfig option for Camera and V4l2 driver for DSS
+was conflicting to each other, so Camera Kconfig option
+changed.
+
+CONFIG_VIDEO_OMAP3_CAM - omap34xxcam.c
+CONFIG_VIDEO_OMAP3_ISP - isp/
+---
+ arch/arm/mach-omap2/board-3430sdp.c         |    4 +-
+ arch/arm/mach-omap2/board-omap3evm-dc-v4l.c |    6 ++--
+ arch/arm/mach-omap2/devices.c               |    2 +-
+ drivers/media/video/Kconfig                 |   32 ++++++++++++--------------
+ drivers/media/video/Makefile                |    5 ++-
+ drivers/media/video/isp/Makefile            |    2 +-
+ 6 files changed, 25 insertions(+), 26 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
+index 8750b7f..ade2068 100644
+--- a/arch/arm/mach-omap2/board-3430sdp.c
++++ b/arch/arm/mach-omap2/board-3430sdp.c
+@@ -43,7 +43,7 @@
+ #include <mach/omap-pm.h>
+ #include <mach/display.h>
+ 
+-#ifdef CONFIG_VIDEO_OMAP3
++#ifdef CONFIG_VIDEO_OMAP3_CAM
+ #include <media/v4l2-int-device.h>
+ #include <../drivers/media/video/omap34xxcam.h>
+ #include <../drivers/media/video/isp/ispreg.h>
+@@ -287,7 +287,7 @@ static struct spi_board_info sdp3430_spi_board_info[] __initdata = {
+ 	},
+ };
+ 
+-#ifdef CONFIG_VIDEO_OMAP3
++#ifdef CONFIG_VIDEO_OMAP3_CAM
+ #define DEBUG_BASE		0x08000000
+ #define REG_SDP3430_FPGA_GPIO_2 (0x50)
+ #define FPGA_SPR_GPIO1_3v3	(0x1 << 14)
+diff --git a/arch/arm/mach-omap2/board-omap3evm-dc-v4l.c b/arch/arm/mach-omap2/board-omap3evm-dc-v4l.c
+index c4fd04b..4e4cdf1 100644
+--- a/arch/arm/mach-omap2/board-omap3evm-dc-v4l.c
++++ b/arch/arm/mach-omap2/board-omap3evm-dc-v4l.c
+@@ -59,7 +59,7 @@
+ #define TVP5146_I2C_ADDR		(0x5D)
+ 
+ #if defined(CONFIG_VIDEO_TVP514X) || defined(CONFIG_VIDEO_TVP514X_MODULE)
+-#if defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
++#if defined(CONFIG_VIDEO_OMAP3_CAM) || defined(CONFIG_VIDEO_OMAP3_CAM_MODULE)
+ static struct omap34xxcam_hw_config decoder_hwc = {
+ 	.dev_index		= 0,
+ 	.dev_minor		= 0,
+@@ -122,7 +122,7 @@ static int tvp5146_ifparm(struct v4l2_ifparm *p)
+  */
+ static int tvp5146_set_prv_data(void *priv)
+ {
+-#if defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
++#if defined(CONFIG_VIDEO_OMAP3_CAM) || defined(CONFIG_VIDEO_OMAP3_CAM_MODULE)
+ 	struct omap34xxcam_hw_config *hwc = priv;
+ 
+ 	if (priv == NULL)
+@@ -234,7 +234,7 @@ static int tvp5146_power_set(enum v4l2_power power)
+ 		if (omap3evmdc_set_mux(MUX_TVP5146, ENABLE_MUX))
+ 			return -ENODEV;
+ 
+-#if defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
++#if defined(CONFIG_VIDEO_OMAP3_CAM) || defined(CONFIG_VIDEO_OMAP3_CAM_MODULE)
+ 		isp_configure_interface(&tvp5146_if_config);
+ #endif
+ 		break;
+diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
+index 4617c8b..48234a6 100644
+--- a/arch/arm/mach-omap2/devices.c
++++ b/arch/arm/mach-omap2/devices.c
+@@ -54,7 +54,7 @@ static inline void omap_init_camera(void)
+ 	platform_device_register(&omap_cam_device);
+ }
+ 
+-#elif defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
++#elif defined(CONFIG_VIDEO_OMAP3_CAM) || defined(CONFIG_VIDEO_OMAP3_CAM_MODULE)
+ 
+ static struct resource omap34xxcam_resources[] = {
+ };
+diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
+index 5a8f1e5..c8867c0 100644
+--- a/drivers/media/video/Kconfig
++++ b/drivers/media/video/Kconfig
+@@ -742,33 +742,31 @@ config VIDEO_CAFE_CCIC
+ 	  CMOS camera controller.  This is the controller found on first-
+ 	  generation OLPC systems.
+ 
+-#config VIDEO_OMAP3
+-#        tristate "OMAP 3 Camera support"
+-#	select VIDEOBUF_GEN
+-#	select VIDEOBUF_DMA_SG
+-#	depends on VIDEO_V4L2 && ARCH_OMAP34XX
+-#	---help---
+-#	  Driver for an OMAP 3 camera controller.
+-
+-config VIDEO_OMAP3
+-	bool "OMAP2/OMAP3 Camera and V4L2-DSS drivers"
++config VIDEO_OMAP3_ISP
++	tristate
+ 	select VIDEOBUF_GEN
+ 	select VIDEOBUF_DMA_SG
+-	depends on VIDEO_DEV && (ARCH_OMAP24XX || ARCH_OMAP34XX)
+-	default y
+-	---help---
+-        V4L2 DSS and Camera driver support for OMAP2/3 based boards.
+-
+-source "drivers/media/video/omap/Kconfig"
+ 
+-config VIDEO_OMAP3
++config VIDEO_OMAP3_CAM
+         tristate "OMAP 3 Camera support"
+ 	select VIDEOBUF_GEN
+ 	select VIDEOBUF_DMA_SG
++	select VIDEO_OMAP3_ISP
+ 	depends on VIDEO_V4L2 && ARCH_OMAP34XX
+ 	---help---
+ 	  Driver for an OMAP 3 camera controller.
+ 
++config VIDEO_OMAP3
++	bool "OMAP2/OMAP3 V4L2-DSS drivers"
++	select VIDEOBUF_GEN
++	select VIDEOBUF_DMA_SG
++	depends on VIDEO_DEV && (ARCH_OMAP24XX || ARCH_OMAP34XX)
++	default y
++	---help---
++        V4L2 DSS driver support for OMAP2/3 based boards.
++
++source "drivers/media/video/omap/Kconfig"
++
+ config SOC_CAMERA
+ 	tristate "SoC camera support"
+ 	depends on VIDEO_V4L2 && HAS_DMA
+diff --git a/drivers/media/video/Makefile b/drivers/media/video/Makefile
+index 7f8ce29..9593b9d 100644
+--- a/drivers/media/video/Makefile
++++ b/drivers/media/video/Makefile
+@@ -111,9 +111,10 @@ obj-$(CONFIG_VIDEO_MT9P012)	+= mt9p012.o
+ obj-$(CONFIG_VIDEO_DW9710) += dw9710.o
+ obj-$(CONFIG_VIDEO_OV3640)     += ov3640.o
+ 
+-obj-$(CONFIG_VIDEO_OMAP3) += omap/
++obj-$(CONFIG_VIDEO_OMAP3_CAM) += omap34xxcam.o
++obj-$(CONFIG_VIDEO_OMAP3_ISP) += isp/
+ 
+-obj-$(CONFIG_VIDEO_OMAP3) += omap34xxcam.o isp/
++obj-$(CONFIG_VIDEO_OMAP3) += omap/
+ 
+ obj-$(CONFIG_USB_DABUSB)        += dabusb.o
+ obj-$(CONFIG_USB_OV511)         += ov511.o
+diff --git a/drivers/media/video/isp/Makefile b/drivers/media/video/isp/Makefile
+index f2f831c..0f9301c 100644
+--- a/drivers/media/video/isp/Makefile
++++ b/drivers/media/video/isp/Makefile
+@@ -9,4 +9,4 @@ isp-mod-objs += \
+ 	isppreview.o ispresizer.o isph3a.o isphist.o isp_af.o ispcsi2.o
+ endif
+ 
+-obj-$(CONFIG_VIDEO_OMAP3) += isp-mod.o
++obj-$(CONFIG_VIDEO_OMAP3_ISP) += isp-mod.o
+-- 
+1.5.6
+

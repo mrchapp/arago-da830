@@ -1,0 +1,132 @@
+From eae6d7062067d719fea17780a29e04a26edd1f16 Mon Sep 17 00:00:00 2001
+From: Paul Walmsley <paul@pwsan.com>
+Date: Sat, 18 Oct 2008 15:59:10 -0600
+Subject: [PATCH 027/304] OMAP2/3 omapdev: add basic omapdev structure
+
+Add a structure 'omapdev' to represent on-chip hardware peripherals.
+Currently the only additional information stored are the powerdomains for
+each on-chip peripheral, although the long-term intention is to use this
+to handle device reset at boot time and to clean up device registration.
+
+Use platform_device name and id fields to link this structure back to the
+corresponding platform_device.  In the medium- to long-term, it may be best
+to use a generic device pointer so system devices can be linked also; but
+for now, most cases can be handled via platform_device.
+
+struct omapdev differs in purpose from struct platform_device in that
+platform_device is currently used to represent "logical" devices in
+the Linux driver model, whereas this struct omapdev is used to
+represent physical on-chip devices in the OMAP memory map.  An example
+is the OMAP2xxx camera driver.  It uses only one platform_device,
+"omap24xxcam.-1", but on the hardware, that platform_device covers
+several independent on-chip devices with their own address space and
+control parameters.  Other examples of multiple omapdevs per platform_device
+include the display subsystem and UARTs.
+
+struct omapdev entries are only for on-chip devices.  Off-chip
+peripherals are not included in omapdev.  So, smc91x and onenand, for example,
+will not be included.  What belongs in those two cases would be some sort
+of GPMC platform_device.
+
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/omapdev-common.h      |   27 +++++++++++++++
+ arch/arm/plat-omap/include/mach/omapdev.h |   51 +++++++++++++++++++++++++++++
+ 2 files changed, 78 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/omapdev-common.h
+ create mode 100644 arch/arm/plat-omap/include/mach/omapdev.h
+
+diff --git a/arch/arm/mach-omap2/omapdev-common.h b/arch/arm/mach-omap2/omapdev-common.h
+new file mode 100644
+index 0000000..ce03f3d
+--- /dev/null
++++ b/arch/arm/mach-omap2/omapdev-common.h
+@@ -0,0 +1,27 @@
++/*
++ * OMAP on-chip devices present on OMAP2/3
++ *
++ * Copyright (C) 2007-2008 Texas Instruments, Inc.
++ * Copyright (C) 2007-2008 Nokia Corporation
++ * Paul Walmsley
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef ARCH_ARM_MACH_OMAP2_OMAPDEV_COMMON_H
++#define ARCH_ARM_MACH_OMAP2_OMAPDEV_COMMON_H
++
++#include <mach/omapdev.h>
++
++#include "omapdev242x.h"
++#include "omapdev243x.h"
++#include "omapdev3xxx.h"
++
++static struct omapdev *omapdevs[] = {
++	NULL,
++};
++
++#endif
+diff --git a/arch/arm/plat-omap/include/mach/omapdev.h b/arch/arm/plat-omap/include/mach/omapdev.h
+new file mode 100644
+index 0000000..ef91f00
+--- /dev/null
++++ b/arch/arm/plat-omap/include/mach/omapdev.h
+@@ -0,0 +1,51 @@
++/*
++ * OMAP on-chip device: structure and function call definitions
++ *
++ * Copyright (C) 2007-2008 Texas Instruments, Inc.
++ * Copyright (C) 2007-2008 Nokia Corporation
++ * Paul Walmsley
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++#ifndef ARCH_ARM_PLAT_OMAP_OMAPDEV_H
++#define ARCH_ARM_PLAT_OMAP_OMAPDEV_H
++
++#include <linux/types.h>
++#include <linux/list.h>
++
++#include <mach/cpu.h>
++#include <mach/powerdomain.h>
++
++/**
++ * struct omapdev - OMAP on-chip hardware devices
++ * @name: name of the device - should match TRM
++ * @pwrdm: powerdomain that the device resides in
++ * @omap_chip: OMAP chips this omapdev is valid for
++ * @pdev_name: platform_device name associated with this omapdev (if any)
++ * @pdev_id: platform_device id associated with this omapdev (if any)
++ *
++ */
++struct omapdev {
++
++	const char *name;
++
++	union {
++		const char *name;
++		struct powerdomain *ptr;
++	} pwrdm;
++
++	const struct omap_chip_id omap_chip;
++
++	const char *pdev_name;
++
++	const int pdev_id;
++
++	struct list_head node;
++};
++
++
++
++#endif
+-- 
+1.5.6
+

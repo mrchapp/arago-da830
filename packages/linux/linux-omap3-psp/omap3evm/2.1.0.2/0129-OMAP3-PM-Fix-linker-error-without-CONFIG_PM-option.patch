@@ -1,0 +1,30 @@
+From 3223d6f13e4eee69471a9b1c976a46bf51b462e2 Mon Sep 17 00:00:00 2001
+From: Tero Kristo <tero.kristo@nokia.com>
+Date: Fri, 9 Jan 2009 17:49:06 +0200
+Subject: [PATCH 129/304] OMAP3: PM: Fix linker error without CONFIG_PM option
+
+omap3_save_scratchpad_contents() is not available without CONFIG_PM.
+
+Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/clock34xx.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clock34xx.c b/arch/arm/mach-omap2/clock34xx.c
+index 8b375a9..6c5254c 100644
+--- a/arch/arm/mach-omap2/clock34xx.c
++++ b/arch/arm/mach-omap2/clock34xx.c
+@@ -1007,7 +1007,9 @@ static int omap3_select_table_rate(struct clk *clk, unsigned long rate)
+ 		curr_vdd2_prcm_set = prcm_vdd;
+ 	}
+ 
++#ifdef CONFIG_PM
+ 	omap3_save_scratchpad_contents();
++#endif
+ 
+ 	return 0;
+ }
+-- 
+1.5.6
+

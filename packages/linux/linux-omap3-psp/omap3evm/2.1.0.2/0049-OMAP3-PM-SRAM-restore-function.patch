@@ -1,0 +1,85 @@
+From 55f49b7efabebddb63ac7fcfb3324a0c570d8f51 Mon Sep 17 00:00:00 2001
+From: Rajendra Nayak <rnayak@ti.com>
+Date: Fri, 26 Sep 2008 17:49:14 +0530
+Subject: [PATCH 049/304] OMAP3: PM: SRAM restore function
+
+Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/pm34xx.c           |   10 +++++++---
+ arch/arm/plat-omap/include/mach/sram.h |    1 +
+ arch/arm/plat-omap/sram.c              |    6 +++---
+ 3 files changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index f2d787d..c96111f 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -626,6 +626,12 @@ static int __init clkdms_setup(struct clockdomain *clkdm, void *unused)
+ 	return 0;
+ }
+ 
++void omap_push_sram_idle(void)
++{
++	_omap_sram_idle = omap_sram_push(omap34xx_cpu_suspend,
++					omap34xx_cpu_suspend_sz);
++}
++
+ int __init omap3_pm_init(void)
+ {
+ 	struct power_state *pwrst, *tmp;
+@@ -660,9 +666,7 @@ int __init omap3_pm_init(void)
+ 		goto err2;
+ 	}
+ 
+-	_omap_sram_idle = omap_sram_push(omap34xx_cpu_suspend,
+-					omap34xx_cpu_suspend_sz);
+-
++	omap_push_sram_idle();
+ 	suspend_set_ops(&omap_pm_ops);
+ 
+ 	pm_idle = omap3_pm_idle;
+diff --git a/arch/arm/plat-omap/include/mach/sram.h b/arch/arm/plat-omap/include/mach/sram.h
+index ab35d62..7e08ab1 100644
+--- a/arch/arm/plat-omap/include/mach/sram.h
++++ b/arch/arm/plat-omap/include/mach/sram.h
+@@ -62,5 +62,6 @@ extern u32 omap3_sram_configure_core_dpll(u32 sdrc_rfr_ctrl,
+ 					  u32 sdrc_actim_ctrla,
+ 					  u32 sdrc_actim_ctrlb, u32 m2);
+ extern unsigned long omap3_sram_configure_core_dpll_sz;
++extern void omap_push_sram_idle(void);
+ 
+ #endif
+diff --git a/arch/arm/plat-omap/sram.c b/arch/arm/plat-omap/sram.c
+index 9242fe5..513856c 100644
+--- a/arch/arm/plat-omap/sram.c
++++ b/arch/arm/plat-omap/sram.c
+@@ -368,14 +368,14 @@ u32 omap3_configure_core_dpll(u32 sdrc_rfr_ctrl, u32 sdrc_actim_ctrla,
+ 					       sdrc_actim_ctrlb, m2);
+  }
+ 
+-/* REVISIT: Should this be same as omap34xx_sram_init() after off-idle? */
+-void restore_sram_functions(void)
++void omap3_sram_restore_context(void)
+ {
+ 	omap_sram_ceil = omap_sram_base + omap_sram_size;
+ 
+ 	_omap3_sram_configure_core_dpll =
+ 		omap_sram_push(omap3_sram_configure_core_dpll,
+ 			       omap3_sram_configure_core_dpll_sz);
++	omap_push_sram_idle();
+ }
+ 
+ int __init omap3_sram_init(void)
+@@ -383,7 +383,7 @@ int __init omap3_sram_init(void)
+ 	_omap3_sram_configure_core_dpll =
+ 		omap_sram_push(omap3_sram_configure_core_dpll,
+ 			       omap3_sram_configure_core_dpll_sz);
+-
++	omap_push_sram_idle();
+ 	return 0;
+ }
+ #else
+-- 
+1.5.6
+

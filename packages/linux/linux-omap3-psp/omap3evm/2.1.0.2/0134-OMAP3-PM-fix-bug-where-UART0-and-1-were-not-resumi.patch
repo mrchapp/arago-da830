@@ -1,0 +1,28 @@
+From f83b62bdef9d56a85b9e0ff6edb270106cda5d83 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Date: Fri, 23 Jan 2009 09:45:21 -0800
+Subject: [PATCH 134/304] OMAP3: PM: fix bug where UART0 and 1 were not resuming from idle
+
+Signed-off-by: Jouni Hogander <jouni.hogander@nokia.com>
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/pm34xx.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index b2db0ba..266e4f5 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -401,6 +401,8 @@ void omap_sram_idle(void)
+ 			omap3_prcm_restore_context();
+ 			omap3_sram_restore_context();
+ 		}
++		omap_uart_resume_idle(0);
++		omap_uart_resume_idle(1);
+ 		if (core_next_state == PWRDM_POWER_OFF)
+ 			prm_clear_mod_reg_bits(OMAP3430_AUTO_OFF,
+ 					       OMAP3430_GR_MOD,
+-- 
+1.5.6
+

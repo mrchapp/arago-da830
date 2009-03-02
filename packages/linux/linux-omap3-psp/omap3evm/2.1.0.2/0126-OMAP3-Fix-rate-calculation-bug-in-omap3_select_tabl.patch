@@ -1,0 +1,39 @@
+From e82fb484ae1b384d922eae8b3045e4e04e63eb4b Mon Sep 17 00:00:00 2001
+From: Tero Kristo <tero.kristo@nokia.com>
+Date: Fri, 9 Jan 2009 17:49:03 +0200
+Subject: [PATCH 126/304] OMAP3: Fix rate calculation bug in omap3_select_table_rate
+
+L3 divisor is not taken into account when trying to set DPLL3 clock.
+
+Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/clock34xx.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clock34xx.c b/arch/arm/mach-omap2/clock34xx.c
+index b565ee6..8b375a9 100644
+--- a/arch/arm/mach-omap2/clock34xx.c
++++ b/arch/arm/mach-omap2/clock34xx.c
+@@ -959,6 +959,7 @@ static int omap3_select_table_rate(struct clk *clk, unsigned long rate)
+ 	struct omap_opp *prcm_vdd = NULL;
+ 	unsigned long found_speed = 0, curr_mpu_speed;
+ 	int index = 0;
++	int l3_div;
+ 
+ 	if ((clk != &virt_vdd1_prcm_set) && (clk != &virt_vdd2_prcm_set))
+ 		return -EINVAL;
+@@ -1000,7 +1001,9 @@ static int omap3_select_table_rate(struct clk *clk, unsigned long rate)
+ 					curr_mpu_speed/1000, found_speed/1000);
+ #endif
+ 	} else {
+-		clk_set_rate(dpll3_clk, prcm_vdd->rate);
++		l3_div = cm_read_mod_reg(CORE_MOD, CM_CLKSEL) &
++			OMAP3430_CLKSEL_L3_MASK;
++		clk_set_rate(dpll3_clk, prcm_vdd->rate * l3_div);
+ 		curr_vdd2_prcm_set = prcm_vdd;
+ 	}
+ 
+-- 
+1.5.6
+

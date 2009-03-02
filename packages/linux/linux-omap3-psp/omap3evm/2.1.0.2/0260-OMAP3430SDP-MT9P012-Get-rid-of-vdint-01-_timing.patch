@@ -1,0 +1,28 @@
+From 2b94656a2f27b257b82f46fd98a32974f96a7b9b Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:27 -0600
+Subject: [PATCH 260/304] OMAP3430SDP: MT9P012: Get rid of vdint[01]_timing
+
+Thsi is to compile with latest Nokia fixes integration.
+
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ arch/arm/mach-omap2/board-3430sdp.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
+index 8e59a77..2d52ef9 100644
+--- a/arch/arm/mach-omap2/board-3430sdp.c
++++ b/arch/arm/mach-omap2/board-3430sdp.c
+@@ -427,8 +427,6 @@ static struct isp_interface_config mt9p012_if_config = {
+ 	.ccdc_par_ser = ISP_PARLL,
+ 	.dataline_shift = 0x1,
+ 	.hsvs_syncdetect = ISPCTRL_SYNC_DETECT_VSRISE,
+-	.vdint0_timing = 0x0,
+-	.vdint1_timing = 0x0,
+ 	.strobe = 0x0,
+ 	.prestrobe = 0x0,
+ 	.shutter = 0x0,
+-- 
+1.5.6
+

@@ -1,0 +1,38 @@
+From 42a8168722229a227e21d06e1f74ae92c681810f Mon Sep 17 00:00:00 2001
+From: Sakari Ailus <sakari.ailus@nokia.com>
+Date: Mon, 26 Jan 2009 15:19:31 -0600
+Subject: [PATCH 254/304] omap34xxcam: Don't do ISP idle mode settings.
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+---
+ drivers/media/video/omap34xxcam.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/media/video/omap34xxcam.c b/drivers/media/video/omap34xxcam.c
+index 03ae2f2..658827f 100644
+--- a/drivers/media/video/omap34xxcam.c
++++ b/drivers/media/video/omap34xxcam.c
+@@ -1929,7 +1929,6 @@ static int omap34xxcam_remove(struct platform_device *pdev)
+ static int omap34xxcam_probe(struct platform_device *pdev)
+ {
+ 	struct omap34xxcam_device *cam;
+-	struct isp_sysc isp_sysconfig;
+ 	int i;
+ 
+ 	cam = kzalloc(sizeof(*cam), GFP_KERNEL);
+@@ -1942,12 +1941,6 @@ static int omap34xxcam_probe(struct platform_device *pdev)
+ 
+ 	cam->dev = &pdev->dev;
+ 
+-	isp_get();
+-	isp_sysconfig.reset = 0;
+-	isp_sysconfig.idle_mode = 1;
+-	isp_power_settings(isp_sysconfig);
+-	isp_put();
+-
+ 	omap34xxcam = cam;
+ 
+ 	for (i = 0; i < OMAP34XXCAM_VIDEODEVS; i++) {
+-- 
+1.5.6
+

@@ -1,0 +1,33 @@
+From 16ce68fd2e35eb2259e2dec8daa52eb4f2a67e45 Mon Sep 17 00:00:00 2001
+From: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+Date: Wed, 19 Nov 2008 13:45:27 +0200
+Subject: [PATCH 097/304] Save sram context after changing MPU, DSP or core clocks
+
+This patch saves the sram context again after a MPU,DSP or core clock
+frequency change. This is necessary so the rom code can restore the correct
+DPLL settings when resuming from off mode. Thanks to Rajendra Nayak for
+suggesting the problem and coming up with the same fix at about the same time.
+
+Signed-off-by: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/clock34xx.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clock34xx.c b/arch/arm/mach-omap2/clock34xx.c
+index 9c0840c..0434552 100644
+--- a/arch/arm/mach-omap2/clock34xx.c
++++ b/arch/arm/mach-omap2/clock34xx.c
+@@ -984,6 +984,9 @@ static int omap3_select_table_rate(struct clk *clk, unsigned long rate)
+ 		omap2_clksel_recalc(&core_ck);
+ 		propagate_rate(&core_ck);
+ 	}
++
++	omap3_save_scratchpad_contents();
++
+ 	return 0;
+ }
+ 
+-- 
+1.5.6
+

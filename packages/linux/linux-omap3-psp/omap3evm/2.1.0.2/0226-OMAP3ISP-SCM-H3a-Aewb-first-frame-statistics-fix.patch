@@ -1,0 +1,112 @@
+From 850d5a5c6853de5ced7c9bd6fd35a5ba1cd11d4c Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:45 -0600
+Subject: [PATCH 226/304] OMAP3ISP: SCM: H3a Aewb first frame statistics fix
+
+Signed-off-by: Gjorgji Rosikopulos <grosikopulos@mm-sol.com>
+---
+ drivers/media/video/isp/isp_af.c |    5 +++++
+ drivers/media/video/isp/isph3a.c |   24 ++++++++++++++++++++----
+ 2 files changed, 25 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/media/video/isp/isp_af.c b/drivers/media/video/isp/isp_af.c
+index 8aec224..be00f68 100644
+--- a/drivers/media/video/isp/isp_af.c
++++ b/drivers/media/video/isp/isp_af.c
+@@ -375,6 +375,8 @@ int isp_af_configure(struct af_configuration *afconfig)
+ 	af_dev_configptr->size_paxel = buff_size;
+ 	atomic_inc(&afstat.config_counter);
+ 	afstat.initialized = 1;
++	afstat.frame_count = 1;
++	active_buff->frame_num = 1;
+ 	/* Set configuration flag to indicate HW setup done */
+ 	if (af_curr_cfg->af_config)
+ 		isp_af_enable(1);
+@@ -512,6 +514,9 @@ static int isp_af_stats_available(struct isp_af_data *afdata)
+ 
+ 	spin_lock_irqsave(&afstat.buffer_lock, irqflags);
+ 	for (i = 0; i < H3A_MAX_BUFF; i++) {
++		DPRINTK_ISP_AF("Checking Stats buff[%d] (%d) for %d\n",
++				i, afstat.af_buff[i].frame_num,
++				afdata->frame_number);
+ 		if ((afdata->frame_number == afstat.af_buff[i].frame_num) &&
+ 						(afstat.af_buff[i].frame_num !=
+ 						active_buff->frame_num)) {
+diff --git a/drivers/media/video/isp/isph3a.c b/drivers/media/video/isp/isph3a.c
+index 7a3ec47..bb053d7 100644
+--- a/drivers/media/video/isp/isph3a.c
++++ b/drivers/media/video/isp/isph3a.c
+@@ -251,7 +251,7 @@ static void isph3a_aewb_update_regs(void)
+ 	isp_reg_writel(aewb_regs.reg_subwin, OMAP3_ISP_IOMEM_H3A, ISPH3A_AEWSUBWIN);
+ 
+ 	aewbstat.update = 0;
+-	aewbstat.frame_count = 0;
++	aewbstat.frame_count = 1;
+ }
+ 
+ /**
+@@ -280,6 +280,9 @@ static int isph3a_aewb_stats_available(struct isph3a_aewb_data *aewbdata)
+ 
+ 	spin_lock_irqsave(&aewbstat.buffer_lock, irqflags);
+ 	for (i = 0; i < H3A_MAX_BUFF; i++) {
++		DPRINTK_ISPH3A("Checking Stats buff[%d] (%d) for %d\n",
++				i, aewbstat.h3a_buff[i].frame_num,
++				aewbdata->frame_number);
+ 		if ((aewbdata->frame_number != aewbstat.h3a_buff[i].frame_num) ||
+ 			(aewbstat.h3a_buff[i].frame_num == active_buff->frame_num))
+ 			continue;
+@@ -635,6 +638,7 @@ int isph3a_aewb_configure(struct isph3a_aewb_config *aewbcfg)
+ 
+ 		if (active_buff == NULL)
+ 			active_buff = &aewbstat.h3a_buff[0];
++
+ 		isp_reg_writel(active_buff->ispmmu_addr, OMAP3_ISP_IOMEM_H3A, ISPH3A_AEWBUFST);
+ 	}
+ 	for (i = 0; i < H3A_MAX_BUFF; i++) {
+@@ -642,13 +646,18 @@ int isph3a_aewb_configure(struct isph3a_aewb_config *aewbcfg)
+ 					"    aligned 0x%lX\n"
+ 					"    phys    0x%lX\n"
+ 					"    ispmmu  0x%08lX\n"
+-					"    mmapped 0x%lX\n", i,
++					"    mmapped 0x%lX\n"
++					"    frame_num %d\n", i,
+ 					aewbstat.h3a_buff[i].virt_addr,
+ 					aewbstat.h3a_buff[i].addr_align,
+ 					aewbstat.h3a_buff[i].phy_addr,
+ 					aewbstat.h3a_buff[i].ispmmu_addr,
+-					aewbstat.h3a_buff[i].mmap_addr);
++					aewbstat.h3a_buff[i].mmap_addr,
++					aewbstat.h3a_buff[i].frame_num);
+ 	}
++
++	active_buff->frame_num = 1;
++
+ 	atomic_inc(&aewbstat.config_counter);
+ 	isph3a_aewb_enable(aewbcfg->aewb_enable);
+ 	isph3a_print_status();
+@@ -689,7 +698,6 @@ int isph3a_aewb_request_statistics(struct isph3a_aewb_data *aewbdata)
+ 	DPRINTK_ISPH3A("WB gain r *=   0x%04x\n", aewbdata->wb_gain_r);
+ 	DPRINTK_ISPH3A("WB gain gb =   0x%04x\n", aewbdata->wb_gain_gb);
+ 	DPRINTK_ISPH3A("WB gain gr =   0x%04x\n", aewbdata->wb_gain_gr);
+-	DPRINTK_ISPH3A("ISP AEWB request status wait for interrupt\n");
+ 
+ 	if (!aewbdata->update) {
+ 		aewbdata->h3a_aewb_statistics_buf = NULL;
+@@ -710,6 +718,14 @@ int isph3a_aewb_request_statistics(struct isph3a_aewb_data *aewbdata)
+ 		aewbdata->h3a_aewb_statistics_buf = NULL;
+ 		goto out;
+ 	}
++
++	if (aewbdata->frame_number < 1) {
++		printk(KERN_ERR "Illeagal frame number "
++			"requested (%d)\n",
++			aewbdata->frame_number);
++		return -EINVAL;
++	}
++
+ 	isph3a_aewb_unlock_buffers();
+ 
+ 	DPRINTK_ISPH3A("Stats available?\n");
+-- 
+1.5.6
+

@@ -1,0 +1,77 @@
+From 05c5b69177ec3e7d22e4cc52d4ade9384fdf8c69 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Fri, 30 Jan 2009 14:52:58 +0530
+Subject: [PATCH 183/304] Changed V4L2 file operations according to 2.6.29
+
+Few Kconfig and Makefile Fixes
+---
+ drivers/media/video/Kconfig          |    2 --
+ drivers/media/video/Makefile         |    2 +-
+ drivers/media/video/omap/omap_vout.c |    9 ++++-----
+ 3 files changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
+index a1fd6d4..eaf82f2 100644
+--- a/drivers/media/video/Kconfig
++++ b/drivers/media/video/Kconfig
+@@ -711,8 +711,6 @@ config VIDEO_CAFE_CCIC
+ 	  CMOS camera controller.  This is the controller found on first-
+ 	  generation OLPC systems.
+ 
+-source "drivers/media/video/isp/Kconfig"
+-
+ #config VIDEO_OMAP3
+ #        tristate "OMAP 3 Camera support"
+ #	select VIDEOBUF_GEN
+diff --git a/drivers/media/video/Makefile b/drivers/media/video/Makefile
+index 95dbad4..e8de241 100644
+--- a/drivers/media/video/Makefile
++++ b/drivers/media/video/Makefile
+@@ -110,7 +110,7 @@ obj-$(CONFIG_VIDEO_TCM825X) += tcm825x.o
+ obj-$(CONFIG_VIDEO_MT9P012)	+= mt9p012.o
+ obj-$(CONFIG_VIDEO_DW9710) += dw9710.o
+ 
+-obj-$(CONFIG_VIDEO_OMAP3) += omap34xxcam.o isp/ omap/
++obj-$(CONFIG_VIDEO_OMAP3) += omap/
+ 
+ obj-$(CONFIG_USB_DABUSB)        += dabusb.o
+ obj-$(CONFIG_USB_OV511)         += ov511.o
+diff --git a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
+index 536e87e..a5bf94c 100755
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -895,7 +895,7 @@ static void omap_vout_free_allbuffers(struct omap_vout_device *vout)
+ 	vout->buffer_allocated = num_buffers;
+ }
+ 
+-static int omap_vout_release(struct inode *inode, struct file *file)
++static int omap_vout_release(struct file *file)
+ {
+ 
+ 	struct omap_vout_fh *fh = file->private_data;
+@@ -954,9 +954,9 @@ static int omap_vout_release(struct inode *inode, struct file *file)
+ 	return r;
+ }
+ 
+-static int omap_vout_open(struct inode *inode, struct file *file)
++static int omap_vout_open(struct file *file)
+ {
+-	int minor = MINOR(file->f_dentry->d_inode->i_rdev);
++	int minor = video_devdata(file)->minor;
+ 	struct omap_vout_device *vout = NULL;
+ 	struct omap_vout_fh *fh;
+ 	struct videobuf_queue *q;
+@@ -1606,9 +1606,8 @@ static const struct v4l2_ioctl_ops vout_ioctl_ops = {
+ 	.vidioc_streamon			= vidioc_streamon,
+ 	.vidioc_streamoff			= vidioc_streamoff,
+ };
+-static struct file_operations omap_vout_fops = {
++static struct v4l2_file_operations omap_vout_fops = {
+ 	.owner 		= THIS_MODULE,
+-	.llseek 	= no_llseek,
+ 	.ioctl 		= video_ioctl2,
+ 	.mmap 		= omap_vout_mmap,
+ 	.open 		= omap_vout_open,
+-- 
+1.5.6
+

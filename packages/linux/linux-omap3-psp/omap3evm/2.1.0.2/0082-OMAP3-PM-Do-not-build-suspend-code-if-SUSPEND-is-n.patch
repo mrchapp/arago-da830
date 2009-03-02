@@ -1,0 +1,55 @@
+From 12075c8decf23b63384cd27b3597ad0f3304aefd Mon Sep 17 00:00:00 2001
+From: Jouni Hogander <jouni.hogander@nokia.com>
+Date: Tue, 18 Nov 2008 14:42:36 +0200
+Subject: [PATCH 082/304] OMAP3: PM: Do not build suspend code if SUSPEND is not enabled
+
+Signed-off-by: Jouni Hogander <jouni.hogander@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/pm34xx.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index ffb195a..810cc8c 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -67,7 +67,9 @@
+ struct power_state {
+ 	struct powerdomain *pwrdm;
+ 	u32 next_state;
++#ifdef CONFIG_SUSPEND
+ 	u32 saved_state;
++#endif
+ 	struct list_head node;
+ };
+ 
+@@ -525,6 +527,7 @@ out:
+ 	local_irq_enable();
+ }
+ 
++#ifdef CONFIG_SUSPEND
+ static int omap3_pm_prepare(void)
+ {
+ 	saved_idle = pm_idle;
+@@ -599,6 +602,7 @@ static struct platform_suspend_ops omap_pm_ops = {
+ 	.finish		= omap3_pm_finish,
+ 	.valid		= suspend_valid_only_mem,
+ };
++#endif /* CONFIG_SUSPEND */
+ 
+ 
+ /**
+@@ -909,7 +913,10 @@ int __init omap3_pm_init(void)
+ 	core_pwrdm = pwrdm_lookup("core_pwrdm");
+ 
+ 	omap_push_sram_idle();
++
++#ifdef CONFIG_SUSPEND
+ 	suspend_set_ops(&omap_pm_ops);
++#endif /* CONFIG_SUSPEND */
+ 
+ 	pm_idle = omap3_pm_idle;
+ 	omap3_idle_init();
+-- 
+1.5.6
+

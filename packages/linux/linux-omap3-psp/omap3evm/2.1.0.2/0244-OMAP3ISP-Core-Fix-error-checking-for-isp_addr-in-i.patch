@@ -1,0 +1,27 @@
+From b1c8e0967e72f7979a577ce4695b346999eb3408 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:35 -0600
+Subject: [PATCH 244/304] OMAP3ISP: Core: Fix error checking for isp_addr in isp_vbq_prepare
+
+Signed-off-by: Vimarsh Zutshi <vimarsh.zutshi@nokia.com>
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/isp/isp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/video/isp/isp.c b/drivers/media/video/isp/isp.c
+index c2371f1..e03ce39 100644
+--- a/drivers/media/video/isp/isp.c
++++ b/drivers/media/video/isp/isp.c
+@@ -1472,7 +1472,7 @@ int isp_vbq_prepare(struct videobuf_queue *vbq, struct videobuf_buffer *vb,
+ 
+ 	isp_addr = ispmmu_map_sg(vdma->sglist, vdma->sglen);
+ 
+-	if (!isp_addr)
++	if (IS_ERR_VALUE(isp_addr))
+ 		err = -EIO;
+ 	else
+ 		bufs->isp_addr_capture[vb->i] = isp_addr;
+-- 
+1.5.6
+

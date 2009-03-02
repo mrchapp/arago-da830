@@ -1,0 +1,27 @@
+From d9d98ee9f076be7572b040c39b7a0df500e56794 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:28 -0600
+Subject: [PATCH 258/304] omap34xxcam: Fix module author e-mail.
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/omap34xxcam.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/video/omap34xxcam.c b/drivers/media/video/omap34xxcam.c
+index 7c8f682..aef42a0 100644
+--- a/drivers/media/video/omap34xxcam.c
++++ b/drivers/media/video/omap34xxcam.c
+@@ -2016,7 +2016,7 @@ static void __exit omap34xxcam_cleanup(void)
+ 	platform_driver_unregister(&omap34xxcam_driver);
+ }
+ 
+-MODULE_AUTHOR("Sakari Ailus <sakari.ailus@nokia.com");
++MODULE_AUTHOR("Sakari Ailus <sakari.ailus@nokia.com>");
+ MODULE_DESCRIPTION("OMAP34xx Video for Linux camera driver");
+ MODULE_LICENSE("GPL");
+ 
+-- 
+1.5.6
+

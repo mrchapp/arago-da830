@@ -1,0 +1,374 @@
+From 44ba4fc9263e7577c903ce954b8d1773dc16c765 Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Fri, 6 Feb 2009 12:04:30 +0530
+Subject: [PATCH 017/304] usb: ehci: update for mistral daughter card
+
+EHCI menuconfig option has been generalised to take care of Mistral
+daughter card on OMAP35xx EVM and other card on OMAP3430SDP etc.
+These options can be extended in future if required.
+
+EHCI issue1/issue2 is defined only for "Extension card 750-2083-001"
+on OMAP3430SDP.
+
+GPIO number is updated for Mistral daughter card on OMAP35xx EVM.
+---
+ arch/arm/mach-omap2/usb-ehci.c |   28 +++-----
+ drivers/usb/host/Kconfig       |  146 +++++++++++++++++++++++++++++++++++++---
+ drivers/usb/host/ehci-omap.c   |   51 +++++++++++---
+ 3 files changed, 186 insertions(+), 39 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/usb-ehci.c b/arch/arm/mach-omap2/usb-ehci.c
+index 6af0b02..8f3e34b 100644
+--- a/arch/arm/mach-omap2/usb-ehci.c
++++ b/arch/arm/mach-omap2/usb-ehci.c
+@@ -62,13 +62,7 @@ static struct platform_device ehci_device = {
+  */
+ static void setup_ehci_io_mux(void)
+ {
+-#ifdef CONFIG_OMAP_EHCI_PHY_MODE
+-	/* PHY mode of operation for board: 750-2083-001
+-	 * ISP1504 connected to Port1 and Port2
+-	 * Do Func Mux setting for 12-pin ULPI PHY mode
+-	 */
+-
+-	/* Port1 */
++#ifdef CONFIG_OMAP_EHCI_PHY_MODE_PORT1
+ 	omap_cfg_reg(Y9_3430_USB1HS_PHY_STP);
+ 	omap_cfg_reg(Y8_3430_USB1HS_PHY_CLK);
+ 	omap_cfg_reg(AA14_3430_USB1HS_PHY_DIR);
+@@ -81,8 +75,9 @@ static void setup_ehci_io_mux(void)
+ 	omap_cfg_reg(Y12_3430_USB1HS_PHY_DATA5);
+ 	omap_cfg_reg(W8_3430_USB1HS_PHY_DATA6);
+ 	omap_cfg_reg(Y13_3430_USB1HS_PHY_DATA7);
++#endif
+ 
+-	/* Port2 */
++#ifdef CONFIG_OMAP_EHCI_PHY_MODE_PORT2
+ 	omap_cfg_reg(AA10_3430_USB2HS_PHY_STP);
+ 	omap_cfg_reg(AA8_3430_USB2HS_PHY_CLK);
+ 	omap_cfg_reg(AA9_3430_USB2HS_PHY_DIR);
+@@ -95,14 +90,10 @@ static void setup_ehci_io_mux(void)
+ 	omap_cfg_reg(R3_3430_USB2HS_PHY_DATA5);
+ 	omap_cfg_reg(R4_3430_USB2HS_PHY_DATA6);
+ 	omap_cfg_reg(T2_3430_USB2HS_PHY_DATA7);
++#endif
+ 
+-#else
+-	/* Set Func mux for :
+-	 * TLL mode of operation
+-	 * 12-pin ULPI SDR TLL mode for Port1/2/3
+-	 */
+ 
+-	/* Port1 */
++#ifdef CONFIG_OMAP_EHCI_TLL_MODE_PORT1
+ 	omap_cfg_reg(Y9_3430_USB1HS_TLL_STP);
+ 	omap_cfg_reg(Y8_3430_USB1HS_TLL_CLK);
+ 	omap_cfg_reg(AA14_3430_USB1HS_TLL_DIR);
+@@ -115,8 +106,9 @@ static void setup_ehci_io_mux(void)
+ 	omap_cfg_reg(Y12_3430_USB1HS_TLL_DATA5);
+ 	omap_cfg_reg(W8_3430_USB1HS_TLL_DATA6);
+ 	omap_cfg_reg(Y13_3430_USB1HS_TLL_DATA7);
++#endif
+ 
+-	/* Port2 */
++#ifdef CONFIG_OMAP_EHCI_TLL_MODE_PORT2
+ 	omap_cfg_reg(AA10_3430_USB2HS_TLL_STP);
+ 	omap_cfg_reg(AA8_3430_USB2HS_TLL_CLK);
+ 	omap_cfg_reg(AA9_3430_USB2HS_TLL_DIR);
+@@ -129,8 +121,9 @@ static void setup_ehci_io_mux(void)
+ 	omap_cfg_reg(R3_3430_USB2HS_TLL_DATA5);
+ 	omap_cfg_reg(R4_3430_USB2HS_TLL_DATA6);
+ 	omap_cfg_reg(T2_3430_USB2HS_TLL_DATA7);
++#endif
+ 
+-	/* Port3 */
++#ifdef CONFIG_OMAP_EHCI_TLL_MODE_PORT3
+ 	omap_cfg_reg(AB3_3430_USB3HS_TLL_STP);
+ 	omap_cfg_reg(AA6_3430_USB3HS_TLL_CLK);
+ 	omap_cfg_reg(AA3_3430_USB3HS_TLL_DIR);
+@@ -143,8 +136,7 @@ static void setup_ehci_io_mux(void)
+ 	omap_cfg_reg(AB13_3430_USB3HS_TLL_DATA5);
+ 	omap_cfg_reg(AA13_3430_USB3HS_TLL_DATA6);
+ 	omap_cfg_reg(AA12_3430_USB3HS_TLL_DATA7);
+-#endif /* CONFIG_OMAP_EHCI_PHY_MODE */
+-
++#endif
+ 	return;
+ }
+ 
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 02df795..7949a16 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -42,23 +42,151 @@ config USB_EHCI_HCD
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called ehci-hcd.
+ choice
+-	prompt "PHY/TLL mode"
++	prompt "Daughter card used on OMAP35xx EVM"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX \
++		&& MACH_OMAP3EVM
++	---help---
++	Choose daughter card on OMAP35xx EVM
++
++config OMAP3EVM_MISTRAL_DC
++	bool "Mistral daughter card"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX
++	---help---
++	Select this if using Mistral daughter card on OMAP35xx EVM
++
++config OMAP3EVM_OTHER_DC
++	bool "Other daughter card"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX
++	---help---
++	Select this if using any other daughter card on OMAP35xx EVM
++endchoice
++
++choice
++	prompt "Daughter/Extension card used on OMAP3430SDP"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX \
++		&& MACH_OMAP_3430SDP
++	---help---
++	Choose daughter card on OMAP35xx EVM
++
++config OMAP3430SDP_750_2083_001
++	bool "External USB connectivity card: 750-2083-001"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX
++	---help---
++	Select this if using External USB connectivity board: 750-2083-001
++	on OMAP3430-SDP
++
++config OMAP3430SDP_OTHER
++	bool "Other extension card"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX
++	---help---
++	Select this if using any other board on OMAP3430-SDP
++endchoice
++
++menuconfig OMAP_EHCI
++	bool "Select PHY/TLL mode for USB ports on OMAP34xx/OMAP35xx"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX
++	default y
++	---help---
++	  Expansion board 750-2099-001(C) on OMAP SDP has,
++	  Port1 connected to ISP1504
++	  Port2 connected to ISP1504
++	  Port3 connected to ISP1301
++
++	  Mistral/Multimedia daughter card on OMAP35xx EVM has only Port2
++	  connected to SMSC USB83320 phy in ULPI mode.Menuconfig will
++	  automatically select only Port2 in PHY mode if Mistral daughter
++	  card is defined.
++
++	  OMAP34xx/35xx silicon rev will be checked at runtime and the
++	  USB ports will be programmed accordingly.
++
++	  In ES2.0/2.1 all the three USB ports can either be in PHY mode
++	  or in TLL mode.Thus don't select one port in PHY mode and other
++	  in TLL mode for ES2.0/2.1 silicon.
++
++	  In ES3.0/3.1 each of the three USB ports can either be in PHY mode
++	  or in TLL mode individually.
++
++choice
++	prompt "Port1 in PHY/TLL mode" if OMAP_EHCI
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX \
++			&& !OMAP3EVM_MISTRAL_DC
++	---help---
++	Choose PHY or TLL mode of operation for Port1
++
++config OMAP_EHCI_PHY_MODE_PORT1
++	bool "PHY mode"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX
++	---help---
++	  Port1 in PHY mode
++
++config OMAP_EHCI_TLL_MODE_PORT1
++	bool "TLL mode"
+ 	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX
+ 	---help---
+-	Choose PHY or TLL mode of operation
++	  Port1 in TLL mode
+ 
+-config OMAP_EHCI_PHY_MODE
+-	bool "PHY mode: ISP1504 on Port1/2 (NEW 3430ES2.0)"
++config OMAP_EHCI_PORT1_NC
++	bool "Not Connected"
+ 	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX
+ 	---help---
+-	  EHCI PHY mode. Port1 and Port2 are connected to ISP1504 transcievers
++	  Port1 not connected
+ 
+-config OMAP_EHCI_TLL_MODE
+-	bool "TLL mode: (EXPERIMENTAL)"
++endchoice
++
++choice
++	prompt "Port2 in PHY/TLL mode" if OMAP_EHCI
+ 	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX
+ 	---help---
+-	OMAP EHCI controller has TLL mode of operation for all 3 ports.
+-	Use this mode when no transciever is present
++	Choose PHY or TLL mode of operation for Port2
++
++config OMAP_EHCI_PHY_MODE_PORT2
++	bool "PHY mode"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX
++	---help---
++	  Port2 in PHY mode
++
++config OMAP_EHCI_TLL_MODE_PORT2
++	bool "TLL mode"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX \
++			&& !OMAP3EVM_MISTRAL_DC
++	---help---
++	  Port2 in TLL mode
++
++config OMAP_EHCI_PORT2_NC
++	bool "Not Connected"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX \
++			&& !OMAP3EVM_MISTRAL_DC
++	---help---
++	  Port2 not connected
++
++endchoice
++
++choice
++	prompt "Port3 in PHY/TLL mode" if OMAP_EHCI
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX \
++			&& !OMAP3EVM_MISTRAL_DC
++	---help---
++	Choose PHY or TLL mode of operation for Port2
++
++config OMAP_EHCI_PHY_MODE_PORT3
++	bool "PHY mode"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX
++	---help---
++	  Port3 in PHY mode
++
++config OMAP_EHCI_TLL_MODE_PORT3
++	bool "TLL mode"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX
++	---help---
++	  Port3 in TLL mode
++
++config OMAP_EHCI_PORT23_NC
++	bool "Not Connected"
++	depends on USB_EHCI_HCD && EXPERIMENTAL && ARCH_OMAP34XX
++	---help---
++	  Port3 not connected
++
+ endchoice
+ 
+ config USB_EHCI_ROOT_HUB_TT
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index 76d9f1b..6b751d4 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -32,34 +32,47 @@
+ #include "ehci-omap.h"
+ 
+ 
+-#ifdef CONFIG_OMAP_EHCI_PHY_MODE
+ /* EHCI connected to External PHY */
+ 
+ /* External USB connectivity board: 750-2083-001
+  * Connected to OMAP3430 SDP
+  * The board has Port1 and Port2 connected to ISP1504 in 12-pin ULPI mode
++ * Mistral/Multimedia daughter card connected to OMAP3EVM
++ * The board has only Port2 connected to SMSC USB83320 in 12-pin ULPI mode
+  */
++#ifdef CONFIG_OMAP3EVM_MISTRAL_DC
++#define EXT_PHY_RESET_GPIO_PORT2        (135)
++#elif CONFIG_OMAP3430SDP_750_2083_001
++#define	EXT_PHY_RESET_GPIO_PORT1	(57)
++#define	EXT_PHY_RESET_GPIO_PORT2	(61)
++#endif
++
++#if defined(CONFIG_OMAP_EHCI_PHY_MODE_PORT1)	|| \
++	defined(CONFIG_OMAP_EHCI_PHY_MODE_PORT2)
+ 
++#ifdef CONFIG_OMAP3430SDP_750_2083_001
+ /* ISSUE1:
+  *      ISP1504 for input clocking mode needs special reset handling
+  *	Hold the PHY in reset by asserting RESET_N signal
+  *	Then start the 60Mhz clock input to PHY
+  *	Release the reset after a delay -
+  *		to get the PHY state machine in working state
++ *     On Mistral/Multimedia daughter card we didn't see this issue, so
++ *     it's not defined for it.
+  */
+ #define EXTERNAL_PHY_RESET
+-#define	EXT_PHY_RESET_GPIO_PORT1	(57)
+-#define	EXT_PHY_RESET_GPIO_PORT2	(61)
+ #define	EXT_PHY_RESET_DELAY		(10)
+ 
+ /* ISSUE2:
+  * USBHOST supports External charge pump PHYs only
+  * Use the VBUS from Port1 to power VBUS of Port2 externally
+  * So use Port2 as the working ULPI port
++ * This is not required for Mistral/Multimedia daughter card on OMAP3EVM.
+  */
+ #define VBUS_INTERNAL_CHARGEPUMP_HACK
++#endif /* CONFIG_OMAP3430SDP_750_2083_001 */
+ 
+-#endif /* CONFIG_OMAP_EHCI_PHY_MODE */
++#endif
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -81,7 +94,9 @@ struct ehci_omap_clock_defs {
+ /*-------------------------------------------------------------------------*/
+ 
+ 
+-#ifndef CONFIG_OMAP_EHCI_PHY_MODE
++#if defined(CONFIG_OMAP_EHCI_TLL_MODE_PORT1) ||	\
++	defined(CONFIG_OMAP_EHCI_TLL_MODE_PORT2) || \
++	defined(CONFIG_OMAP_EHCI_TLL_MODE_PORT3)
+ 
+ static void omap_usb_utmi_init(struct usb_hcd *hcd, u8 tll_channel_mask)
+ {
+@@ -280,7 +295,9 @@ static int omap_start_ehc(struct platform_device *dev, struct usb_hcd *hcd)
+ 			(1 << OMAP_UHH_SYSCONFIG_MIDLEMODE_SHIFT),
+ 			OMAP_UHH_SYSCONFIG);
+ 
+-#ifdef CONFIG_OMAP_EHCI_PHY_MODE
++#if defined(CONFIG_OMAP_EHCI_PHY_MODE_PORT1) || \
++	defined(CONFIG_OMAP_EHCI_PHY_MODE_PORT2) || \
++	defined(CONFIG_OMAP_EHCI_PHY_MODE_PORT3)
+ 	/* Bypass the TLL module for PHY mode operation */
+ 	omap_writel((0 << OMAP_UHH_HOSTCONFIG_ULPI_BYPASS_SHIFT)|
+ 			(1<<OMAP_UHH_HOSTCONFIG_INCR4_BURST_EN_SHIFT)|
+@@ -294,13 +311,23 @@ static int omap_start_ehc(struct platform_device *dev, struct usb_hcd *hcd)
+ 		cpu_relax();
+ 
+ 	dev_dbg(hcd->self.controller, "Entered ULPI PHY MODE: success\n");
++#endif
+ 
+-#else
+-	/* Enable UTMI mode for all 3 TLL channels */
+-	omap_usb_utmi_init(hcd,
+-		OMAP_TLL_CHANNEL_1_EN_MASK |
+-		OMAP_TLL_CHANNEL_2_EN_MASK |
+-		OMAP_TLL_CHANNEL_3_EN_MASK
++
++#if defined(CONFIG_OMAP_EHCI_TLL_MODE_PORT1) || \
++	defined(CONFIG_OMAP_EHCI_TLL_MODE_PORT2) || \
++	defined(CONFIG_OMAP_EHCI_TLL_MODE_PORT3)
++	/* Enable UTMI mode for all selected TLL channels */
++	omap_usb_utmi_init(hcd, 0
++#ifdef CONFIG_OMAP_EHCI_TLL_MODE_PORT1
++		| OMAP_TLL_CHANNEL_1_EN_MASK
++#endif
++#ifdef CONFIG_OMAP_EHCI_TLL_MODE_PORT2
++		| OMAP_TLL_CHANNEL_2_EN_MASK
++#endif
++#ifdef CONFIG_OMAP_EHCI_TLL_MODE_PORT3
++		| OMAP_TLL_CHANNEL_3_EN_MASK
++#endif
+ 		);
+ #endif
+ 
+-- 
+1.5.6
+

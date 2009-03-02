@@ -1,0 +1,1062 @@
+From fe019ca7a677441d058648aad8283b52cf42e8f3 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Wed, 14 Jan 2009 20:07:33 +0530
+Subject: [PATCH 178/304] Merged Latest Tomi's changes
+
+Merged Latest Tomi's changes from VRFB branch, added
+follwing fixes -
+
+        - VRFB adress calculation fix
+	- def_rotation initialized to -1
+---
+ arch/arm/plat-omap/dss/display.c           |   20 ++-
+ arch/arm/plat-omap/dss/dsi.c               |   41 ++++
+ arch/arm/plat-omap/fb-vrfb.c               |    2 +-
+ arch/arm/plat-omap/include/mach/display.h  |   16 ++-
+ arch/arm/plat-omap/include/mach/omap34xx.h |   13 --
+ arch/arm/plat-omap/include/mach/omapfb.h   |    6 +-
+ drivers/video/omap2/omapfb-ioctl.c         |   14 +-
+ drivers/video/omap2/omapfb-main.c          |  324 ++++++++++++++++++----------
+ drivers/video/omap2/omapfb-sysfs.c         |   52 ++++-
+ drivers/video/omap2/omapfb.h               |   25 +--
+ 10 files changed, 346 insertions(+), 167 deletions(-)
+ mode change 100644 => 100755 arch/arm/plat-omap/dss/display.c
+ mode change 100644 => 100755 arch/arm/plat-omap/dss/dsi.c
+ mode change 100644 => 100755 arch/arm/plat-omap/fb-vrfb.c
+ mode change 100644 => 100755 arch/arm/plat-omap/include/mach/display.h
+ mode change 100644 => 100755 arch/arm/plat-omap/include/mach/omap34xx.h
+ mode change 100644 => 100755 arch/arm/plat-omap/include/mach/omapfb.h
+ mode change 100644 => 100755 drivers/video/omap2/omapfb-ioctl.c
+ mode change 100644 => 100755 drivers/video/omap2/omapfb-main.c
+ mode change 100644 => 100755 drivers/video/omap2/omapfb-sysfs.c
+ mode change 100644 => 100755 drivers/video/omap2/omapfb.h
+
+diff --git a/arch/arm/plat-omap/dss/display.c b/arch/arm/plat-omap/dss/display.c
+old mode 100644
+new mode 100755
+index 375bc8d..53265de
+--- a/arch/arm/plat-omap/dss/display.c
++++ b/arch/arm/plat-omap/dss/display.c
+@@ -72,6 +72,13 @@ void uninitialize_sysfs(struct device *dev)
+ 	device_remove_file(dev, &dev_attr_clk);
+ }
+ 
++static void default_get_resolution(struct omap_display *display,
++			int *xres, int *yres)
++{
++	*xres = display->panel->timings.x_res;
++	*yres = display->panel->timings.y_res;
++}
++
+ void initialize_displays(struct omap_dss_platform_data *pdata)
+ {
+ 	int i;
+@@ -90,6 +97,8 @@ void initialize_displays(struct omap_dss_platform_data *pdata)
+ 		display->type = pdata->displays[i]->type;
+ 		display->name = pdata->displays[i]->name;
+ 
++		display->get_resolution = default_get_resolution;
++
+ 		switch (display->type) {
+ 
+ 		case OMAP_DISPLAY_TYPE_DPI:
+@@ -131,6 +140,7 @@ static int check_overlay(struct omap_overlay *ovl,
+ {
+ 	struct omap_overlay_info *info;
+ 	int outw, outh;
++	int dw, dh;
+ 
+ 	if (!display)
+ 		return 0;
+@@ -155,11 +165,17 @@ static int check_overlay(struct omap_overlay *ovl,
+ 			outh = info->out_height;
+ 	}
+ 
+-	if (display->panel->timings.x_res < info->pos_x + outw)
++	display->get_resolution(display, &dw, &dh);
++
++	if (dw < info->pos_x + outw) {
++		DSSDBG("check_overlay failed 1\n");
+ 		return -EINVAL;
++	}
+ 
+-	if (display->panel->timings.y_res < info->pos_y + outh)
++	if (dh < info->pos_y + outh) {
++		DSSDBG("check_overlay failed 2\n");
+ 		return -EINVAL;
++	}
+ 
+ 	return 0;
+ }
+diff --git a/arch/arm/plat-omap/dss/dsi.c b/arch/arm/plat-omap/dss/dsi.c
+old mode 100644
+new mode 100755
+index e279571..51c7656
+--- a/arch/arm/plat-omap/dss/dsi.c
++++ b/arch/arm/plat-omap/dss/dsi.c
+@@ -3063,6 +3063,43 @@ static int dsi_display_get_te(struct omap_display *display)
+ 	return dsi.use_te;
+ }
+ 
++
++
++static int dsi_display_set_rotate(struct omap_display *display, int rotate)
++{
++	DSSDBG("dsi_display_set_rotate\n");
++
++	if (!display->ctrl->set_rotate || !display->ctrl->get_rotate)
++		return -EINVAL;
++
++	mutex_lock(&dsi.lock);
++
++	enable_clocks(1);
++	dsi_enable_pll_clock(1);
++
++	dsi_set_update_mode(display, OMAP_DSS_UPDATE_DISABLED);
++
++	display->ctrl->set_rotate(display, rotate);
++
++	/* restore the old update mode */
++	dsi_set_update_mode(display, dsi.user_update_mode);
++
++	enable_clocks(0);
++	dsi_enable_pll_clock(0);
++
++	mutex_unlock(&dsi.lock);
++
++	return 0;
++}
++
++static int dsi_display_get_rotate(struct omap_display *display)
++{
++	if (!display->ctrl->set_rotate || !display->ctrl->get_rotate)
++		return 0;
++
++	return display->ctrl->get_rotate(display);
++}
++
+ static int dsi_display_run_test(struct omap_display *display, int test_num)
+ {
+ 	int r = 0;
+@@ -3131,6 +3168,10 @@ void dsi_init_display(struct omap_display *display)
+ 	display->get_update_mode = dsi_display_get_update_mode;
+ 	display->enable_te = dsi_display_enable_te;
+ 	display->get_te = dsi_display_get_te;
++
++	display->get_rotate = dsi_display_get_rotate;
++	display->set_rotate = dsi_display_set_rotate;
++
+ 	display->run_test = dsi_display_run_test;
+ 
+ 	display->caps = OMAP_DSS_DISPLAY_CAP_MANUAL_UPDATE;
+diff --git a/arch/arm/plat-omap/fb-vrfb.c b/arch/arm/plat-omap/fb-vrfb.c
+old mode 100644
+new mode 100755
+index 741ad05..5ea0279
+--- a/arch/arm/plat-omap/fb-vrfb.c
++++ b/arch/arm/plat-omap/fb-vrfb.c
+@@ -8,7 +8,7 @@
+ #endif
+ 
+ #define SMS_ROT_VIRT_BASE(context, rot) \
+-		(((context >= 4) ? 0xE0000000 : 0x70000000) \
++		(((context >= 4) ? 0xD0000000 : 0x70000000) \
+ 		| 0x4000000 * (context) \
+ 		| 0x1000000 * (rot))
+ 
+diff --git a/arch/arm/plat-omap/include/mach/display.h b/arch/arm/plat-omap/include/mach/display.h
+old mode 100644
+new mode 100755
+index 48af269..a1d9f58
+--- a/arch/arm/plat-omap/include/mach/display.h
++++ b/arch/arm/plat-omap/include/mach/display.h
+@@ -247,8 +247,11 @@ struct omap_ctrl {
+ 
+ 	int (*enable_te)(struct omap_display *display, int enable);
+ 
+-	int (*rotate)(struct omap_display *display, int rotate);
+-	int (*mirror)(struct omap_display *display, int enable);
++	int (*get_rotate)(struct omap_display *display);
++	int (*set_rotate)(struct omap_display *display, int rotate);
++
++	int (*get_mirror)(struct omap_display *display);
++	int (*set_mirror)(struct omap_display *display, int enable);
+ 
+ 	int (*run_test)(struct omap_display *display, int test);
+ 
+@@ -423,6 +426,9 @@ struct omap_display {
+ 	int (*suspend)(struct omap_display *display);
+ 	int (*resume)(struct omap_display *display);
+ 
++	void (*get_resolution)(struct omap_display *display,
++			int *xres, int *yres);
++
+ 	int (*check_timings)(struct omap_display *display,
+ 			struct omap_video_timings *timings);
+ 	void (*set_timings)(struct omap_display *display,
+@@ -441,6 +447,12 @@ struct omap_display {
+ 	int (*enable_te)(struct omap_display *display, int enable);
+ 	int (*get_te)(struct omap_display *display);
+ 
++	int (*get_rotate)(struct omap_display *display);
++	int (*set_rotate)(struct omap_display *display, int rotate);
++
++	int (*get_mirror)(struct omap_display *display);
++	int (*set_mirror)(struct omap_display *display, int enable);
++
+ 	int (*run_test)(struct omap_display *display, int test);
+ };
+ 
+diff --git a/arch/arm/plat-omap/include/mach/omap34xx.h b/arch/arm/plat-omap/include/mach/omap34xx.h
+old mode 100644
+new mode 100755
+index 666fb7f..382e741
+--- a/arch/arm/plat-omap/include/mach/omap34xx.h
++++ b/arch/arm/plat-omap/include/mach/omap34xx.h
+@@ -59,19 +59,6 @@
+ #define OMAP34XX_CAMERA_BASE		(L4_34XX_BASE + 0xBC000)
+ #define OMAP34XX_MAILBOX_BASE		(L4_34XX_BASE + 0x94000)
+ 
+-#define OMAP34XX_VRFB_CTX0	0x70000000
+-#define OMAP34XX_VRFB_CTX1	0x74000000
+-#define OMAP34XX_VRFB_CTX2	0x78000000
+-#define OMAP34XX_VRFB_CTX3	0x7C000000
+-#define OMAP34XX_VRFB_CTX4	0xE0000000
+-#define OMAP34XX_VRFB_CTX5	0xE4000000
+-#define OMAP34XX_VRFB_CTX6	0xE8000000
+-#define OMAP34XX_VRFB_CTX7	0xEC000000
+-#define OMAP34XX_VRFB_CTX8	0xF0000000
+-#define OMAP34XX_VRFB_CTX9	0xF4000000
+-#define OMAP34XX_VRFB_CTX10	0xF8000000
+-#define OMAP34XX_VRFB_CTX11	0xFC000000
+-#define OMAP34XX_VRFB_CTX_SIZE	0x4000000
+ 
+ #if defined(CONFIG_ARCH_OMAP3430)
+ 
+diff --git a/arch/arm/plat-omap/include/mach/omapfb.h b/arch/arm/plat-omap/include/mach/omapfb.h
+old mode 100644
+new mode 100755
+index c26d5db..bcf4245
+--- a/arch/arm/plat-omap/include/mach/omapfb.h
++++ b/arch/arm/plat-omap/include/mach/omapfb.h
+@@ -413,6 +413,9 @@ struct vrfb
+ 	int context;
+ 	void *vaddr[4];
+ 	unsigned long paddr[4];
++	int xoffset;
++	int yoffset;
++	int bytespp;
+ };
+ 
+ /*
+@@ -422,7 +425,8 @@ struct vrfb
+  */
+ #define VRFB_SIZE (2048 * 720 * 4)
+ 
+-void omap_vrfb_setup(int ctx, unsigned long paddr, u32 width, u32 height,
++void omap_vrfb_setup(int ctx, unsigned long paddr,
++		u32 width, u32 height,
+ 		int bytespp);
+ void omap_vrfb_release_ctx(struct vrfb *vrfb);
+ int omap_vrfb_create_ctx(struct vrfb *vrfb);
+diff --git a/drivers/video/omap2/omapfb-ioctl.c b/drivers/video/omap2/omapfb-ioctl.c
+old mode 100644
+new mode 100755
+index c33b2a7..820242e
+--- a/drivers/video/omap2/omapfb-ioctl.c
++++ b/drivers/video/omap2/omapfb-ioctl.c
+@@ -73,13 +73,15 @@ static int omapfb_setup_plane(struct fb_info *fbi, struct omapfb_plane_info *pi)
+ 		ovl->manager->apply(ovl->manager);
+ 
+ 	if (display) {
++		int w, h;
++
+ 		if (display->sync)
+ 			display->sync(display);
+ 
++		display->get_resolution(display, &w, &h);
++
+ 		if (display->update)
+-			display->update(display, 0, 0,
+-					display->panel->timings.x_res,
+-					display->panel->timings.y_res);
++			display->update(display, 0, 0, w, h);
+ 	}
+ 
+ out:
+@@ -205,6 +207,7 @@ static int omapfb_update_window(struct fb_info *fbi,
+ 	struct omapfb_info *ofbi = FB2OFB(fbi);
+ 	struct omapfb2_device *fbdev = ofbi->fbdev;
+ 	struct omap_display *display = fb2display(fbi);
++	int dw, dh;
+ 
+ 	if (!display)
+ 		return 0;
+@@ -212,8 +215,9 @@ static int omapfb_update_window(struct fb_info *fbi,
+ 	if (w == 0 || h == 0)
+ 		return 0;
+ 
+-	if (x + w > display->panel->timings.x_res ||
+-			y + h > display->panel->timings.y_res)
++	display->get_resolution(display, &dw, &dh);
++
++	if (x + w > dw || y + h > dh)
+ 		return -EINVAL;
+ 
+ 	omapfb_lock(fbdev);
+diff --git a/drivers/video/omap2/omapfb-main.c b/drivers/video/omap2/omapfb-main.c
+old mode 100644
+new mode 100755
+index d03418a..a6654d9
+--- a/drivers/video/omap2/omapfb-main.c
++++ b/drivers/video/omap2/omapfb-main.c
+@@ -39,6 +39,7 @@
+ 
+ static char *def_mode;
+ static char *def_vram;
++static int def_rotate_type;
+ static int def_rotate = -1;
+ 
+ #define VRFB_WIDTH 2048
+@@ -49,8 +50,9 @@ module_param_named(debug, omapfb_debug, bool, 0644);
+ #endif
+ 
+ #ifdef DEBUG
+-static void fill_fb(void *addr, struct fb_info *fbi)
++static void fill_fb(struct fb_info *fbi)
+ {
++	struct omapfb_info *ofbi = FB2OFB(fbi);
+ 	struct fb_var_screeninfo *var = &fbi->var;
+ 	struct fb_fix_screeninfo *fix = &fbi->fix;
+ 
+@@ -59,8 +61,9 @@ static void fill_fb(void *addr, struct fb_info *fbi)
+ 	const int bytespp = var->bits_per_pixel >> 3;
+ 	const int row_inc = fix->line_length / bytespp - w;
+ 
+-	int y, x;
++	void *addr = omapfb_get_region_vaddr(ofbi);
+ 	u8 *p = addr;
++	int y, x;
+ 
+ 	DBG("fill_fb %dx%d, line_len %d\n", w, h, fix->line_length);
+ 
+@@ -144,6 +147,72 @@ static void fill_fb(void *addr, struct fb_info *fbi)
+ }
+ #endif
+ 
++static unsigned omapfb_get_vrfb_offset(struct omapfb_info *ofbi, int rot)
++{
++	struct vrfb *vrfb = &ofbi->region.vrfb;
++	unsigned offset;
++
++	switch (rot) {
++	case FB_ROTATE_UR:
++		offset = 0;
++		break;
++	case FB_ROTATE_CW:
++		offset = vrfb->yoffset * vrfb->bytespp;
++		break;
++	case FB_ROTATE_UD:
++		offset = (vrfb->yoffset * VRFB_WIDTH + vrfb->xoffset) *
++			vrfb->bytespp;
++		break;
++	case FB_ROTATE_CCW:
++		offset = vrfb->xoffset * vrfb->bytespp;
++		break;
++	default:
++		BUG();
++	}
++
++	return offset;
++}
++
++u32 omapfb_get_region_paddr(struct omapfb_info *ofbi)
++{
++	if (ofbi->rotation_type == OMAPFB_ROT_VRFB) {
++		int rot;
++		unsigned offset;
++
++		if (ofbi->rotation == FB_ROTATE_CW)
++			rot = FB_ROTATE_CCW;
++		else if (ofbi->rotation == FB_ROTATE_CCW)
++			rot = FB_ROTATE_CW;
++		else
++			rot = ofbi->rotation;
++
++		offset = omapfb_get_vrfb_offset(ofbi, rot);
++
++		return ofbi->region.vrfb.paddr[rot] + offset;
++	} else
++		return ofbi->region._paddr;
++}
++
++void *omapfb_get_region_vaddr(struct omapfb_info *ofbi)
++{
++	if (ofbi->rotation_type == OMAPFB_ROT_VRFB) {
++		int rot;
++		unsigned offset;
++
++		if (ofbi->rotation == FB_ROTATE_CW)
++			rot = FB_ROTATE_CCW;
++		else if (ofbi->rotation == FB_ROTATE_CCW)
++			rot = FB_ROTATE_CW;
++		else
++			rot = ofbi->rotation;
++
++		offset = omapfb_get_vrfb_offset(ofbi, rot);
++
++		return ofbi->region.vrfb.vaddr[rot] + offset;
++	} else
++		return ofbi->region._vaddr;
++}
++
+ static enum omap_color_mode fb_mode_to_dss_mode(struct fb_var_screeninfo *var)
+ {
+ 	switch (var->nonstd) {
+@@ -205,20 +274,18 @@ void set_fb_fix(struct fb_info *fbi)
+ 	DBG("set_fb_fix\n");
+ 
+ 	/* used by open/write in fbmem.c */
+-	fbi->screen_base = (char __iomem *)omapfb_get_region_vaddr(rg,
+-			ofbi->rotation);
+-
++	fbi->screen_base = (char __iomem *)omapfb_get_region_vaddr(ofbi);
+ 
+ 	/* used by mmap in fbmem.c */
+-	if (ofbi->rotation == -1)
+-		fix->line_length = (var->xres_virtual * var->bits_per_pixel) >> 3;
+-	else
++	if (ofbi->rotation_type == OMAPFB_ROT_VRFB)
+ 		fix->line_length = (VRFB_WIDTH * var->bits_per_pixel) >> 3;
+-	fix->smem_start = omapfb_get_region_paddr(rg, ofbi->rotation);
+-	if (ofbi->rotation == -1)
+-		fix->smem_len = rg->size;
+ 	else
++		fix->line_length = (var->xres_virtual * var->bits_per_pixel) >> 3;
++	fix->smem_start = omapfb_get_region_paddr(ofbi);
++	if (ofbi->rotation_type == OMAPFB_ROT_VRFB)
+ 		fix->smem_len = var->yres_virtual * fix->line_length;
++	else
++		fix->smem_len = rg->size;
+ 
+ 	fix->type = FB_TYPE_PACKED_PIXELS;
+ 
+@@ -250,7 +317,8 @@ void set_fb_fix(struct fb_info *fbi)
+ 	if (rg->size) {
+ 		int w, h;
+ 
+-		if (ofbi->rotation == 1 || ofbi->rotation == 3) {
++		if (ofbi->rotation == FB_ROTATE_CW ||
++				ofbi->rotation == FB_ROTATE_CCW) {
+ 			w = var->yres_virtual;
+ 			h = var->xres_virtual;
+ 		} else {
+@@ -271,8 +339,8 @@ int check_fb_var(struct fb_info *fbi, struct fb_var_screeninfo *var)
+ 	struct omap_display *display = fb2display(fbi);
+ 	unsigned long max_frame_size;
+ 	unsigned long line_size;
+-	int xres_min, xres_max;
+-	int yres_min, yres_max;
++	int xres_min;
++	int yres_min;
+ 	enum omap_color_mode mode = 0;
+ 	struct omap_overlay *ovl;
+ 
+@@ -321,18 +389,28 @@ int check_fb_var(struct fb_info *fbi, struct fb_var_screeninfo *var)
+ 		return -EINVAL;
+ 	}
+ 
+-	xres_min = OMAPFB_PLANE_XRES_MIN;
+-	yres_min = OMAPFB_PLANE_YRES_MIN;
++	if (var->rotate != fbi->var.rotate) {
++		DBG("rotation changing\n");
+ 
+-	if (ofbi->rotation == 1 || ofbi->rotation == 3) {
+-		/* XXX pos_x/y affects? */
+-		xres_max = (display ? display->panel->timings.y_res : 2048) - ovl->info.pos_x;
+-		yres_max = (display ? display->panel->timings.x_res : 2048) - ovl->info.pos_y;
+-	} else {
+-		xres_max = (display ? display->panel->timings.x_res : 2048) - ovl->info.pos_x;
+-		yres_max = (display ? display->panel->timings.y_res : 2048) - ovl->info.pos_y;
++		ofbi->rotation = var->rotate;
++
++		if (abs(var->rotate - fbi->var.rotate) != 2) {
++			int tmp;
++			DBG("rotate changing 90/270 degrees. swapping x/y res\n");
++
++			tmp = var->yres;
++			var->yres = var->xres;
++			var->xres = tmp;
++
++			tmp = var->yres_virtual;
++			var->yres_virtual = var->xres_virtual;
++			var->xres_virtual = tmp;
++		}
+ 	}
+ 
++	xres_min = OMAPFB_PLANE_XRES_MIN;
++	yres_min = OMAPFB_PLANE_YRES_MIN;
++
+ 	if (var->xres < xres_min)
+ 		var->xres = xres_min;
+ 	if (var->yres < yres_min)
+@@ -457,15 +535,15 @@ static int omapfb_release(struct fb_info *fbi, int user)
+ 	omapfb_lock(fbdev);
+ #if 1
+ 	if (display) {
++		int w, h;
+ 		/* XXX Is this really needed ? */
+ 		if (display->sync)
+ 			display->sync(display);
+ 
++		display->get_resolution(display, &w, &h);
++
+ 		if (display->update)
+-			display->update(display,
+-					0, 0,
+-					display->panel->timings.x_res,
+-					display->panel->timings.y_res);
++			display->update(display, 0, 0, w, h);
+ 	}
+ #endif
+ 
+@@ -484,11 +562,13 @@ int omapfb_setup_overlay(struct fb_info *fbi, struct omap_overlay *ovl,
+ 	int r = 0;
+ 	struct omapfb_info *ofbi = FB2OFB(fbi);
+ 	struct fb_var_screeninfo *var = &fbi->var;
++	struct fb_fix_screeninfo *fix = &fbi->fix;
+ 	enum omap_color_mode mode = 0;
+ 	int offset;
+ 	u32 data_start_p;
+ 	void *data_start_v;
+ 	int xres, yres;
++	int screen_width;
+ 
+ 	DBG("setup_overlay %d\n", ofbi->id);
+ 
+@@ -501,13 +581,13 @@ int omapfb_setup_overlay(struct fb_info *fbi, struct omap_overlay *ovl,
+ 	offset = ((var->yoffset * var->xres_virtual +
+ 				var->xoffset) * var->bits_per_pixel) >> 3;
+ 
+-	if (ofbi->rotation == -1) {
+-		data_start_p = omapfb_get_region_paddr(&ofbi->region, -1);
+-		data_start_v = omapfb_get_region_vaddr(&ofbi->region, -1);
+-	} else {
++	if (ofbi->rotation_type == OMAPFB_ROT_VRFB) {
+ 		/* setup DSS's view to always 0 degrees */
+-		data_start_p = omapfb_get_region_paddr(&ofbi->region, 0);
+-		data_start_v = omapfb_get_region_vaddr(&ofbi->region, 0);
++		data_start_p = ofbi->region.vrfb.paddr[0];
++		data_start_v = ofbi->region.vrfb.vaddr[0];
++	} else {
++		data_start_p = omapfb_get_region_paddr(ofbi);
++		data_start_v = omapfb_get_region_vaddr(ofbi);
+ 	}
+ 
+ 	data_start_p += offset;
+@@ -520,7 +600,7 @@ int omapfb_setup_overlay(struct fb_info *fbi, struct omap_overlay *ovl,
+ 		goto err;
+ 	}
+ 
+-	if (ofbi->rotation == 1 || ofbi->rotation == 3) {
++	if (ofbi->rotation == FB_ROTATE_CW || ofbi->rotation == FB_ROTATE_CCW) {
+ 		int tmp;
+ 		xres = var->yres;
+ 		yres = var->xres;
+@@ -532,10 +612,12 @@ int omapfb_setup_overlay(struct fb_info *fbi, struct omap_overlay *ovl,
+ 		yres = var->yres;
+ 	}
+ 
++	screen_width = fix->line_length / (var->bits_per_pixel >> 3);
++
+ 	r = ovl->setup_input(ovl,
+ 			data_start_p, data_start_v,
+ 			var->xres_virtual*var->bits_per_pixel/8,
+-			ofbi->rotation == -1 ? var->xres_virtual : VRFB_WIDTH,
++			screen_width,
+ 			xres, yres, mode,
+ 			ofbi->rotation == -1 ? ofbi->rotation :ofbi->rotation*90,
+ 			-1);
+@@ -636,12 +718,6 @@ static int omapfb_set_par(struct fb_info *fbi)
+ 	return r;
+ }
+ 
+-static void omapfb_rotate(struct fb_info *fbi, int rotate)
+-{
+-	DBG("rotate(%d)\n", FB2OFB(fbi)->id);
+-	return;
+-}
+-
+ static int omapfb_pan_display(struct fb_var_screeninfo *var,
+ 		struct fb_info *fbi)
+ {
+@@ -698,21 +774,19 @@ static int omapfb_mmap(struct fb_info *fbi, struct vm_area_struct *vma)
+ {
+ 	struct omapfb_info *ofbi = FB2OFB(fbi);
+ 	struct fb_fix_screeninfo *fix = &fbi->fix;
+-	struct omapfb2_mem_region *rg = &ofbi->region;
+ 	unsigned long off;
+ 	unsigned long start;
+ 	u32 len;
+ 
++	DBG("MMAP ROT %d\n", ofbi->rotation);
++
+ 	if (vma->vm_end - vma->vm_start == 0)
+ 		return 0;
+ 	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT))
+ 		return -EINVAL;
+ 	off = vma->vm_pgoff << PAGE_SHIFT;
+ 
+-	start = omapfb_get_region_paddr(rg, ofbi->rotation);
+-	if (ofbi->rotation == -1)
+-		len = rg->size;
+-	else
++	start = omapfb_get_region_paddr(ofbi);
+ 		len = fix->smem_len;
+ 	if (off >= len)
+ 		return -EINVAL;
+@@ -875,11 +949,12 @@ static int omapfb_blank(int blank, struct fb_info *fbi)
+ exit:
+ 	omapfb_unlock(fbdev);
+ 
+-	if (r == 0 && do_update && display->update)
+-		r = display->update(display,
+-				0, 0,
+-				display->panel->timings.x_res,
+-				display->panel->timings.y_res);
++	if (r == 0 && do_update && display->update) {
++		int w, h;
++		display->get_resolution(display, &w, &h);
++
++		r = display->update(display, 0, 0, w, h);
++	}
+ 
+ 	return r;
+ }
+@@ -903,7 +978,6 @@ static struct fb_ops omapfb_ops = {
+ 	.fb_ioctl       = omapfb_ioctl,
+ 	.fb_check_var   = omapfb_check_var,
+ 	.fb_set_par     = omapfb_set_par,
+-	.fb_rotate      = omapfb_rotate,
+ 	.fb_pan_display = omapfb_pan_display,
+ 	.fb_mmap	= omapfb_mmap,
+ 	.fb_setcolreg	= omapfb_setcolreg,
+@@ -1027,6 +1101,7 @@ static int omapfb_alloc_fbmem_display(struct omapfb2_device *fbdev, int fbnum,
+ 	struct omap_display *display;
+ 	int bytespp;
+ 	unsigned long size;
++	int w, h;
+ 
+ 	ofbi = FB2OFB(fbdev->fbs[fbnum]);
+ 	display =  fb2display(fbdev->fbs[fbnum]);
+@@ -1049,12 +1124,13 @@ static int omapfb_alloc_fbmem_display(struct omapfb2_device *fbdev, int fbnum,
+ 
+ 	if (def_vram)
+ 		size = def_vram;
+-	else if (def_rotate >= 0)
++	else if ((def_rotate_type == OMAPFB_ROT_VRFB) &&
++						(def_rotate >= 0))
+ 		size = VRFB_SIZE;
+-	else
+-		size = display->panel->timings.x_res *
+-			display->panel->timings.y_res *
+-			bytespp;
++	else {
++		display->get_resolution(display, &w, &h);
++		size = w * h * bytespp;
++	}
+ 
+ 	return omapfb_alloc_fbmem(fbdev, fbnum, size);
+ }
+@@ -1139,15 +1215,20 @@ static int fbinfo_init(struct omapfb2_device *fbdev, struct fb_info *fbi)
+ 
+ 	DBG("default rotation %d\n", def_rotate);
+ 
++	ofbi->rotation_type = def_rotate_type;
+ 	ofbi->rotation = def_rotate;
++	var->rotate = ofbi->rotation;
+ 
+ 	if (display) {
+-		if (ofbi->rotation == 1 || ofbi->rotation == 3) {
+-			var->yres = display->panel->timings.x_res;
+-			var->xres = display->panel->timings.y_res;
++		int w, h;
++		display->get_resolution(display, &w, &h);
++		if (ofbi->rotation == FB_ROTATE_CW ||
++				ofbi->rotation == FB_ROTATE_CCW) {
++			var->xres = h;
++			var->yres = w;
+ 		} else {
+-			var->xres = display->panel->timings.x_res;
+-			var->yres = display->panel->timings.y_res;
++			var->xres = w;
++			var->yres = h;
+ 		}
+ 		var->xres_virtual = var->xres;
+ 		var->yres_virtual = var->yres;
+@@ -1176,8 +1257,7 @@ static int fbinfo_init(struct omapfb2_device *fbdev, struct fb_info *fbi)
+ 
+ #ifdef DEBUG
+ 	if (omapfb_debug && FB2OFB(fbi)->region.size > 0)
+-		fill_fb(omapfb_get_region_vaddr(&ofbi->region, ofbi->rotation),
+-				fbi);
++		fill_fb(fbi);
+ #endif
+ err:
+ 	return r;
+@@ -1220,6 +1300,37 @@ static void omapfb_free_resources(struct omapfb2_device *fbdev)
+ 	kfree(fbdev);
+ }
+ 
++static ssize_t show_rotate_type(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct fb_info *fbi = dev_get_drvdata(dev);
++	struct omapfb_info *ofbi = FB2OFB(fbi);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", ofbi->rotation_type);
++}
++
++static ssize_t store_rotate_type(struct device *dev,
++		struct device_attribute *attr,
++		const char *buf, size_t count)
++{
++	//struct fb_info *fbi = dev_get_drvdata(dev);
++	//struct omapfb_info *ofbi = FB2OFB(fbi);
++	int rotate_type;
++
++	rotate_type = simple_strtoul(buf, NULL, 0);
++
++	if (rotate_type != OMAPFB_ROT_DMA &&
++			rotate_type != OMAPFB_ROT_VRFB)
++		return -EINVAL;
++
++	//ofbi->rotation_type = rotate_type;
++
++	return count;
++}
++
++static DEVICE_ATTR(rotate_type, S_IRUGO | S_IWUSR,
++		show_rotate_type, store_rotate_type);
++
+ static int omapfb_create_framebuffers(struct omapfb2_device *fbdev)
+ {
+ 	int r, i;
+@@ -1293,8 +1404,20 @@ static int omapfb_create_framebuffers(struct omapfb2_device *fbdev)
+ 
+ 	for (i = 0; i < fbdev->num_fbs; i++) {
+ 		r = omapfb_apply_changes(fbdev->fbs[i], 1);
+-		if (r)
++		if (r) {
+ 			dev_err(fbdev->dev, "failed to change mode\n");
++			return r;
++		}
++	}
++
++	DBG("create sysfs for fbs\n");
++	for (i = 0; i < fbdev->num_fbs; i++) {
++		r = device_create_file(fbdev->fbs[i]->dev,
++				&dev_attr_rotate_type);
++		if (r) {
++			dev_err(fbdev->dev, "failed to create sysfs file\n");
++			return r;
++		}
+ 	}
+ 
+ 	/* Enable fb0 */
+@@ -1304,7 +1427,13 @@ static int omapfb_create_framebuffers(struct omapfb2_device *fbdev)
+ 		if (ofbi->num_overlays > 0 ) {
+ 			struct omap_overlay *ovl = ofbi->overlays[0];
+ 
+-			ovl->enable(ovl, 1);
++			r = ovl->enable(ovl, 1);
++
++			if (r) {
++				dev_err(fbdev->dev,
++						"failed to enable overlay\n");
++				return r;
++			}
+ 		}
+ 	}
+ 
+@@ -1359,43 +1488,6 @@ int omapfb_mode_to_timings(const char *mode_str,
+ 	}
+ }
+ 
+-#ifndef MODULE
+-int omapfb_parse_cmdline(char *options)
+-{
+-	char *this_opt;
+-
+-	DBG("omap2fb: Options \"%s\"\n", options);
+-
+-	if (!options || !*options)
+-		return 0;
+-
+-	while ((this_opt = strsep(&options, ",")) != NULL) {
+-		if (!*this_opt)
+-			continue;
+-
+-		if (!strncmp(this_opt, "rotation=", 9)) {
+-			int deg = simple_strtoul(this_opt + 9, NULL, 0);
+-
+-			if (deg == 0 || deg == 90 || deg == 180 || deg == 270)
+-				def_rotate = omap_rotation_index(deg);
+-			else
+-				def_rotate = -1;
+-
+-			printk(KERN_INFO "omap2fb: Rotation %s\n",
+-				(def_rotate == -1) ?
+-				"none (supported: \"rotation=[0|90|180|270]\")":
+-				this_opt);
+-
+-		} else if (!strcmp(this_opt, "vram=")) {
+-			def_vram = this_opt + 5;
+-		} else if (!strcmp(this_opt, "mode=")) {
+-			def_mode = this_opt + 5;
+-		}
+-	}
+-	return 0;
+-}
+-#endif
+-
+ static int omapfb_probe(struct platform_device *pdev)
+ {
+ 	struct omapfb2_device *fbdev = NULL;
+@@ -1403,9 +1495,6 @@ static int omapfb_probe(struct platform_device *pdev)
+ 	int i, t;
+ 	struct omap_overlay *ovl;
+ 	struct omap_display *def_display;
+-#ifndef MODULE
+-	char *option;
+-#endif
+ 
+ 	DBG("omapfb_probe\n");
+ 
+@@ -1426,14 +1515,6 @@ static int omapfb_probe(struct platform_device *pdev)
+ 	fbdev->dev = &pdev->dev;
+ 	platform_set_drvdata(pdev, fbdev);
+ 
+-#ifndef MODULE
+-	/* Parse the command line options */
+-	if (fb_get_options("omap2fb", &option)) {
+-		return -ENODEV;
+-	}
+-	omapfb_parse_cmdline(option);
+-#endif /* MODULE */
+-
+ 	fbdev->num_displays = 0;
+ 	t = omap_dss_get_num_displays();
+ 	for (i = 0; i < t; i++) {
+@@ -1533,12 +1614,12 @@ static int omapfb_probe(struct platform_device *pdev)
+ 
+ 	for (i = 0; i < fbdev->num_displays; i++) {
+ 		struct omap_display *display = fbdev->displays[i];
++		int w, h;
++
++		display->get_resolution(display, &w, &h);
+ 
+ 		if (display->update)
+-			display->update(display,
+-					0, 0,
+-					display->panel->timings.x_res,
+-					display->panel->timings.y_res);
++			display->update(display, 0, 0, w, h);
+ 	}
+ 
+ 	DBG("display->updated\n");
+@@ -1558,9 +1639,15 @@ err0:
+ static int omapfb_remove(struct platform_device *pdev)
+ {
+ 	struct omapfb2_device *fbdev = platform_get_drvdata(pdev);
++	int i;
+ 
+ 	/* FIXME: wait till completion of pending events */
+ 
++	DBG("remove sysfs for fbs\n");
++	for (i = 0; i < fbdev->num_fbs; i++) {
++		device_remove_file(fbdev->fbs[i]->dev, &dev_attr_rotate_type);
++	}
++
+ 	omapfb_remove_sysfs(fbdev);
+ 
+ 	omapfb_free_resources(fbdev);
+@@ -1598,6 +1685,7 @@ static void __exit omapfb_exit(void)
+ module_param_named(video_mode, def_mode, charp, 0);
+ module_param_named(vram, def_vram, charp, 0);
+ module_param_named(rotate, def_rotate, int, 0);
++module_param_named(rotate_type, def_rotate_type, int, 0);
+ 
+ /* late_initcall to let panel/ctrl drivers loaded first.
+  * I guess better option would be a more dynamic approach,
+diff --git a/drivers/video/omap2/omapfb-sysfs.c b/drivers/video/omap2/omapfb-sysfs.c
+old mode 100644
+new mode 100755
+index aff67f6..7161361
+--- a/drivers/video/omap2/omapfb-sysfs.c
++++ b/drivers/video/omap2/omapfb-sysfs.c
+@@ -516,11 +516,11 @@ static ssize_t store_overlays(struct device *dev,
+ 		ovl->enable(ovl, 0);
+ 	}
+ 
+-	if (mgr && mgr->display && mgr->display->update)
+-		mgr->display->update(mgr->display,
+-				0, 0,
+-				mgr->display->panel->timings.x_res,
+-				mgr->display->panel->timings.y_res);
++	if (mgr && mgr->display && mgr->display->update) {
++		int w, h;
++		mgr->display->get_resolution(mgr->display, &w, &h);
++		mgr->display->update(mgr->display, 0, 0, w, h);
++	}
+ 
+ 	omapfb_unlock(fbdev);
+ 	return count;
+@@ -657,6 +657,7 @@ static ssize_t show_displays(struct device *dev, struct device_attribute *attr,
+ 		struct omap_display *display;
+ 		enum omap_dss_update_mode mode = -1;
+ 		int te = 0;
++		int rot = 0, mir = 0;
+ 
+ 		display = fbdev->displays[i];
+ 
+@@ -671,9 +672,15 @@ static ssize_t show_displays(struct device *dev, struct device_attribute *attr,
+ 		else
+ 			memset(&timings, 0, sizeof(timings));
+ 
++		if (display->get_rotate)
++			rot = display->get_rotate(display);
++
++		if (display->get_mirror)
++			mir = display->get_mirror(display);
++
+ 		l += snprintf(buf + l, size - l,
+ 				"%s e:%d u:%d t:%d h:%u/%u/%u/%u "
+-				"v:%u/%u/%u/%u p:%u\n",
++				"v:%u/%u/%u/%u p:%u r:%d i:%d\n",
+ 				display->name,
+ 				display->state != OMAP_DSS_DISPLAY_DISABLED,
+ 				mode, te,
+@@ -681,7 +688,8 @@ static ssize_t show_displays(struct device *dev, struct device_attribute *attr,
+ 				timings.hfp, timings.hbp, timings.hsw,
+ 				timings.y_res,
+ 				timings.vfp, timings.vbp, timings.vsw,
+-				timings.pixel_clock);
++				timings.pixel_clock,
++				rot, mir);
+ 	}
+ 
+ 	omapfb_unlock(fbdev);
+@@ -701,7 +709,7 @@ static ssize_t store_displays(struct device *dev,
+ 	enum omap_dss_update_mode mode;
+ 	struct omap_display *display = NULL;
+ 	int r;
+-	int te;
++	int te, rot, mir;
+ 	char str[128];
+ 	char *s, *tok;
+ 
+@@ -743,6 +751,16 @@ static ssize_t store_displays(struct device *dev,
+ 	else
+ 		te = 0;
+ 
++	if (display->get_rotate)
++		rot = display->get_rotate(display);
++	else
++		rot = 0;
++
++	if (display->get_mirror)
++		mir = display->get_mirror(display);
++	else
++		mir = 0;
++
+ 	if (display->get_timings)
+ 		display->get_timings(display, &old_timings);
+ 	else
+@@ -775,6 +793,14 @@ static ssize_t store_displays(struct device *dev,
+ 			te = simple_strtoul(o, NULL, 0);
+ 			break;
+ 
++		case 'r':
++			rot = simple_strtoul(o, NULL, 0);
++			break;
++
++		case 'i':
++			mir = simple_strtoul(o, NULL, 0);
++			break;
++
+ 		case 'm': {
+ 			unsigned bpp;
+ 			if (omapfb_mode_to_timings(o, &new_timings, &bpp) != 0)
+@@ -857,6 +883,16 @@ static ssize_t store_displays(struct device *dev,
+ 			display->enable_te(display, te);
+ 	}
+ 
++	if (display->set_rotate && display->get_rotate) {
++		if (rot != display->get_rotate(display))
++			display->set_rotate(display, rot);
++	}
++
++	if (display->set_mirror && display->get_mirror) {
++		if (mir != display->get_mirror(display))
++			display->set_mirror(display, mir);
++	}
++
+ 	r = count;
+ err:
+ 	omapfb_unlock(fbdev);
+diff --git a/drivers/video/omap2/omapfb.h b/drivers/video/omap2/omapfb.h
+old mode 100644
+new mode 100755
+index 1138547..e436144
+--- a/drivers/video/omap2/omapfb.h
++++ b/drivers/video/omap2/omapfb.h
+@@ -51,23 +51,10 @@ struct omapfb2_mem_region {
+ 	unsigned	map:1;		/* kernel mapped by the driver */
+ };
+ 
+-static inline u32 omapfb_get_region_paddr(struct omapfb2_mem_region *region,
+-		int rotation)
+-{
+-	if (rotation == -1)
+-		return region->_paddr;
+-	else
+-		return region->vrfb.paddr[rotation];
+-}
+-
+-static inline void *omapfb_get_region_vaddr(struct omapfb2_mem_region *region,
+-		int rotation)
+-{
+-	if (rotation == -1)
+-		return region->_vaddr;
+-	else
+-		return region->vrfb.vaddr[rotation];
+-}
++enum omapfb_rotation_type {
++	OMAPFB_ROT_DMA = 0,
++	OMAPFB_ROT_VRFB = 1,
++};
+ 
+ /* appended to fb_info */
+ struct omapfb_info {
+@@ -77,6 +64,7 @@ struct omapfb_info {
+ 	int num_overlays;
+ 	struct omap_overlay *overlays[OMAPFB_MAX_OVL_PER_FB];
+ 	struct omapfb2_device *fbdev;
++	enum omapfb_rotation_type rotation_type;
+ 	int rotation;
+ };
+ 
+@@ -99,6 +87,9 @@ struct omapfb2_device {
+ 	struct omap_overlay_manager *managers[10];
+ };
+ 
++u32 omapfb_get_region_paddr(struct omapfb_info *ofbi);
++void *omapfb_get_region_vaddr(struct omapfb_info *ofbi);
++
+ void set_fb_fix(struct fb_info *fbi);
+ int check_fb_var(struct fb_info *fbi, struct fb_var_screeninfo *var);
+ int omapfb_realloc_fbmem(struct omapfb2_device *fbdev, int fbnum,
+-- 
+1.5.6
+

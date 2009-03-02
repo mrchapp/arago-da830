@@ -1,0 +1,27 @@
+From 6bfc386e1219ae2965fed544c6a3b3e3e800e697 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Thu, 12 Feb 2009 21:32:49 +0530
+Subject: [PATCH 269/304] Bug SDOCM00053646: YUYV support in Capture is broken
+
+Fixed the Bug SDOCM00053646 - pixel format YUYV
+support in Video Capture driver is broken,
+currently it only works with UYVY pixel format.
+---
+ drivers/media/video/omap34xxcam.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/video/omap34xxcam.c b/drivers/media/video/omap34xxcam.c
+index b4e37db..da0e03a 100644
+--- a/drivers/media/video/omap34xxcam.c
++++ b/drivers/media/video/omap34xxcam.c
+@@ -615,7 +615,6 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *fh,
+ 
+ 		pix->width = input_fmt.fmt.pix.width;
+ 		pix->height = input_fmt.fmt.pix.height;
+-		pix->pixelformat = input_fmt.fmt.pix.pixelformat;
+ 		pix->field = input_fmt.fmt.pix.field;
+ 		pix->bytesperline = input_fmt.fmt.pix.bytesperline;
+ 		pix->colorspace = input_fmt.fmt.pix.colorspace;
+-- 
+1.5.6
+
