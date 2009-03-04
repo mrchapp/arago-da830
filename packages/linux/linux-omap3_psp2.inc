@@ -5,7 +5,8 @@ KERNEL_IMAGETYPE = "uImage"
 
 FILESDIR = "${@os.path.dirname(bb.data.getVar('FILE',d,1))}/linux-omap3-psp/${MACHINE}/${PSPREL}"
 
-PV = "${KVER}+psp${PSPREL}"
+PV = "${KVER}"
+PR = "psp${PSPREL}"
 
 COMPATIBLE_MACHINE = "omap3evm"
 

@@ -1,8 +1,9 @@
-KVER = "2.6.28"
+KVER = "2.6.28+2.6.29rc3"
 PSPREL = "2.1.0.2"
-PR = "r1"
 
 require linux-omap3_psp2.inc
+
+PR .= "-r2"
 
 SRCREV = "c40ce00e32082c57070fdba39c7d7cba3228d440"
 
