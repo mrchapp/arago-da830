@@ -26,6 +26,7 @@ ARAGO_BASE = "\
     mtd-utils \
     opkg-nogpg \
     arago-feed-configs \
+    initscript-telnetd \
     "
 
 # minimal set of packages - needed to boot
