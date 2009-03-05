@@ -1,0 +1,25 @@
+#! /bin/sh
+
+omapdemo=/usr/tests/omap-demo
+
+test -x "$omapdemo" || exit 0
+
+grep "OMAP3 EVM" /proc/cpuinfo >/dev/null 2>&1 || exit 0
+
+case "$1" in
+  start)
+    echo -n "Starting OMAP Demo application"
+    start-stop-daemon --start --quiet --background --exec $omapdemo
+    echo "."
+    ;;
+  stop)
+    echo -n "Stopping OMAP Demo application"
+    start-stop-daemon --stop --quiet --pidfile /var/run/omap-demo.pid
+    echo "."
+    ;;
+  *)
+    echo "Usage: /etc/init.d/omap-demo {start|stop}"
+    exit 1
+esac
+
+exit 0
