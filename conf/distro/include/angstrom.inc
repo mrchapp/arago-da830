@@ -5,7 +5,7 @@
 # Preserve original DISTRO value
 USERDISTRO := "${DISTRO}"
 DISTRO = "angstrom"
-DISTRO_NAME = "Angstrom"
+DISTRO_NAME ?= "Angstrom"
 
 #TARGET_VENDOR = "-angstrom"
 TARGET_VENDOR ?= "-none"
