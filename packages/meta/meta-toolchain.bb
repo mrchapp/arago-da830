@@ -21,7 +21,7 @@ PACKAGE_ARCHS := "${REAL_PACKAGE_ARCHS}"
 SDK_DIR = "${WORKDIR}/sdk"
 SDK_OUTPUT = "${SDK_DIR}/image"
 SDK_OUTPUT2 = "${SDK_DIR}/image-extras"
-SDK_DEPLOY = "${TMPDIR}/deploy/sdk"
+SDK_DEPLOY = "${DEPLOY_DIR}/sdk"
 
 IPKG_HOST = "opkg-cl -f ${IPKGCONF_SDK} -o ${SDK_OUTPUT}"
 IPKG_TARGET = "opkg-cl -f ${IPKGCONF_TARGET} -o ${SDK_OUTPUT}/${SDK_PATH}/${TARGET_SYS}"
@@ -71,9 +71,16 @@ do_populate_sdk() {
 	${IPKG_TARGET} update
 	${IPKG_TARGET} install ${TOOLCHAIN_TARGET_TASK}
 
+	# Remove packages from the exclude list which were installed by dependencies
+	${IPKG_TARGET} remove -force-depends ${TOOLCHAIN_TARGET_EXCLUDE}
+
 	install -d ${SDK_OUTPUT}/${prefix}/usr/lib/opkg
 	mv ${SDK_OUTPUT}/usr/lib/opkg/* ${SDK_OUTPUT}/${prefix}/usr/lib/opkg/
 	rm -Rf ${SDK_OUTPUT}/usr/lib
+
+	# Clean up empty directories
+	find ${SDK_OUTPUT} -type d -empty -print0 | xargs -0 /bin/rmdir
+	find ${SDK_OUTPUT} -type d -empty -print0 | xargs -0 /bin/rmdir
 
 	install -d ${SDK_OUTPUT}/${prefix}/${TARGET_SYS}/${layout_sysconfdir}
 	install -m 0644 ${IPKGCONF_TARGET} ${IPKGCONF_SDK} ${SDK_OUTPUT}/${prefix}/${TARGET_SYS}/${layout_sysconfdir}/
@@ -115,7 +122,7 @@ do_populate_sdk() {
 	# libgcc-dev should be responsible for that, but it's not getting built
 	# RP: it gets smashed up depending on the order that gcc, gcc-cross and 
 	# gcc-cross-sdk get built :( (30/11/07)
-	ln -sf libgcc_s.so.1 ${SDK_OUTPUT}/${prefix}/${TARGET_SYS}/lib/libgcc_s.so
+	#ln -sf libgcc_s.so.1 ${SDK_OUTPUT}/${prefix}/${TARGET_SYS}/lib/libgcc_s.so
 
 	# Fix or remove broken .la files
 	for i in `find ${SDK_OUTPUT}/${prefix}/${TARGET_SYS} -name \*.la`; do
@@ -148,7 +155,7 @@ do_populate_sdk() {
 	# Add version information
 	versionfile=${SDK_OUTPUT}/${prefix}/version
 	touch $versionfile
-	echo 'Distro: ${DISTRO}' >> $versionfile
+	echo 'Distro: ${SDK_DISTRO}' >> $versionfile
 	echo 'Distro Version: ${DISTRO_VERSION}' >> $versionfile
 	echo 'Metadata Revision: ${METADATA_REVISION}' >> $versionfile
 	echo 'Timestamp: ${DATETIME}' >> $versionfile
