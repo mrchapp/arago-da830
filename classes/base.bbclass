@@ -71,7 +71,13 @@ def base_chk_file(parser, pn, pv, src_uri, localpath, data):
         
         file.write("[%s]\nmd5=%s\nsha256=%s\n\n" % (src_uri, md5data, shadata))
         file.close()
-        return False
+        if not bb.data.getVar("OE_STRICT_CHECKSUMS",data, True):
+            bb.note("This package has no entry in checksums.ini, please add one")
+            bb.note("\n[%s]\nmd5=%s\nsha256=%s" % (src_uri, md5data, shadata))
+            return True
+        else:
+            bb.note("Missing checksum")
+            return False
 
     if not md5 == md5data:
         bb.note("The MD5Sums did not match. Wanted: '%s' and Got: '%s'" % (md5,md5data))
@@ -767,7 +773,13 @@ python base_do_unpack() {
 def base_get_scmbasepath(d):
 	import bb
 	path_to_bbfiles = bb.data.getVar( 'BBFILES', d, 1 ).split()
-	return path_to_bbfiles[0][:path_to_bbfiles[0].rindex( "packages" )]
+
+	try:
+		index = path_to_bbfiles[0].rindex( "recipes" )
+	except ValueError:
+		index = path_to_bbfiles[0].rindex( "packages" )
+
+	return path_to_bbfiles[0][:index]
 
 def base_get_metadata_monotone_branch(d):
 	monotone_branch = "<unknown>"
@@ -867,8 +879,12 @@ python base_eventhandler() {
 		msg += messages.get(name[5:]) or name[5:]
 	elif name == "UnsatisfiedDep":
 		msg += "package %s: dependency %s %s" % (e.pkg, e.dep, name[:-3].lower())
-	if msg:
-		note(msg)
+
+	# Only need to output when using 1.8 or lower, the UI code handles it
+	# otherwise
+	if (int(bb.__version__.split(".")[0]) <= 1 and int(bb.__version__.split(".")[1]) <= 8):
+		if msg:
+			note(msg)
 
 	if name.startswith("BuildStarted"):
 		bb.data.setVar( 'BB_VERSION', bb.__version__, e.data )
