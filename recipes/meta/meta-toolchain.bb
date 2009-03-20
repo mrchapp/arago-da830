@@ -143,13 +143,15 @@ do_populate_sdk() {
 	# Create environment setup script
 	script=${SDK_OUTPUT}/${prefix}/environment-setup
 	touch $script
-	echo 'export PATH=${prefix}/bin:$PATH' >> $script
-	echo 'export LIBTOOL_SYSROOT_PATH=${prefix}/${TARGET_SYS}' >> $script
-	echo 'export PKG_CONFIG_SYSROOT_DIR=${prefix}/${TARGET_SYS}' >> $script
-	echo 'export PKG_CONFIG_PATH=${prefix}/${TARGET_SYS}${layout_libdir}/pkgconfig' >> $script
-	echo 'export CONFIG_SITE=${prefix}/site-config' >> $script
-	echo "alias opkg='LD_LIBRARY_PATH=${prefix}/lib ${prefix}/bin/opkg-cl -f ${sysconfdir}/opkg-sdk.conf -o ${prefix}'" >> $script
-	echo "alias opkg-target='LD_LIBRARY_PATH=${prefix}/lib ${prefix}/bin/opkg-cl -f ${prefix}/${TARGET_SYS}${layout_sysconfdir}/opkg.conf -o ${prefix}/${TARGET_SYS}'" >> $script
+	echo 'export SDK_PATH=${prefix}' >> $script
+	echo 'export TARGET_SYS=${TARGET_SYS}' >> $script
+	echo 'export PATH=$SDK_PATH/bin:$PATH' >> $script
+	echo 'export LIBTOOL_SYSROOT_PATH=$SDK_PATH/$TARGET_SYS' >> $script
+	echo 'export PKG_CONFIG_SYSROOT_DIR=$SDK_PATH/$TARGET_SYS' >> $script
+	echo 'export PKG_CONFIG_PATH=$SDK_PATH/$TARGET_SYS${layout_libdir}/pkgconfig' >> $script
+	echo 'export CONFIG_SITE=$SDK_PATH/site-config' >> $script
+	echo 'alias opkg="LD_LIBRARY_PATH=$SDK_PATH/lib $SDK_PATH/bin/opkg-cl -f $SDK_PATH${layout_sysconfdir}/opkg-sdk.conf -o $SDK_PATH"' >> $script
+	echo 'alias opkg-target="LD_LIBRARY_PATH=$SDK_PATH/lib $SDK_PATH/bin/opkg-cl -f $SDK_PATH/$TARGET_SYS${layout_sysconfdir}/opkg.conf -o $SDK_PATH/$TARGET_SYS"' >> $script
 
 	# Add version information
 	versionfile=${SDK_OUTPUT}/${prefix}/version
