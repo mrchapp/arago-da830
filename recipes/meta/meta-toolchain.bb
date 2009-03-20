@@ -79,8 +79,7 @@ do_populate_sdk() {
 	rm -Rf ${SDK_OUTPUT}/usr/lib
 
 	# Clean up empty directories
-	find ${SDK_OUTPUT} -type d -empty -print0 | xargs -0 /bin/rmdir
-	find ${SDK_OUTPUT} -type d -empty -print0 | xargs -0 /bin/rmdir
+	find ${SDK_OUTPUT} -depth -type d -empty -print0 | xargs -0 /bin/rmdir
 
 	install -d ${SDK_OUTPUT}/${prefix}/${TARGET_SYS}/${layout_sysconfdir}
 	install -m 0644 ${IPKGCONF_TARGET} ${IPKGCONF_SDK} ${SDK_OUTPUT}/${prefix}/${TARGET_SYS}/${layout_sysconfdir}/
