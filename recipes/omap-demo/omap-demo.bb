@@ -1,5 +1,5 @@
 DESCRIPTION = "OMAP35x LCD/touchscreen/audio demo"
-PR = "r2"
+PR = "r3"
 
 SRC_URI = "\
 http://arago-project.org/files/short-term/demo/demo-app-src.tar.gz \
@@ -15,7 +15,7 @@ S = "${WORKDIR}"
 inherit update-rc.d
 
 do_compile() {
-	${CC} -o omap-demo demo.c
+	${CC} ${CFLAGS} ${LDFLAGS} -o omap-demo demo.c
 }
 
 do_install() {
