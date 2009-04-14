@@ -1,12 +1,12 @@
 DESCRIPTION = "C++ stub to link against libstdc++"
-PR = "r2"
+PR = "r3"
 
 SRC_URI = "file://cppstub.cpp"
 
 S = "${WORKDIR}"
 
 do_compile() {
-	${CXX} -o cppstub cppstub.cpp
+	${CXX} ${CFLAGS} ${CXXFLAGS} ${LDFLAGS} -o cppstub cppstub.cpp
 }
 
 do_install() {
