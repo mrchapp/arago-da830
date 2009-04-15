@@ -1,11 +1,11 @@
 DESCRIPTION = "Meta-package for Arago board sets (kernel+bootloaders)"
-PR = "r1"
+PR = "r2"
 
 # Generic "arago" machine is not part of this list on purpose
 # so it would require setting MACHINE explicitly
 COMPATIBLE_MACHINE = "omap3evm|beagleboard|davinci-dvevm"
 
-DEPENDS = "virtual/kernel u-boot"
+DEPENDS = "virtual/kernel virtual/bootloader"
 
 DEPENDS_append_omap3evm = " x-load"
 DEPENDS_append_beagleboard = " x-load"
