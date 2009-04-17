@@ -6,7 +6,7 @@ PACKAGES = "${PN}"
 
 # Stuff contained in this SDK is largely taken from task-sdk-base.bb.
 # This is a starting point, and nothing more at present -- please fill
-# this out with a reasonable set of development tools for a SlugOS image.
+# this out with a reasonable set of development tools for a Arago image.
 # Also feel free to remove stuff that's silly.
 
 RDEPENDS_${PN} = "\
