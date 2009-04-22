@@ -1,16 +1,13 @@
-DESCRIPTION = "LPM module for TI OMAP3 processors"
+DESCRIPTION = "CMEM module for TI ARM/DSP processors"
 
 inherit module
+
 # compile and run time dependencies
 DEPENDS 	= "virtual/kernel perl-native"
-DEPENDS    += "ti-dsplink-module"
-PREFERED_VERSION_ti-dsplink-module = "161"
-RDEPENDS    = "ti-dsplink-module"
 RDEPENDS 	= "update-modules"
 
 # what this recipe provides
-PROVIDES    += "ti-lpm-module"
-PACKAGES += "ti-lpm-module"
+PACKAGES =+ "ti-cmem-module"
 
 PR = "r0"
 PV = "223"
@@ -24,12 +21,11 @@ SRC_URI = "ftp://156.117.95.201/codec_engine_2_23.tar.gz"
 # Set the source directory
 S = "${WORKDIR}/codec_engine_2_23"
 
-export DSPLINK="${S}/cetools/packages/dsplink"
-
-LPMDSPPOWERSOC 				 ?= "omap3530"
-LPMDSPPOWERSOC_omap3evm 	 ?= "omap3530"
-
-do_compile () {
+do_compile() {
+    # CMEM - Build the cmem kernel module and associated test apps
+    # TODO - Still need to clean up UCTOOLs - don't really want to build UC 
+    # here - it's not good to just build with MVTOOLS (GLIBC) 
+    # - note target default, doesn't get passed through to underlying makefiles
     # TODO :: KERNEL_CC, etc need replacing with user CC
     # TODO :: Need to understand why OBJDUMP is required for kernel module
     # Unset these since LDFLAGS gets picked up and used incorrectly.... need 
@@ -37,33 +33,32 @@ do_compile () {
 
     unset CFLAGS CPPFLAGS CXXFLAGS LDFLAGS
 
-    cd ${S}/cetools/packages/ti/bios/power/modules/${LPMDSPPOWERSOC}/lpm
+    cd ${S}/cetools/packages/ti/sdo/linuxutils/cmem
     make \
-      DSPLINK_REPO="${DSPLINK}/.." \
       LINUXKERNEL_INSTALL_DIR="${STAGING_KERNEL_DIR}" \
       MVTOOL_PREFIX="${TARGET_PREFIX}" \
-      .clean default
+      UCTOOL_PREFIX="${TARGET_PREFIX}" \
+      clean debug release
 }
 
 do_install () {
-
-    # LPM/CMEM/SDMA drivers - kernel modules
     install -d ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp
-	  install -m 0755 ${S}/cetools/packages/ti/bios/power/modules/${LPMDSPPOWERSOC}/lpm/*.ko ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp
+    install -m 0755 ${S}/cetools/packages/ti/sdo/linuxutils/cmem/src/module/cmemk.ko ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp
 }
 
-
-pkg_postinst_ti-lpm-module () {
-    if [ -n "$D" ]; then
-        exit 1
-    fi
-    depmod -a
-    update-modules || true
+pkg_postinst_ti-cmem-module () {
+    if [ -n "$D" ]; then        
+                exit 1
+        fi
+        depmod -a
+        update-modules || true
 }
 
-pkg_postrm_ti-lpm-module () {
-    update-modules || true
+pkg_postrm_ti-cmem-module () {
+        update-modules || true
 }
 
 INHIBIT_PACKAGE_STRIP = "1"
-FILES_ti-lpm-module = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/*lpm*ko"
+
+FILES_ti-cmem-module = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/cmemk.ko"
+

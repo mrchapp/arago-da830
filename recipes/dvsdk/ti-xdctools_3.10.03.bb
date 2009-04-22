@@ -6,10 +6,6 @@ DESCRIPTION = "XDC tool 3.10.03"
 OE_ALLOW_INSECURE_DOWNLOADS = "1"
 SRC_URI	= "ftp://156.117.95.201/xdctools_3_10_03.tar.gz"
 
-# what this recipe provides
-PROVIDES = "ti-xdctools"
-PACKAGES = "ti-xdctools"
-
 S = "${WORKDIR}/xdctools_3_10_03"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD

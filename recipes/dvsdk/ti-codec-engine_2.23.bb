@@ -6,9 +6,9 @@ DEPENDS_dm6446-evm 	+= "ti-dsplink-module ti-cmem-module ti-cgt6x"
 DEPENDS_omap3evm   	+= "ti-dsplink-module ti-cmem-module ti-lpm-module ti-cgt6x"
 DEPENDS_dm355-evm 	+= "ti-cmem-module ti-codec-combo-dm355"
 
-PREFERED_VERSION_ti_dspbios =  "533"
-PREFERED_VERSION_ti_cgt6x   = "60"
-PREFERED_VERSION_ti_xdctools = "310"
+PREFERED_VERSION_ti_dspbios 		= "533"
+PREFERED_VERSION_ti_cgt6x   		= "60"
+PREFERED_VERSION_ti_xdctools 		= "310"
 PREFERED_VERSION_ti-dsplink-module 	= "161"
 PREFERED_VERSION_ti-cmem-module 	= "223"
 PREFERED_VERSION_ti-lpm-module 		= "223"
@@ -19,8 +19,7 @@ RDEPENDS_omap3evm   = "ti-dsplink-module ti-cmem-module ti-lpm-module"
 RDEPENDS_dm355-evm 	= "ti-cmem-module ti-codec-combo-dm355"
 
 # what this recipe provides
-PROVIDES += "ti-codec-engine-apps"
-PACKAGES += "ti-codec-engine-apps"
+PACKAGES =+ "ti-codec-engine-apps"
 
 # tconf from xdctools dislikes '.' in pwd :/
 PR = "r0"
@@ -58,9 +57,9 @@ DUALCPU_dm644x-evm  ?= "true"
 
 PARALLEL_MAKE = ""
 
-STAGING_TI_DSPBIOS_DIR="${STAGING_DIR}/${HOST_SYS}/ti-dspbios-5-33-02"
-STAGING_TI_CGT6x_DIR="${STAGING_DIR}/${HOST_SYS}/ti-cgt6x-6-0-16"
-STAGING_TI_XDCTOOLS_DIR="${STAGING_DIR}/${HOST_SYS}/xdctools_3_10_03"
+STAGING_TI_DSPBIOS_DIR="${STAGING_DIR}/${HOST_SYS}/ti-dspbios"
+STAGING_TI_CGT6x_DIR="${STAGING_DIR}/${HOST_SYS}/ti-cgt6x"
+STAGING_TI_XDCTOOLS_DIR="${STAGING_DIR}/${HOST_SYS}/xdctools"
 	
 do_compile () {
     # FIXME: Have some issue with building codec engine. DISABLING BUILD UNTIL

@@ -3,12 +3,11 @@ inherit module
 
 # compile and run time dependencies
 DEPENDS 	= "virtual/kernel perl-native"
-DEPENDS   += "ti-dspbios ti-xdctools ti-cgt6x"
+DEPENDS     += "ti-dspbios ti-xdctools ti-cgt6x"
 RDEPENDS 	= "update-modules"
 
 # what this recipe provides
-PROVIDES += "ti-dsplink-module ti-dsplink-apps"
-PACKAGES += "ti-dsplink-module ti-dsplink-apps"
+PACKAGES =+ "ti-dsplink-module ti-dsplink-apps"
 
 # tconf from xdctools dislikes '.' in pwd :/
 PR = "r1"
@@ -39,8 +38,8 @@ DSPLINKGPPOS_omap3evm    ?= "OMAPLSP"
 DSPLINKGPPOS_dm6446-evm  ?= "MVL5G"
 
 export DSPLINK="${S}/cetools/packages/dsplink"
-STAGING_TI_DSPBIOS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-dspbios-5-33-02"
-STAGING_TI_CGT6x_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-cgt6x-6-0-16"
+STAGING_TI_DSPBIOS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-dspbios"
+STAGING_TI_CGT6x_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-cgt6x"
 
 do_compile() {
 

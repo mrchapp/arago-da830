@@ -6,10 +6,6 @@ DESCRIPTION = "Code Generation Tools 6.0.16 for TI DaVinci and OMAP"
 OE_ALLOW_INSECURE_DOWNLOADS = "1"
 SRC_URI	= "ftp://156.117.95.201/cg6x_6_0_16.tar.gz"
 
-# what this recipe provides
-PROVIDES = "ti-cgt6x"
-PACKAGES = "ti-cgt6x"
-
 S = "${WORKDIR}/cg6x_6_0_16"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD

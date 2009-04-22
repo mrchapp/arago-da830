@@ -9,10 +9,6 @@ RDEPENDS 	= "ti-dm355mm-module"
 OE_ALLOW_INSECURE_DOWNLOADS = "1"
 SRC_URI	= "ftp://156.117.95.201/dm355_codecs_1_13_000.tar.gz"
 
-# what this recipe provides
-PROVIDES = "ti-codec-combo-dm355"
-PACKAGES = "ti-codec-combo-dm355"
-
 S = "${WORKDIR}/dm355_codecs_1_13_000"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD

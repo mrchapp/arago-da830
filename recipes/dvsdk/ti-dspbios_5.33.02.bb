@@ -6,10 +6,6 @@ DESCRIPTION = "TI DSP/BIOS 5.33.02 for Davinci and OMAP processor"
 OE_ALLOW_INSECURE_DOWNLOADS = "1"
 SRC_URI	= "ftp://156.117.95.201/bios_5_33_02.tar.gz"
 
-# what this recipe provides
-PROVIDES = "ti-dspbios"
-PACKAGES = "ti-dspbios"
-
 S = "${WORKDIR}/bios_5_33_02"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
