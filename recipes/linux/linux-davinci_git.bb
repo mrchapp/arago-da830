@@ -3,14 +3,14 @@ require linux.inc
 DESCRIPTION = "Linux kernel for Davinci processors"
 KERNEL_IMAGETYPE = "uImage"
 
-COMPATIBLE_MACHINE = "(davinci-dvevm|davinci-sffsdr|dm355-leopard)"
+COMPATIBLE_MACHINE = "(dm6446-evm|dm6467-evm|dm355-evm|davinci-sffsdr|dm355-leopard)"
 
-DEFAULT_PREFERENCE = "-1"
+DEFAULT_PREFERENCE = "1"
 
 SRCREV = "486afa37130356662213cc1a2199a285b4fd72af"
 
 PV = "2.6.29+2.6.29-rc7-${PR}+gitr${SRCREV}"
-PR = "r3"
+PR = "r4"
 
 SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git;protocol=git \
            file://update-mach-types.patch;patch=1 \
