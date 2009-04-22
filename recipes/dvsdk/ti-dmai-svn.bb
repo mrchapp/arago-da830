@@ -72,7 +72,7 @@ do_stage () {
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 PACKAGES =+ "ti-dmai-apps"
-FILES_ti-dmai-apps = "${datadir}/ti-dmai/*"
+FILES_ti-dmai-apps = "/opt//ti/dmai/*"
 INHIBIT_PACKAGE_STRIP = "1"
 
 
