@@ -5,7 +5,8 @@ inherit module
 DEPENDS 	= "virtual/kernel perl-native"
 RDEPENDS 	= "update-modules"
 
-PACKAGES =+ "ti-sdma-module"
+PACKAGES += "ti-sdma-module"
+PROVIDES += "ti-sdma-module"
 
 PR = "r0"
 PV = "223"

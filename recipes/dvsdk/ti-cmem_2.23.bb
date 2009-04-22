@@ -7,7 +7,8 @@ DEPENDS 	= "virtual/kernel perl-native"
 RDEPENDS 	= "update-modules"
 
 # what this recipe provides
-PACKAGES =+ "ti-cmem-module"
+PACKAGES += "ti-cmem-module"
+PROVIDES += "ti-cmem-module"
 
 PR = "r0"
 PV = "223"

@@ -2,7 +2,7 @@ DESCRIPTION = "DMAI for TI ARM/DSP processors"
 
 # compile time dependencies
 DEPENDS	  		 = "ti-codec-engine ti-xdctools" 
-DEPENDS_omap3evm += "ti-sdma-module ti-dspbios ti-cgt6x"
+DEPENDS_omap3evm += "ti-sdma ti-dspbios ti-cgt6x"
 
 PREFERED_VERSION_ti-codec-engine 	= "223"
 
@@ -71,7 +71,8 @@ do_stage () {
 }
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
-PACKAGES =+ "ti-dmai-apps"
+PACKAGES += "ti-dmai-apps"
+PROVIDES += "ti-dmai-apps"
 FILES_ti-dmai-apps = "/opt/ti/dmai/*"
 INHIBIT_PACKAGE_STRIP = "1"
 

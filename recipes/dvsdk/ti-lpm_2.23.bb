@@ -8,7 +8,8 @@ PREFERED_VERSION_ti-dsplink = "161"
 RDEPENDS    = "ti-dsplink-module"
 RDEPENDS 	= "update-modules"
 
-PACKAGES =+ "ti-lpm-module"
+PACKAGES += "ti-lpm-module"
+PROVIDES += "ti-lpm-module"
 
 PR = "r0"
 PV = "223"

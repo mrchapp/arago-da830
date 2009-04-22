@@ -2,9 +2,9 @@ DESCRIPTION = "Codec Engine 2.23 for TI ARM/DSP processors"
 
 # compile time dependencies
 DEPENDS             = "ti-dspbios ti-xdctools"
-DEPENDS_dm6446-evm 	+= "ti-dsplink-module ti-cmem-module ti-cgt6x"
-DEPENDS_omap3evm   	+= "ti-dsplink-module ti-cmem-module ti-lpm-module ti-cgt6x"
-DEPENDS_dm355-evm 	+= "ti-cmem-module ti-codec-combo-dm355"
+DEPENDS_dm6446-evm 	+= "ti-dsplink ti-cmem ti-cgt6x"
+DEPENDS_omap3evm   	+= "ti-dsplink ti-cmem ti-lpm ti-cgt6x"
+DEPENDS_dm355-evm 	+= "ti-cmem ti-codec-combo-dm355"
 
 PREFERED_VERSION_ti_dspbios 		= "533"
 PREFERED_VERSION_ti_cgt6x   		= "60"
@@ -19,7 +19,8 @@ RDEPENDS_omap3evm   = "ti-dsplink-module ti-cmem-module ti-lpm-module"
 RDEPENDS_dm355-evm 	= "ti-cmem-module ti-codec-combo-dm355"
 
 # what this recipe provides
-PACKAGES =+ "ti-codec-engine-apps"
+PACKAGES += "ti-codec-engine-apps"
+PROVIDES += "ti-codec-engine-apps"
 
 # tconf from xdctools dislikes '.' in pwd :/
 PR = "r0"

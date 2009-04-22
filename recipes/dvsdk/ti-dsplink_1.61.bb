@@ -3,11 +3,12 @@ inherit module
 
 # compile and run time dependencies
 DEPENDS 	= "virtual/kernel perl-native"
-DEPENDS     += "ti-dspbios ti-xdctools ti-cgt6x"
+DEPENDS     += "ti-dspbios ti-cgt6x"
 RDEPENDS 	= "update-modules"
 
 # what this recipe provides
-PACKAGES =+ "ti-dsplink-module ti-dsplink-apps"
+PACKAGES += "ti-dsplink-module ti-dsplink-apps"
+PROVIDES += "ti-dsplink-module ti-dsplink-apps"
 
 # tconf from xdctools dislikes '.' in pwd :/
 PR = "r1"

@@ -13,7 +13,8 @@ SRC_URI	= "ftp://156.117.95.201/dm355_codecs_1_13_000.tar.gz \
 		   file://dm355mm_1_30.patch;patch=1 \
 	      "
 
-PACKAGES =+ "ti-dm355mm-module"
+PACKAGES += "ti-dm355mm-module"
+PROVIDES += "ti-dm355mm-module"
 
 S = "${WORKDIR}/dm355_codecs_1_13_000"
 
