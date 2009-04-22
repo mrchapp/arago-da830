@@ -2,7 +2,7 @@ DESCRIPTION = "udev is a daemon which dynamically creates and removes device nod
 /dev/, handles hotplug events and loads drivers at boot time. It replaces \
 the hotplug package and requires a kernel not older than 2.6.12."
 RPROVIDES_${PN} = "hotplug"
-PR = "r15"
+PR = "r16"
 
 SRC_URI = "http://kernel.org/pub/linux/utils/kernel/hotplug/udev-${PV}.tar.gz \
 	   file://noasmlinkage.patch;patch=1 \
@@ -12,6 +12,7 @@ SRC_URI = "http://kernel.org/pub/linux/utils/kernel/hotplug/udev-${PV}.tar.gz \
 	   file://libvolume-id-soname.patch;patch=1 \
 	   file://mount.blacklist \
 	   file://run.rules \
+	   file://default \
 	   "
 
 SRC_URI_append_h2200 = " file://50-hostap_cs.rules "
@@ -32,6 +33,9 @@ do_install () {
 	oe_runmake 'DESTDIR=${D}' INSTALL=install install
 	install -d ${D}${sysconfdir}/init.d
 	install -m 0755 ${WORKDIR}/init ${D}${sysconfdir}/init.d/udev
+
+	install -d ${D}${sysconfdir}/default
+	install -m 0755 ${WORKDIR}/default ${D}${sysconfdir}/default/udev
 
 	install -d ${D}${sysconfdir}/udev/rules.d/
 
