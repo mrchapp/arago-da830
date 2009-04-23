@@ -40,7 +40,7 @@ if [ "$DEVCACHE" != "" ]; then
 	[ -x /bin/uname ] && /bin/uname -mrspv > /tmp/uname || touch /tmp/uname
 	[ -r /proc/cmdline ] && cat /proc/cmdline > /tmp/cmdline || touch /tmp/cmdline
 	[ -r /proc/atags ] && cat /proc/atags > /tmp/atags || touch /tmp/atags
-	if [ -e /etc/dev.tar ] && \
+	if [ -e $DEVCACHE ] && \
 	   cmp -s /tmp/uname /etc/udev/saved.uname && \
 	   cmp -s /tmp/cmdline /etc/udev/saved.cmdline && \
 	   cmp -s /tmp/atags /etc/udev/saved.atags; then
