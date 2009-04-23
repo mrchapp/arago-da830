@@ -17,20 +17,23 @@ SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto
 S = "${WORKDIR}/BRIJESH_GIT_031809/davinci_multimedia_application_interface/dmai"
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "120+svnr${SRCREV}"
-PR = "r2"
+PR = "r3"
 
 # Define DMAI build time variables
 TARGET 				?= "all"
 TARGET_omap3evm 	?= "o3530_al"
 TARGET_dm355-evm 	?= "dm355_al"
 TARGET_dm6446-evm 	?= "dm6446_al"
+
 USER_XDC_PATH="${CE_INSTALL_DIR}/examples"
 CE_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine"
-CODEC_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm355"
+CODEC_dm355-evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm355"
+CODEC_omap3evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-omap3530"
+CODEC_dm6446-evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm6446"
 FC_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
-STAGING_TI_DSPBIOS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-dspbios"
-STAGING_TI_CGT6x_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-cgt6x"
-STAGING_TI_XDCTOOLS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-xdctools"
+DSPBIOS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-dspbios"
+CGT6x_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-cgt6x"
+XDCTOOLS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-xdctools"
 
 PARALLEL_MAKE = ""
 	
@@ -42,16 +45,20 @@ do_compile () {
 	#  TODO: Figure out how to pass the alsa include location, currently 
     #  LINUXLIBS_INSTALL_DIR is hard-coded for armv5te
 	make CE_INSTALL_DIR="${CE_INSTALL_DIR}" \
-		CODEC_INSTALL_DIR="${CODEC_INSTALL_DIR}" \
+		CODEC_INSTALL_DIR="${CODEC}" \
 		FC_INSTALL_DIR="${FC_INSTALL_DIR}" \
 		LINUXKERNEL_INSTALL_DIR="${STAGING_KERNEL_DIR}" \
-		XDC_INSTALL_DIR="${STAGING_TI_XDCTOOLS_DIR}" \
-		CODEGEN_INSTALL_DIR="${STAGING_TI_CGT6x_DIR}" \
-		BIOSUTILS_INSTALL_DIR="${STAGING_TI_DSPBIOS_DIR}"\
+		XDC_INSTALL_DIR="${XDCTOOLS_DIR}" \
+		CODEGEN_INSTALL_DIR="${CGT6x_DIR}" \
+		BIOS_INSTALL_DIR="${DSPBIOS_DIR}"\
 		LINUXLIBS_INSTALL_DIR="${STAGING_DIR}/armv5te-none-linux-gnueabi/usr" \
 		USER_XDC_PATH="${USER_XDC_PATH}" \
 		CROSS_COMPILE="${META_SDK_PATH}/bin/${TARGET_PREFIX}" \
 		VERBOSE="true" \
+		XDAIS_INSTALL_DIR="${CE_INSTALL_DIR}/cetools" \
+		LINK_INSTALL_DIR="${CE_INSTALL_DIR}/cetools/packages/dsplink" \
+		CMEM_INSTALL_DIR="${CE_INSTALL_DIR}/cetools" \
+		LPM_INSTALL_DIR="${CE_INSTALL_DIR}/cetools" \	
 		PLATFORM="${TARGET}"
 }
 
