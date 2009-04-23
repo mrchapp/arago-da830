@@ -1,17 +1,9 @@
 DESCRIPTION = "CMEM module for TI ARM/DSP processors"
-
 inherit module
 
 # compile and run time dependencies
 DEPENDS 	= "virtual/kernel perl-native"
 RDEPENDS 	= "update-modules"
-
-# what this recipe provides
-PACKAGES += "ti-cmem-module"
-PROVIDES += "ti-cmem-module"
-
-PR = "r0"
-PV = "223"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.
 # This will not work outside TI network and the link should be remove once
@@ -21,6 +13,9 @@ SRC_URI = "ftp://156.117.95.201/codec_engine_2_23.tar.gz"
 
 # Set the source directory
 S = "${WORKDIR}/codec_engine_2_23"
+
+PR = "r1"
+PV = "223"
 
 do_compile() {
     # CMEM - Build the cmem kernel module and associated test apps
@@ -60,6 +55,6 @@ pkg_postrm_ti-cmem-module () {
 }
 
 INHIBIT_PACKAGE_STRIP = "1"
-
+PACKAGES =+ "ti-cmem-module"
 FILES_ti-cmem-module = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/cmemk.ko"
 

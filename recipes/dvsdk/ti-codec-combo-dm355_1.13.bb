@@ -1,8 +1,5 @@
 DESCRIPTION = "DM355 Codec Combo 1.13"
 
-# run time dependency 
-RDEPENDS 	= "ti-dm355mm-module"
-
 # NOTE: This in internal ftp running on Brijesh's linux host.
 # This will not work outside TI network and the link should be remove once
 # we get external http:// URL

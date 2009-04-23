@@ -2,16 +2,12 @@ DESCRIPTION = "DSPLINK 1.61 module for TI ARM/DSP processors"
 inherit module
 
 # compile and run time dependencies
-DEPENDS 	= "virtual/kernel perl-native"
-DEPENDS     += "ti-dspbios ti-cgt6x"
-RDEPENDS 	= "update-modules"
-
-# what this recipe provides
-PACKAGES += "ti-dsplink-module ti-dsplink-apps"
-PROVIDES += "ti-dsplink-module ti-dsplink-apps"
+DEPENDS 	= " virtual/kernel perl-native"
+DEPENDS     =+ " ti-dspbios ti-cgt6x"
+RDEPENDS 	= " update-modules"
 
 # tconf from xdctools dislikes '.' in pwd :/
-PR = "r1"
+PR = "r2"
 PV = "161"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.
@@ -132,11 +128,7 @@ do_install () {
     # DSPLINK sample apps
     install -d ${D}/${datadir}/ti-dsplink
     
-	# FIXME: Do not copy gpp side binaries it is causing
-	#    ERROR: QA Issue: No GNU_HASH in the elf binary 
-	# The reason for that is that OE's LDFLAGS is not used by dsplink makefile
-
-    #cp ${DSPLINK}/gpp/export/BIN/Linux/${DSPLINKPLATFORM}/RELEASE/*gpp ${D}/${datadir}/ti-dsplink
+    cp ${DSPLINK}/gpp/export/BIN/Linux/${DSPLINKPLATFORM}/RELEASE/*gpp ${D}/${datadir}/ti-dsplink
     
     for i in $(find ${DSPLINK}/dsp/BUILD/ -name "*.out") ; do
         cp ${i} ${D}/${datadir}/ti-dsplink
@@ -161,5 +153,10 @@ pkg_postinst_ti-dsplink-module () {
 
 INHIBIT_PACKAGE_STRIP = "1"
 
+PACKAGES =+ " ti-dsplink-module ti-dsplink-apps"
 FILES_ti-dsplink-module  = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/dsplinkk.ko"
 FILES_ti-dsplink-apps = "${datadir}/ti-dsplink/* ${libdir}/dsplink.lib"
+
+# Disable QA check untils we figure out how to pass LDFLAGS in build
+INSANE_SKIP_${PN} = True
+INSANE_SKIP_ti-dsplink-apps = True

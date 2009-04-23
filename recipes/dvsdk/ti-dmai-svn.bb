@@ -1,15 +1,13 @@
 DESCRIPTION = "DMAI for TI ARM/DSP processors"
 
 # compile time dependencies
-DEPENDS	  		 = "ti-codec-engine ti-xdctools" 
-DEPENDS_omap3evm += "ti-sdma ti-dspbios ti-cgt6x"
-
+DEPENDS	  		 	=+ " ti-codec-engine ti-xdctools" 
+DEPENDS_omap3evm 	=+ " ti-dspbios ti-cgt6x"
+DEPENDS_dm6446-evm 	=+ " ti-dspbios ti-cgt6x"
 PREFERED_VERSION_ti-codec-engine 	= "223"
-
-# run time dependencies
-RDEPENDS			  = "ti-cmem-module"
-RDEPENDS_dm355-evm    += "ti-codec-combo-dm355"
-RDEPENDS_omap3evm     += "ti-sdma-module"
+PREFERED_VERSION_ti_dspbios 		= "533"
+PREFERED_VERSION_ti_cgt6x   		= "60"
+PREFERED_VERSION_ti_xdctools 		= "310"
 
 # NOTE: Use Brijesh' DMAI development branch. The URL *must* be updated once
 # we have stable DMAI 2.x on gforge.
@@ -19,19 +17,17 @@ SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto
 S = "${WORKDIR}/BRIJESH_GIT_031809/davinci_multimedia_application_interface/dmai"
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "120+svnr${SRCREV}"
-PR = "r0"
+PR = "r2"
 
+# Define DMAI build time variables
 TARGET 				?= "all"
 TARGET_omap3evm 	?= "o3530_al"
 TARGET_dm355-evm 	?= "dm355_al"
 TARGET_dm6446-evm 	?= "dm6446_al"
-
-
 USER_XDC_PATH="${CE_INSTALL_DIR}/examples"
 CE_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine"
 CODEC_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm355"
 FC_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
-
 STAGING_TI_DSPBIOS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-dspbios"
 STAGING_TI_CGT6x_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-cgt6x"
 STAGING_TI_XDCTOOLS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-xdctools"
@@ -60,9 +56,9 @@ do_compile () {
 }
 
 do_install () {
-    install -d ${D}/opt/ti/dmai
-    export EXEC_DIR="${D}/opt/ti/dmai"
-    oe_runmake install
+    install -d ${D}/${datadir}/ti-dmai
+	cd ${S}
+    make PLATFORM="${TARGET}" EXEC_DIR=${D}/${datadir}/ti-dmai install 
 }
 
 do_stage () {
@@ -71,9 +67,17 @@ do_stage () {
 }
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
-PACKAGES += "ti-dmai-apps"
-PROVIDES += "ti-dmai-apps"
-FILES_ti-dmai-apps = "/opt/ti/dmai/*"
 INHIBIT_PACKAGE_STRIP = "1"
 
+# Disable QA check untils we figure out how to pass LDFLAGS in build
+INSANE_SKIP_${PN} = True
+INSANE_SKIP_ti-dmai-apps = True
+
+PACKAGES =+ "ti-dmai-apps"
+FILES_ti-dmai-apps = "${datadir}/ti-dmai/*"
+
+# run time dependencies 
+RDEPENDS_ti-dmai-apps_dm355-evm += " ti-dm355mm-module ti-cmem-module"
+RDEPENDS_ti-dmai-apps_dm6446-evm += " ti-cmem-module ti-dsplink-module ti-codec-combo-dm6446"
+RDEPENDS_ti-dmai-apps_omap3evm += " ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module"
 

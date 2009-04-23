@@ -12,15 +12,11 @@ OE_ALLOW_INSECURE_DOWNLOADS = "1"
 SRC_URI	= "ftp://156.117.95.201/dm355_codecs_1_13_000.tar.gz \
 		   file://dm355mm_1_30.patch;patch=1 \
 	      "
-
-PACKAGES += "ti-dm355mm-module"
-PROVIDES += "ti-dm355mm-module"
-
 S = "${WORKDIR}/dm355_codecs_1_13_000"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "113"
-PR = "r0"
+PR = "r1"
 
 do_configure() {
 	find ${S} -name "*.ko" -exec rm {} \; || true
@@ -54,6 +50,7 @@ pkg_postrm_ti-dm355mm-module () {
 }
 
 INHIBIT_PACKAGE_STRIP = "1"
-
+PACKAGES =+ "ti-dm355mm-module"
 FILES_ti-dm355mm-module = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/dm350mmap.ko"
+
 

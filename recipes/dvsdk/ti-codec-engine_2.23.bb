@@ -1,29 +1,16 @@
 DESCRIPTION = "Codec Engine 2.23 for TI ARM/DSP processors"
 
 # compile time dependencies
-DEPENDS             = "ti-dspbios ti-xdctools"
-DEPENDS_dm6446-evm 	+= "ti-dsplink ti-cmem ti-cgt6x"
-DEPENDS_omap3evm   	+= "ti-dsplink ti-cmem ti-lpm ti-cgt6x"
-DEPENDS_dm355-evm 	+= "ti-cmem ti-codec-combo-dm355"
-
-PREFERED_VERSION_ti_dspbios 		= "533"
-PREFERED_VERSION_ti_cgt6x   		= "60"
-PREFERED_VERSION_ti_xdctools 		= "310"
-PREFERED_VERSION_ti-dsplink-module 	= "161"
-PREFERED_VERSION_ti-cmem-module 	= "223"
-PREFERED_VERSION_ti-lpm-module 		= "223"
-
-# run time dependencies
-RDEPENDS_dm6446-evm = "ti-dsplink-module ti-cmem-module"
-RDEPENDS_omap3evm   = "ti-dsplink-module ti-cmem-module ti-lpm-module"
-RDEPENDS_dm355-evm 	= "ti-cmem-module ti-codec-combo-dm355"
-
-# what this recipe provides
-PACKAGES += "ti-codec-engine-apps"
-PROVIDES += "ti-codec-engine-apps"
+DEPENDS             =+ " ti-xdctools"
+DEPENDS_dm6446-evm 	=+ " ti-cgt6x ti-dspbios ti-codec-combo-dm6446"
+DEPENDS_omap3evm   	=+ " ti-cgt6x ti-dspbios ti-codec-combo-omap3530"
+DEPENDS_dm355-evm 	=+ " ti-codec-combo-dm355"
+PREFERED_VERSION_ti_dspbios		= "533"
+PREFERED_VERSION_ti_cgt6x  		= "60"
+PREFERED_VERSION_ti_xdctools	= "310"
 
 # tconf from xdctools dislikes '.' in pwd :/
-PR = "r0"
+PR = "r1"
 PV = "223"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.
@@ -43,21 +30,19 @@ S = "${WORKDIR}/codec_engine_2_23"
 CEEXAMPLESDEVICES             ?= "DM6446"
 CEEXAMPLESDEVICES_omap3evm    ?= "OMAP3530"
 CEEXAMPLESDEVICES_dm644x-evm  ?= "DM6446"
-
 PLATFORM            ?= "evm3530"
 PLATFORM_omap3evm   ?= "evm3530"
 PLATFORM_dm644x-evm ?= "evmDM6446"
-
 BUILDDSP            ?= "false"
 BUILDDSP_omap3evm   ?= "true"
 BUILDDSP_dm644x-evm ?= "true"
-
 DUALCPU             ?= "false"
 DUALCPU_omap3evm    ?= "true"
 DUALCPU_dm644x-evm  ?= "true"
 
 PARALLEL_MAKE = ""
 
+# set TI tools directory
 STAGING_TI_DSPBIOS_DIR="${STAGING_DIR}/${HOST_SYS}/ti-dspbios"
 STAGING_TI_CGT6x_DIR="${STAGING_DIR}/${HOST_SYS}/ti-cgt6x"
 STAGING_TI_XDCTOOLS_DIR="${STAGING_DIR}/${HOST_SYS}/xdctools"
@@ -156,15 +141,19 @@ do_install () {
     
 }
 
-PACKAGE_ARCH = "${MACHINE_ARCH}"
 # Codec Engine and friends need a complete tree, so stage it all - possibly could use repoman for this later
 do_stage() {
     install -d ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}
     cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}/ 
 }
 
-
+PACKAGE_ARCH = "${MACHINE_ARCH}"
+PACKAGES =+ " ti-codec-engine-apps"
+FILES_ti-codec-engine-apps = "${datadir}/ti-codec-engine/*"
 INHIBIT_PACKAGE_STRIP = "1"
 
-FILES_ti-codec-engine = "${datadir}/ti-codec-engine/*"
+# run time dependencies 
+RDEPENDS_ti-codec-engine-apps_dm355-evm += " ti-dm355mm-module ti-cmem-module"
+RDEPENDS_ti-codec-engine-apps_dm6446-evm += " ti-cmem-module ti-dsplink-module ti-codec-combo-dm6446"
+RDEPENDS_ti-codec-engine-apps_omap3evm += " ti-cmem-module ti-dsplink-module ti-codec-engine-combo-omap3530"
 

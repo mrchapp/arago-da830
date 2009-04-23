@@ -2,16 +2,10 @@ DESCRIPTION = "LPM module for TI OMAP3 processors"
 
 inherit module
 # compile and run time dependencies
-DEPENDS 	= "virtual/kernel perl-native"
-DEPENDS    += "ti-dsplink"
+DEPENDS 	= " virtual/kernel perl-native"
+DEPENDS     =+ " ti-dsplink"
 PREFERED_VERSION_ti-dsplink = "161"
-RDEPENDS    = "ti-dsplink-module"
-RDEPENDS 	= "update-modules"
-
-PACKAGES += "ti-lpm-module"
-PROVIDES += "ti-lpm-module"
-
-PR = "r0"
+PR = "r1"
 PV = "223"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.
@@ -65,4 +59,7 @@ pkg_postrm_ti-lpm-module () {
 }
 
 INHIBIT_PACKAGE_STRIP = "1"
+
+PACKAGES =+ " ti-lpm-module"
 FILES_ti-lpm-module = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/*lpm*ko"
+RDEPENDS 	=+ " ti-dsplink-module"
