@@ -2,8 +2,7 @@ DESCRIPTION = "DSPLINK 1.61 module for TI ARM/DSP processors"
 inherit module
 
 # compile and run time dependencies
-DEPENDS 	= " virtual/kernel perl-native"
-DEPENDS     =+ " ti-dspbios ti-cgt6x"
+DEPENDS 	= " virtual/kernel perl-native ti-dspbios ti-cgt6x"
 RDEPENDS 	= " update-modules"
 
 # tconf from xdctools dislikes '.' in pwd :/

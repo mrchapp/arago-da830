@@ -1,10 +1,9 @@
 DESCRIPTION = "Codec Engine 2.23 for TI ARM/DSP processors"
 
 # compile time dependencies
-DEPENDS             =+ " ti-xdctools"
-DEPENDS_dm6446-evm 	=+ " ti-cgt6x ti-dspbios ti-codec-combo-dm6446"
-DEPENDS_omap3evm   	=+ " ti-cgt6x ti-dspbios ti-codec-combo-omap3530"
-DEPENDS_dm355-evm 	=+ " ti-codec-combo-dm355"
+DEPENDS_dm6446-evm 	=+ " ti-xdctools ti-cgt6x ti-dspbios ti-codec-combo-dm6446"
+DEPENDS_omap3evm   	=+ " ti-cgt6x ti-dspbios ti-codec-combo-omap3530 ti-xdctools"
+DEPENDS_dm355-evm 	=+ " ti-codec-combo-dm355 ti-xdctools"
 PREFERED_VERSION_ti_dspbios		= "533"
 PREFERED_VERSION_ti_cgt6x  		= "60"
 PREFERED_VERSION_ti_xdctools	= "310"
@@ -155,5 +154,5 @@ INHIBIT_PACKAGE_STRIP = "1"
 # run time dependencies 
 RDEPENDS_ti-codec-engine-apps_dm355-evm += " ti-dm355mm-module ti-cmem-module"
 RDEPENDS_ti-codec-engine-apps_dm6446-evm += " ti-cmem-module ti-dsplink-module ti-codec-combo-dm6446"
-RDEPENDS_ti-codec-engine-apps_omap3evm += " ti-cmem-module ti-dsplink-module ti-codec-engine-combo-omap3530"
+RDEPENDS_ti-codec-engine-apps_omap3evm += " ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530"
 

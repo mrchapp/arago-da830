@@ -1,9 +1,10 @@
 DESCRIPTION = "DMAI for TI ARM/DSP processors"
 
 # compile time dependencies
-DEPENDS	  		 	=+ " ti-codec-engine ti-xdctools" 
-DEPENDS_omap3evm 	=+ " ti-dspbios ti-cgt6x"
-DEPENDS_dm6446-evm 	=+ " ti-dspbios ti-cgt6x"
+DEPENDS_omap3evm 	= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-omap3530"
+DEPENDS_dm6446-evm 	= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-dm6446"
+DEPENDS_dm355-evm  	= " ti-codec-engine ti-xdctools ti-codec-combo-dm355"
+
 PREFERED_VERSION_ti-codec-engine 	= "223"
 PREFERED_VERSION_ti_dspbios 		= "533"
 PREFERED_VERSION_ti_cgt6x   		= "60"
@@ -25,7 +26,6 @@ TARGET_omap3evm 	?= "o3530_al"
 TARGET_dm355-evm 	?= "dm355_al"
 TARGET_dm6446-evm 	?= "dm6446_al"
 
-USER_XDC_PATH="${CE_INSTALL_DIR}/examples"
 CE_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine"
 CODEC_dm355-evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm355"
 CODEC_omap3evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-omap3530"
@@ -34,13 +34,14 @@ FC_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
 DSPBIOS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-dspbios"
 CGT6x_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-cgt6x"
 XDCTOOLS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-xdctools"
+USER_XDC_PATH="${CE_INSTALL_DIR}/examples"
 
 PARALLEL_MAKE = ""
 	
 do_compile () {
 
 	cd ${S}
-	make XDC_INSTALL_DIR_${TARGET}="${STAGING_TI_XDCTOOLS_DIR}" clean
+	make XDC_INSTALL_DIR_${TARGET}="${XDCTOOLS_DIR}" clean
 
 	#  TODO: Figure out how to pass the alsa include location, currently 
     #  LINUXLIBS_INSTALL_DIR is hard-coded for armv5te
@@ -84,7 +85,7 @@ PACKAGES =+ "ti-dmai-apps"
 FILES_ti-dmai-apps = "${datadir}/ti-dmai/*"
 
 # run time dependencies 
-RDEPENDS_ti-dmai-apps_dm355-evm += " ti-dm355mm-module ti-cmem-module"
-RDEPENDS_ti-dmai-apps_dm6446-evm += " ti-cmem-module ti-dsplink-module ti-codec-combo-dm6446"
-RDEPENDS_ti-dmai-apps_omap3evm += " ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module"
+RDEPENDS_ti-dmai-apps_dm355-evm =+ " ti-dm355mm-module ti-cmem-module"
+RDEPENDS_ti-dmai-apps_dm6446-evm =+ " ti-cmem-module ti-dsplink-module ti-codec-combo-dm6446"
+RDEPENDS_ti-dmai-apps_omap3evm =+ " ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module"
 
