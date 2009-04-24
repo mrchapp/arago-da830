@@ -12,13 +12,15 @@ PREFERED_VERSION_ti_xdctools 		= "310"
 
 # NOTE: Use Brijesh' DMAI development branch. The URL *must* be updated once
 # we have stable DMAI 2.x on gforge.
-SRCREV = "80"
-SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto=https;user=anonymous;pswd=''"
+SRCREV = "86"
+SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto=https;user=anonymous;pswd='' \
+		file://loadmodules-ti-dmai-dm355.sh \
+	"
 
 S = "${WORKDIR}/BRIJESH_GIT_031809/davinci_multimedia_application_interface/dmai"
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "120+svnr${SRCREV}"
-PR = "r3"
+PR = "r4"
 
 # Define DMAI build time variables
 TARGET 				?= "all"
@@ -63,10 +65,15 @@ do_compile () {
 		PLATFORM="${TARGET}"
 }
 
+PLATFORM_dm355-evm ?="dm355"
+PLATFORM_dm6446-evm ?="dm6446"
+PLATFORM_omap3evm ?="omap3530"
+
 do_install () {
-    install -d ${D}/${datadir}/ti-dmai
+    install -d ${D}/opt/ti-dmai-apps
 	cd ${S}
-    make PLATFORM="${TARGET}" EXEC_DIR=${D}/${datadir}/ti-dmai install 
+    make PLATFORM="${TARGET}" EXEC_DIR=${D}/opt/ti-dmai-apps install 
+	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${PLATFORM}.sh ${D}/opt/ti-dmai-apps/loadmodule.sh 
 }
 
 do_stage () {
@@ -82,7 +89,7 @@ INSANE_SKIP_${PN} = True
 INSANE_SKIP_ti-dmai-apps = True
 
 PACKAGES =+ "ti-dmai-apps"
-FILES_ti-dmai-apps = "${datadir}/ti-dmai/*"
+FILES_ti-dmai-apps = "/opt/ti-dmai-apps/*"
 
 # run time dependencies 
 RDEPENDS_ti-dmai-apps_dm355-evm =+ " ti-dm355mm-module ti-cmem-module"
