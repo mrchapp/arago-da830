@@ -8,21 +8,14 @@ IMAGE_ROOTFS_SIZE_ext2.gz = "32768"
 
 IMAGE_PREPROCESS_COMMAND = "create_etc_timestamp"
 
-# Install DMAI packages  
-DMAI_PACKAGES = "\  
-	ti-cmem-module \
-	ti-dm355mm-module \
-	ti-dmai-apps \
-	"
-
 # Disable these for now
 # util-linux-mount util-linux-umount \
 
 IMAGE_INSTALL = "\
-	task-arago-demo \
+	task-arago-base \
     ${DISTRO_SSH_DAEMON} \
     angstrom-version \
-	${DMAI_PACKAGES} \
+	ti-dmai-apps \
     "
 
 export IMAGE_BASENAME = "arago-dvsdk-image"
