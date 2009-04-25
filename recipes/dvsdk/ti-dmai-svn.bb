@@ -1,9 +1,9 @@
 DESCRIPTION = "DMAI for TI ARM/DSP processors"
 
 # compile time dependencies
-DEPENDS_omap3evm 	= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-omap3530"
-DEPENDS_dm6446-evm 	= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-dm6446"
-DEPENDS_dm355-evm  	= " ti-codec-engine ti-xdctools ti-codec-combo-dm355"
+DEPENDS_omap3evm 	= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-omap3530 virtual/kernel "
+DEPENDS_dm6446-evm 	= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-dm6446 virtual/kernel "
+DEPENDS_dm355-evm  	= " ti-codec-engine ti-xdctools ti-codec-combo-dm355 virtual/kernel"
 
 PREFERED_VERSION_ti-codec-engine 	= "223"
 PREFERED_VERSION_ti_dspbios 		= "533"
@@ -14,7 +14,9 @@ PREFERED_VERSION_ti_xdctools 		= "310"
 # we have stable DMAI 2.x on gforge.
 SRCREV = "86"
 SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto=https;user=anonymous;pswd='' \
-		file://loadmodules-ti-dmai-dm355.sh \
+		file://loadmodules-ti-dmai-dm355_al.sh \
+		file://loadmodules-ti-dmai-dm6446_al.sh \
+		file://loadmodules-ti-dmai-o3530_al.sh \
 	"
 
 S = "${WORKDIR}/BRIJESH_GIT_031809/davinci_multimedia_application_interface/dmai"
@@ -65,15 +67,15 @@ do_compile () {
 		PLATFORM="${TARGET}"
 }
 
-PLATFORM_dm355-evm ?="dm355"
-PLATFORM_dm6446-evm ?="dm6446"
-PLATFORM_omap3evm ?="omap3530"
-
 do_install () {
     install -d ${D}/opt/ti-dmai-apps
 	cd ${S}
     make PLATFORM="${TARGET}" EXEC_DIR=${D}/opt/ti-dmai-apps install 
-	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${PLATFORM}.sh ${D}/opt/ti-dmai-apps/loadmodule.sh 
+	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${TARGET}.sh ${D}/opt/ti-dmai-apps/loadmodule.sh 
+}
+
+pkg_postinst_ti-dmai-apps () {
+	ln -sf /opt/ti-codec-combo/* /opt/ti-dmai-apps/
 }
 
 do_stage () {
@@ -92,7 +94,8 @@ PACKAGES =+ "ti-dmai-apps"
 FILES_ti-dmai-apps = "/opt/ti-dmai-apps/*"
 
 # run time dependencies 
-RDEPENDS_ti-dmai-apps_dm355-evm =+ " ti-dm355mm-module ti-cmem-module"
+RDEPENDS_ti-dmai-apps_dm355-evm =+ " ti-dm355mm-module ti-cmem-module ti-codec-combo-dm355"
 RDEPENDS_ti-dmai-apps_dm6446-evm =+ " ti-cmem-module ti-dsplink-module ti-codec-combo-dm6446"
 RDEPENDS_ti-dmai-apps_omap3evm =+ " ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module"
+
 

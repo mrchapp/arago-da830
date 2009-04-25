@@ -9,12 +9,8 @@ SRC_URI	= "ftp://156.117.95.201/dm6446_dvsdk_combos_2_02.tar.gz"
 S = "${WORKDIR}/dm6446_dvsdk_combos_2_02"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
-PV = "316"
+PV = "202"
 PR = "r0"
-
-do_configure () {
-  	echo "Do not rebuild for now"
-}
 
 do_compile() {
   	echo "Do not rebuild for now"

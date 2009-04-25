@@ -12,19 +12,15 @@ S = "${WORKDIR}/omap3530_dvsdk_combos_3_16"
 PV = "316"
 PR = "r0"
 
-do_configure () {
-  	echo "Do not rebuild for now"
-}
-
 do_compile() {
   	echo "Do not rebuild for now"
 }
 
 do_install () {
-    install -d ${D}/${datadir}/ti-codec-combo
+    install -d ${D}/opt/ti-codec-combo
 	cd ${S}
 	for file in `find . -name *.x64P`; do
-		cp ${file} ${D}/${datadir}/ti-codec-combo
+		cp ${file} ${D}/opt/ti-codec-combo
 	done
 }
 
@@ -35,5 +31,5 @@ do_stage() {
     cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}/ 
 }
 
-FILES_${PN} = "${datadir}/ti-codec-combo/*"
+FILES_${PN} = "/opt/ti-codec-combo/*"
 
