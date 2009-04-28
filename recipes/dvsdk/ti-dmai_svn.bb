@@ -1,9 +1,9 @@
 DESCRIPTION = "DMAI for TI ARM/DSP processors"
 
 # compile time dependencies
-DEPENDS_omap3evm 	= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-omap3530 virtual/kernel "
-DEPENDS_dm6446-evm 	= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-dm6446 virtual/kernel "
-DEPENDS_dm355-evm  	= " ti-codec-engine ti-xdctools ti-codec-combo-dm355 virtual/kernel"
+DEPENDS_omap3evm 	+= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-omap3530 virtual/kernel "
+DEPENDS_dm6446-evm 	+= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-dm6446 virtual/kernel "
+DEPENDS_dm355-evm  	+= " ti-codec-engine ti-xdctools ti-codec-combo-dm355 virtual/kernel"
 
 PREFERED_VERSION_ti-codec-engine 	= "223"
 PREFERED_VERSION_ti_dspbios 		= "533"
@@ -22,7 +22,7 @@ SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto
 S = "${WORKDIR}/BRIJESH_GIT_031809/davinci_multimedia_application_interface/dmai"
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "120+svnr${SRCREV}"
-PR = "r4"
+PR = "r8"
 
 # Define DMAI build time variables
 TARGET 				?= "all"
@@ -68,14 +68,14 @@ do_compile () {
 }
 
 do_install () {
-    install -d ${D}/opt/ti-dmai-apps
+    install -d ${D}/opt/ti/dmai-apps
 	cd ${S}
-    make PLATFORM="${TARGET}" EXEC_DIR=${D}/opt/ti-dmai-apps install 
-	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${TARGET}.sh ${D}/opt/ti-dmai-apps/loadmodule.sh 
+    make PLATFORM="${TARGET}" EXEC_DIR=${D}/opt/ti/dmai-apps install 
+	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${TARGET}.sh ${D}/opt/ti/dmai-apps/loadmodule.sh 
 }
 
 pkg_postinst_ti-dmai-apps () {
-	ln -sf /opt/ti-codec-combo/* /opt/ti-dmai-apps/
+	ln -sf /opt/ti/codec-combo/* /opt/ti/dmai-apps/
 }
 
 do_stage () {
@@ -90,12 +90,11 @@ INHIBIT_PACKAGE_STRIP = "1"
 INSANE_SKIP_${PN} = True
 INSANE_SKIP_ti-dmai-apps = True
 
-PACKAGES =+ "ti-dmai-apps"
-FILES_ti-dmai-apps = "/opt/ti-dmai-apps/*"
+PACKAGES += "ti-dmai-apps"
+FILES_ti-dmai-apps = "/opt/ti/dmai-apps/*"
 
 # run time dependencies 
-RDEPENDS_ti-dmai-apps_dm355-evm =+ " ti-dm355mm-module ti-cmem-module ti-codec-combo-dm355"
-RDEPENDS_ti-dmai-apps_dm6446-evm =+ " ti-cmem-module ti-dsplink-module ti-codec-combo-dm6446"
-RDEPENDS_ti-dmai-apps_omap3evm =+ " ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module"
-
+RDEPENDS_ti-dmai-apps_dm355-evm += " ti-dm355mm-module ti-cmem-module ti-codec-combo-dm355"
+RDEPENDS_ti-dmai-apps_dm6446-evm += " ti-cmem-module ti-dsplink-module ti-codec-combo-dm6446"
+RDEPENDS_ti-dmai-apps_omap3evm += " ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module"
 

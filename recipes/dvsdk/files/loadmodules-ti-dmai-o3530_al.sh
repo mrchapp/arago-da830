@@ -24,12 +24,12 @@
 # 0x87F00000     4 KB   DSPLINK (RESET)
 # 0x87F01000  1020 KB   unused
 
-insmod cmemk.ko phys_start=0x85800000 phys_end=0x86800000 pools=20x4096,8x131072,4x829440,1x5250000,1x1429440,1x256000
+modprobe cmemk phys_start=0x85800000 phys_end=0x86800000 pools=20x4096,8x131072,4x829440,1x5250000,1x1429440,1x256000
 
 
 # insert DSP/BIOS Link driver
 #
-insmod dsplinkk.ko
+modprobe dsplinkk
 
 # make /dev/dsplink
 rm -f /dev/dsplink
@@ -38,4 +38,5 @@ mknod /dev/dsplink c `awk "\\$2==\"dsplink\" {print \\$1}" /proc/devices` 0
 
 # insert Local Power Manager driver
 #
-insmod lpm_omap3530.ko
+modprobe lpm_omap3530
+

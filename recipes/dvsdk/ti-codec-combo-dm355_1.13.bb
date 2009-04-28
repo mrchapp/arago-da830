@@ -12,7 +12,7 @@ S = "${WORKDIR}/dm355_codecs_1_13_000"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "113"
-PR = "r1"
+PR = "r2"
 
 do_compile() {
 	echo "Do nothing"
@@ -31,4 +31,4 @@ do_stage() {
 }
 
 INSANE_SKIP_${PN} = True
-FILE_${PN} = "/opt/ti/codec-combo/mapdmaq"
+FILES_${PN} = "/opt/ti/codec-combo/mapdmaq"

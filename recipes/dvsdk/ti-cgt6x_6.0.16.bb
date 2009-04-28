@@ -9,8 +9,8 @@ SRC_URI	= "ftp://156.117.95.201/cg6x_6_0_16.tar.gz"
 S = "${WORKDIR}/cg6x_6_0_16"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
-PV = "60"
-PR = "r16"
+PV = "6016"
+PR = "r1"
 
 do_compile() {
 	echo "Do nothing"

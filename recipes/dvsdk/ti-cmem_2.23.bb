@@ -14,7 +14,7 @@ SRC_URI = "ftp://156.117.95.201/codec_engine_2_23.tar.gz"
 # Set the source directory
 S = "${WORKDIR}/codec_engine_2_23"
 
-PR = "r1"
+PR = "r5"
 PV = "223"
 
 do_compile() {
@@ -55,6 +55,6 @@ pkg_postrm_ti-cmem-module () {
 }
 
 INHIBIT_PACKAGE_STRIP = "1"
-PACKAGES =+ "ti-cmem-module"
+PACKAGES += " ti-cmem-module"
 FILES_ti-cmem-module = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/cmemk.ko"
 

@@ -1,15 +1,15 @@
 DESCRIPTION = "Codec Engine 2.23 for TI ARM/DSP processors"
 
 # compile time dependencies
-DEPENDS_dm6446-evm 	=+ " ti-xdctools ti-cgt6x ti-dspbios ti-codec-combo-dm6446"
-DEPENDS_omap3evm   	=+ " ti-cgt6x ti-dspbios ti-codec-combo-omap3530 ti-xdctools"
-DEPENDS_dm355-evm 	=+ " ti-codec-combo-dm355 ti-xdctools"
+DEPENDS_dm6446-evm 	+= " ti-xdctools ti-cgt6x ti-dspbios ti-codec-combo-dm6446"
+DEPENDS_omap3evm   	+= " ti-cgt6x ti-dspbios ti-codec-combo-omap3530 ti-xdctools"
+DEPENDS_dm355-evm 	+= " ti-codec-combo-dm355 ti-xdctools"
 PREFERED_VERSION_ti_dspbios		= "533"
 PREFERED_VERSION_ti_cgt6x  		= "60"
 PREFERED_VERSION_ti_xdctools	= "310"
 
 # tconf from xdctools dislikes '.' in pwd :/
-PR = "r1"
+PR = "r4"
 PV = "223"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.
@@ -147,8 +147,8 @@ do_stage() {
 }
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
-PACKAGES =+ " ti-codec-engine-apps"
-FILES_ti-codec-engine-apps = "${datadir}/ti-codec-engine/*"
+PACKAGES += " ti-codec-engine-apps"
+FILES_ti-codec-engine-apps = "/opt/ti/codec-engine/*"
 INHIBIT_PACKAGE_STRIP = "1"
 
 # run time dependencies 

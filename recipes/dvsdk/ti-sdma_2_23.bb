@@ -4,7 +4,7 @@ inherit module
 # compile and run time dependencies
 DEPENDS 	= "virtual/kernel perl-native"
 
-PR = "r1"
+PR = "r3"
 PV = "223"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.
@@ -52,6 +52,6 @@ pkg_postrm_ti-sdma-module () {
 
 INHIBIT_PACKAGE_STRIP = "1"
 
-PACKAGES =+ "ti-sdma-module"
+PACKAGES += " ti-sdma-module"
 FILES_ti-sdma-module = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/sdmak.ko"
 
