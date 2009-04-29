@@ -16,24 +16,37 @@ IMAGE_INSTALL = "\
 	task-arago-base \
     ${DISTRO_SSH_DAEMON} \
     angstrom-version \
-	ti-dmai-apps \
 	gstreamer \
 	gst-plugins-base \
 	gst-plugins-good \ 
 	gst-plugins-bad \ 
 	gst-plugins-ugly \ 
+	gst-plugin-typefindfunctions \
+	gst-plugin-queue2 \
 	gst-plugin-ossaudio \
 	gst-plugin-alsa \
 	gst-plugin-audioconvert \
 	gst-plugin-audioresample \
-	gst-plugin-videotestsrc \
 	gst-plugin-volume \
 	gst-plugin-audiotestsrc \
+	gst-plugin-videotestsrc \
+	gst-plugin-video4linux2 \
+	gst-plugin-videoscale \
+	gst-plugin-videorate \
+	gst-plugin-videomixer \
+	gst-plugin-videoflip \
+	gst-plugin-ffmpegcolorspace \
 	gst-plugin-decodebin \
 	gst-plugin-playbin \
+	gst-plugin-autodetect \
 	gst-plugin-rtp \
+	gst-plugin-udp \
+	gst-plugin-rtpmanager \
+	gst-plugin-tcp \
 	gst-plugin-avi \
 	gst-plugin-qtdemux \
+	gst-plugin-mad \
+	ti-dmai-apps \
 	gstreamer-ti \
 	gstreamer-ti-demo-script \
     "
