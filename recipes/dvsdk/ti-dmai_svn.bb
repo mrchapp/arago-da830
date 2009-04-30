@@ -45,7 +45,7 @@ PARALLEL_MAKE = ""
 do_compile () {
 
 	cd ${S}
-	make XDC_INSTALL_DIR_${TARGET}="${XDCTOOLS_DIR}" clean
+	make XDC_INSTALL_DIR="${XDCTOOLS_DIR}" clean
 
 	#  TODO: Figure out how to pass the alsa include location, currently 
     #  LINUXLIBS_INSTALL_DIR is hard-coded for armv5te
