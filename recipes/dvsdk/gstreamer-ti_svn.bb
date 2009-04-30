@@ -1,6 +1,6 @@
-inherit autotools
-
 DESCRIPTION = "Gstreamer plugin for TI Davinci and OMAP processors"
+
+inherit autotools
 
 DEPENDS = "ti-dmai gstreamer gst-plugins-base gst-plugins-good gst-plugins-ugly"
 PREFERED_VERSION_gstreamer 			= "0.10.22"
@@ -62,9 +62,12 @@ CPPFLAGS_append 			= " -DPlatform_${PLATFORM}"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 do_install_prepend () {
+	# install gstreamer demo scripts
 	install -d ${D}/opt/ti/gst
 	cp -r ${WORKDIR}/gstreamer_ti/gstreamer_demo/shared ${D}/opt/ti/gst
 	cp -r ${WORKDIR}/gstreamer_ti/gstreamer_demo/${PLATFORM} ${D}/opt/ti/gst
+
+	# default loadmodule script is hard-coded for insmod, change to modprobe
 	sed -i 's/insmod/modprobe/g' ${D}/opt/ti/gst/${PLATFORM}/loadmodules.sh
 	sed -i 's/.ko//g' ${D}/opt/ti/gst/${PLATFORM}/loadmodules.sh
 	chmod 0755 ${D}/opt/ti/gst -R

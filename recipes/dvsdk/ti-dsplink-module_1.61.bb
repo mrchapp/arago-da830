@@ -2,11 +2,10 @@ DESCRIPTION = "DSPLINK 1.61 module for TI ARM/DSP processors"
 inherit module
 
 # compile and run time dependencies
-DEPENDS 	+= " virtual/kernel perl-native ti-dspbios ti-cgt6x"
-RDEPENDS 	= " update-modules"
+DEPENDS 	+= " virtual/kernel perl-native ti-dspbios ti-cgt6x update-modules"
 
 # tconf from xdctools dislikes '.' in pwd :/
-PR = "r4"
+PR = "r6"
 PV = "161"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.
@@ -118,31 +117,31 @@ do_compile() {
 do_install () {
     # DSPLINK driver - kernel module
     install -d ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp
-    cp ${DSPLINK}/gpp/export/BIN/Linux/${DSPLINKPLATFORM}/RELEASE/dsplinkk.ko ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/ 
+    install -m 0755 ${DSPLINK}/gpp/export/BIN/Linux/${DSPLINKPLATFORM}/RELEASE/dsplinkk.ko ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/ 
 
     # DSPLINK library
-    install -d ${D}/${libdir}
-    install -m 0755 ${DSPLINK}/gpp/export/BIN/Linux/${DSPLINKPLATFORM}/RELEASE/dsplink.lib  ${D}/${libdir}
+    install -d ${D}/opt/ti/dsplink/libs
+    install -m 0755 ${DSPLINK}/gpp/export/BIN/Linux/${DSPLINKPLATFORM}/RELEASE/dsplink.lib  ${D}/opt/ti/dsplink/libs
 
     # DSPLINK sample apps
-    install -d ${D}/${datadir}/ti-dsplink
+    install -d ${D}/opt/ti/dsplink/apps
     
-    cp ${DSPLINK}/gpp/export/BIN/Linux/${DSPLINKPLATFORM}/RELEASE/*gpp ${D}/${datadir}/ti-dsplink
+    cp ${DSPLINK}/gpp/export/BIN/Linux/${DSPLINKPLATFORM}/RELEASE/*gpp ${D}/opt/ti/dsplink/apps
     
     for i in $(find ${DSPLINK}/dsp/BUILD/ -name "*.out") ; do
-        cp ${i} ${D}/${datadir}/ti-dsplink
+        cp ${i} ${D}/opt//ti/dsplink/apps
     done
 
     # DSPLINK test app module un/load scripts
-    install ${WORKDIR}/loadmodules-ti-dsplink-apps.sh ${D}/${datadir}/ti-dsplink
-    install ${WORKDIR}/unloadmodules-ti-dsplink-apps.sh ${D}/${datadir}/ti-dsplink
+    install ${WORKDIR}/loadmodules-ti-dsplink-apps.sh ${D}/opt/ti/dsplink/apps
+    install ${WORKDIR}/unloadmodules-ti-dsplink-apps.sh ${D}/opt/ti/dsplink/apps
 }
 
-pkg_postrm_ti-dsplink-module () {
+pkg_postrm () {
     update-modules || true
 }
 
-pkg_postinst_ti-dsplink-module () {
+pkg_postinst () {
     if [ -n "$D" ]; then
         exit 1
     fi
@@ -152,10 +151,11 @@ pkg_postinst_ti-dsplink-module () {
 
 INHIBIT_PACKAGE_STRIP = "1"
 
-PACKAGES =+ " ti-dsplink-module ti-dsplink-apps"
-FILES_ti-dsplink-module  = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/dsplinkk.ko"
-FILES_ti-dsplink-apps = "${datadir}/ti-dsplink/* ${libdir}/dsplink.lib"
+PACKAGES += " ti-dsplink-apps" 
+FILES_${PN} = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/*"
+FILES_ti-dsplink-apps = "/opt/ti/dsplink/*"
 
 # Disable QA check untils we figure out how to pass LDFLAGS in build
 INSANE_SKIP_${PN} = True
 INSANE_SKIP_ti-dsplink-apps = True
+

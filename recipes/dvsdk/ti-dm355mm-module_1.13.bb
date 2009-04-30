@@ -1,6 +1,6 @@
 DESCRIPTION = "User space DMA module for DM355"
-inherit module
 
+inherit module
 # compile and run time dependencies
 DEPENDS 	= "virtual/kernel perl-native"
 RDEPENDS 	= "update-modules"
@@ -16,7 +16,7 @@ S = "${WORKDIR}/dm355_codecs_1_13_000"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "113"
-PR = "r4"
+PR = "r5"
 
 do_configure() {
 	find ${S} -name "*.ko" -exec rm {} \; || true
@@ -37,7 +37,7 @@ do_install () {
     install -m 0755 ${S}/dm355mm/module/dm350mmap.ko ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp
 }
 
-pkg_postinst_ti-dm355mm-module () {
+pkg_postinst () {
     if [ -n "$D" ]; then        
                 exit 1
         fi
@@ -45,12 +45,11 @@ pkg_postinst_ti-dm355mm-module () {
         update-modules || true
 }
 
-pkg_postrm_ti-dm355mm-module () {
+pkg_postrm () {
         update-modules || true
 }
 
 INHIBIT_PACKAGE_STRIP = "1"
-PACKAGES += " ti-dm355mm-module"
-FILES_ti-dm355mm-module = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/dm350mmap.ko"
+FILES_${PN} = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/dm350mmap.ko"
 
 

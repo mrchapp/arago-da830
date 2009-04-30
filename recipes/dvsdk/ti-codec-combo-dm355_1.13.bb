@@ -19,8 +19,13 @@ do_compile() {
 }
 
 do_install () {
+	# install mapdmaq on target
 	install -d ${D}/opt/ti/codec-combo
 	install -m 0755 ${WORKDIR}/mapdmaq 	${D}/opt/ti/codec-combo
+
+	# install codec combo on dev pkg
+	install -d ${D}/dm355_codec_combo_1_13/
+	cp -pRrf ${S}/* ${D}/dm355_codec_combo_1_13/
 }
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
@@ -30,5 +35,9 @@ do_stage() {
     cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}/ 
 }
 
+INHIBIT_PACKAGE_STRIP = "1"
 INSANE_SKIP_${PN} = True
+INSANE_SKIP_${PN}-dev = True
 FILES_${PN} = "/opt/ti/codec-combo/mapdmaq"
+FILES_${PN}-dev = "/dm355_codec_combo_1_13/*"
+

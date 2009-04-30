@@ -13,15 +13,20 @@ PV = "533"
 PR = "r02"
 
 do_compile() {
-	echo "Do nothing"
+	echo "Nothing to compile"
 }
 
 do_install () {
-	echo "Do nothing"
+	# install for dev pkg
+    install -d ${D}/bios_5_33_02
+    cp -pPrf ${S}/* ${D}/bios_5_33_02 
 }
 
 do_stage() {
     install -d ${STAGING_DIR}/${BUILD_SYS}/${PN}
     cp -pPrf ${S}/* ${STAGING_DIR}/${BUILD_SYS}/${PN}/ 
 }
+
+FILES_${PN}-dev ="/bios_5_33_02/*"
+INSANE_SKIP_${PN}-dev = True
 

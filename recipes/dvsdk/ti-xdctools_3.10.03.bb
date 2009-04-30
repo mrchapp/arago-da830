@@ -13,15 +13,20 @@ PV = "310"
 PR = "r4"
 
 do_compile() {
-	echo "Do nothing"
+	echo "Nothing to compile"
 }
 
 do_install () {
-	echo "Do nothing"
+    install -d ${D}/xdctools_3_10_03
+    cp -pPrf ${S}/* ${D}/xdctools_3_10_03
 }
 
 do_stage() {
     install -d ${STAGING_DIR}/${BUILD_SYS}/${PN}
     cp -pPrf ${S}/* ${STAGING_DIR}/${BUILD_SYS}/${PN}/ 
 }
+
+INSANE_SKIP_${PN}-dev = True
+INHIBIT_PACKAGE_STRIP = "1"
+FILES_${PN}-dev = "/xdctools_3_10_03/*"
 

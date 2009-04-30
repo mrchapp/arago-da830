@@ -5,7 +5,7 @@ DEPENDS_omap3evm 	+= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-
 DEPENDS_dm6446-evm 	+= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-dm6446 virtual/kernel "
 DEPENDS_dm355-evm  	+= " ti-codec-engine ti-xdctools ti-codec-combo-dm355 virtual/kernel"
 
-PREFERED_VERSION_ti-codec-engine 	= "223"
+PREFERED_VERSION_ti-codec-engine 	= "2231"
 PREFERED_VERSION_ti_dspbios 		= "533"
 PREFERED_VERSION_ti_cgt6x   		= "60"
 PREFERED_VERSION_ti_xdctools 		= "310"
@@ -22,7 +22,7 @@ SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto
 S = "${WORKDIR}/BRIJESH_GIT_031809/davinci_multimedia_application_interface/dmai"
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "120+svnr${SRCREV}"
-PR = "r8"
+PR = "r9"
 
 # Define DMAI build time variables
 TARGET 				?= "all"
@@ -68,10 +68,15 @@ do_compile () {
 }
 
 do_install () {
+	# install dmai apps on target
     install -d ${D}/opt/ti/dmai-apps
 	cd ${S}
     make PLATFORM="${TARGET}" EXEC_DIR=${D}/opt/ti/dmai-apps install 
 	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${TARGET}.sh ${D}/opt/ti/dmai-apps/loadmodule.sh 
+
+	# install DMAI for dev pkg
+	install -d ${D}/dmai
+	cp -pPrf ${S}/* ${D}/dmai
 }
 
 pkg_postinst_ti-dmai-apps () {
@@ -88,13 +93,15 @@ INHIBIT_PACKAGE_STRIP = "1"
 
 # Disable QA check untils we figure out how to pass LDFLAGS in build
 INSANE_SKIP_${PN} = True
+INSANE_SKIP_${PN}-dev = True
 INSANE_SKIP_ti-dmai-apps = True
 
 PACKAGES += "ti-dmai-apps"
 FILES_ti-dmai-apps = "/opt/ti/dmai-apps/*"
+FILES_${PN}-dev += "/dmai/*"
 
 # run time dependencies 
-RDEPENDS_ti-dmai-apps_dm355-evm += " ti-dm355mm-module ti-cmem-module ti-codec-combo-dm355"
-RDEPENDS_ti-dmai-apps_dm6446-evm += " ti-cmem-module ti-dsplink-module ti-codec-combo-dm6446"
-RDEPENDS_ti-dmai-apps_omap3evm += " ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module"
+RDEPENDS_ti-dmai-apps_dm355-evm += "ti-dm355mm-module ti-cmem-module ti-codec-combo-dm355"
+RDEPENDS_ti-dmai-apps_dm6446-evm += "ti-cmem-module ti-dsplink-module ti-codec-combo-dm6446"
+RDEPENDS_ti-dmai-apps_omap3evm += "ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module"
 

@@ -2,19 +2,19 @@ DESCRIPTION = "LPM module for TI OMAP3 processors"
 
 inherit module
 # compile and run time dependencies
-DEPENDS 	= " virtual/kernel perl-native ti-dsplink"
-PREFERED_VERSION_ti-dsplink = "161"
-PR = "r5"
-PV = "223"
+DEPENDS 	= " virtual/kernel perl-native ti-dsplink-module"
+PREFERED_VERSION_ti-dsplink = "1613"
+PR = "r6"
+PV = "2231"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.
 # This will not work outside TI network and the link should be remove once
 # we get external http:// URL
 OE_ALLOW_INSECURE_DOWNLOADS = "1"
-SRC_URI = "ftp://156.117.95.201/codec_engine_2_23.tar.gz"
+SRC_URI = "ftp://156.117.95.201/codec_engine_2_23_01.tar.gz"
 
 # Set the source directory
-S = "${WORKDIR}/codec_engine_2_23"
+S = "${WORKDIR}/codec_engine_2_23_01"
 
 export DSPLINK="${S}/cetools/packages/dsplink"
 
@@ -34,7 +34,7 @@ do_compile () {
       DSPLINK_REPO="${DSPLINK}/.." \
       LINUXKERNEL_INSTALL_DIR="${STAGING_KERNEL_DIR}" \
       MVTOOL_PREFIX="${TARGET_PREFIX}" \
-      .clean default
+      clean default
 }
 
 do_install () {
@@ -45,7 +45,7 @@ do_install () {
 }
 
 
-pkg_postinst_ti-lpm-module () {
+pkg_postinst () {
     if [ -n "$D" ]; then
         exit 1
     fi
@@ -53,12 +53,12 @@ pkg_postinst_ti-lpm-module () {
     update-modules || true
 }
 
-pkg_postrm_ti-lpm-module () {
+pkg_postrm () {
     update-modules || true
 }
 
 INHIBIT_PACKAGE_STRIP = "1"
 
-PACKAGES += " ti-lpm-module"
-FILES_ti-lpm-module = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/*lpm*ko"
-RDEPENDS 	+= " ti-dsplink-module"
+FILES_${PN} = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/*lpm*ko"
+RDEPENDS += " ti-dsplink-module"
+

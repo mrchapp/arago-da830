@@ -1,4 +1,4 @@
-DESCRIPTION = "Codec Engine 2.23 for TI ARM/DSP processors"
+DESCRIPTION = "Codec Engine 2.23.01 for TI ARM/DSP processors"
 
 # compile time dependencies
 DEPENDS_dm6446-evm 	+= "ti-xdctools ti-cgt6x ti-dspbios ti-codec-combo-dm6446"
@@ -11,16 +11,16 @@ PREFERED_VERSION_ti-codec-combo-dm6446	= "205"
 
 # tconf from xdctools dislikes '.' in pwd :/
 PR = "r4"
-PV = "223"
+PV = "2231"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.
 # This will not work outside TI network and the link should be remove once
 # we get external http:// URL
 OE_ALLOW_INSECURE_DOWNLOADS = "1"
-SRC_URI = "ftp://156.117.95.201/codec_engine_2_23.tar.gz "
+SRC_URI = "ftp://156.117.95.201/codec_engine_2_23_01.tar.gz "
 
 # Set the source directory
-S = "${WORKDIR}/codec_engine_2_23"
+S = "${WORKDIR}/codec_engine_2_23_01"
 
 do_compile () {
     echo "! Do not rebuild for now !"
@@ -28,8 +28,8 @@ do_compile () {
 
 do_install () {
 	# install codec engine source
-	install -s ${D}/codec_engine_2_23/
-    cp -pPrf ${S}/* ${D}/codec_engine_2_23/ 
+	install -d ${D}/codec_engine_2_23_01/
+    cp -pPrf ${S}/* ${D}/codec_engine_2_23_01/ 
 }
 
 # stage tree - other packages may need this
@@ -39,6 +39,7 @@ do_stage() {
 }
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
-FILES_${PN}-dev += "/codec_engine_2_23/*"
+FILES_${PN}-dev += "/codec_engine_2_23_01/*"
 INHIBIT_PACKAGE_STRIP = "1"
+INSANE_SKIP_${PN}-dev = True
 

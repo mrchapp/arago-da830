@@ -13,11 +13,12 @@ PV = "6016"
 PR = "r1"
 
 do_compile() {
-	echo "Do nothing"
+	echo "Nothing to compile"
 }
 
 do_install () {
-	echo "Do nothing"
+    install -d ${D}/cgt6x_6_0_16
+    cp -pPrf ${S}/* ${D}/cgt6x_6_0_16
 }
 
 do_stage() {
@@ -25,3 +26,5 @@ do_stage() {
     cp -pPrf ${S}/* ${STAGING_DIR}/${BUILD_SYS}/${PN}/ 
 }
 
+FILES_${PN}-dev += "/cgt6x_6_0_16/*"
+INSANE_SKIP_${PN}-dev = True

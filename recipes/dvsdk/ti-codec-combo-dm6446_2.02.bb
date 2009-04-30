@@ -10,10 +10,34 @@ S = "${WORKDIR}/dm6446_dvsdk_combos_2_02"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "202"
-PR = "r1"
+PR = "r2"
+
+CE_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine"
+CODEC_dm355-evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm355"
+CODEC_omap3evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-omap3530"
+CODEC_dm6446-evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm6446"
+FC_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
+DSPBIOS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-dspbios"
+CGT6x_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-cgt6x"
+XDCTOOLS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-xdctools"
+USER_XDC_PATH="${CE_INSTALL_DIR}/examples"
+
+XDCARGS="eval"
+export XDCARGS
+
+
+
+XDCPATH="${CE_INSTALL_DIR}/packages;${FC_INSTALL_DIR}/packages;${DSPBIOS_DIR}/packages;"
+
+do_configure () {
+	sed -i -e s:/db/toolsrc/library/vendors2005/ti/c6x/6.0.21/Linux:${CGT6x_DIR}:g ${S}/config.bld 
+}
 
 do_compile() {
-  	echo "Do not rebuild for now"
+	echo "do nothing"
+#	cd ${S}
+#	${XDCTOOLS_DIR}/xdc clean -PR . 
+#	${XDCTOOLS_DIR}/xdc XDCBUILDCFG=${S}/config.bld  --xdcpath=".;${S}/packages/;${XDCPATH}" -PR . 
 }
 
 do_install () {
