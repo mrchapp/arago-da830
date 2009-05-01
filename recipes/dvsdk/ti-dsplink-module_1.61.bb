@@ -22,14 +22,17 @@ S = "${WORKDIR}/codec_engine_2_23"
 # DSPLINK - Config Variable for different platform
 DSPLINKPLATFORM            ?= "DAVINCI"
 DSPLINKPLATFORM_omap3evm   ?= "OMAP3530"
+DSPLINKPLATFORM_beagleboard   ?= "OMAP3530"
 DSPLINKPLATFORM_dm6446-evm ?= "DAVINCI"
 
 DSPLINKDSPCFG            ?= "DM6446GEMSHMEM"
 DSPLINKDSPCFG_omap3evm   ?= "OMAP3530SHMEM"
+DSPLINKDSPCFG_beagleboard   ?= "OMAP3530SHMEM"
 DSPLINKDSPCFG_dm6446-evm ?= "DM6446GEMSHMEM"
 
 DSPLINKGPPOS             ?= "MVL5G"
 DSPLINKGPPOS_omap3evm    ?= "OMAPLSP"
+DSPLINKGPPOS_beagleboard    ?= "OMAPLSP"
 DSPLINKGPPOS_dm6446-evm  ?= "MVL5G"
 
 export DSPLINK="${S}/cetools/packages/dsplink"

@@ -3,10 +3,10 @@ DESCRIPTION = "Gstreamer plugin for TI Davinci and OMAP processors"
 inherit autotools
 
 DEPENDS = "ti-dmai gstreamer gst-plugins-base gst-plugins-good gst-plugins-ugly"
-PREFERED_VERSION_gstreamer 			= "0.10.22"
-PREFERED_VERSION_gst-plugins-base 	= "0.10.22"
-PREFERED_VERSION_gst-plugins-good  	= "0.10.14"
-PREFERED_VERSION_gst-plugins-ugly 	= "0.10.10"
+PREFERRED_VERSION_gstreamer 		= "0.10.21"
+PREFERRED_VERSION_gst-plugins-base 	= "0.10.21"
+PREFERRED_VERSION_gst-plugins-good 	= "0.10.10"
+PREFERRED_VERSION_gst-plugins-ugly 	= "0.10.10"
 
 # Fetch source from svn repo
 SRCREV = "194"
@@ -14,7 +14,7 @@ SRC_URI = "svn://gforge.ti.com/svn/gstreamer_ti/trunk;module=gstreamer_ti;proto=
 	"
 
 # Again, no '.' in PWD allowed :(
-PR = "r9"
+PR = "r10"
 PV = "svnr${SRCREV}"
 
 S = "${WORKDIR}/gstreamer_ti/ti_build/ticodecplugin"
@@ -25,6 +25,7 @@ FC_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
 CODEC_INSTALL_DIR_dm355-evm="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm355"
 CODEC_INSTALL_DIR_dm6446-evm="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm6446"
 CODEC_INSTALL_DIR_omap3evm="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-omap3530"
+CODEC_INSTALL_DIR_beagleboard="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-omap3530"
 XDC_INSTALL_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-xdctools"
 CODEGEN_INSTALL_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-cgt6x"
 
@@ -39,6 +40,7 @@ XDC_TARGET  				= gnu.targets.arm.GCArmv5T
 XDC_PLATFORM_dm355-evm 		= ti.platforms.evmDM355
 XDC_PLATFORM_dm6446-evm 	= ti.platforms.evmDM6446
 XDC_PLATFORM_omap3evm  		= ti.platforms.evm3530
+XDC_PLATFORM_beagleboard	= ti.platforms.evm3530
 PLATFORM_XDC				= ${XDC_PLATFORM}
 
 export XDC_TARGET
@@ -48,6 +50,7 @@ export PLATFORM_XDC
 PLATFORM_dm355-evm 			= "dm355"
 PLATFORM_dm6446-evm 		= "dm6446"
 PLATFORM_omap3evm 			= "omap3530"
+PLATFORM_beagleboard		= "omap3530"
 
 export PLATFORM
 

@@ -2,13 +2,14 @@ DESCRIPTION = "DMAI for TI ARM/DSP processors"
 
 # compile time dependencies
 DEPENDS_omap3evm 	+= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-omap3530 virtual/kernel "
+DEPENDS_beagleboard	+= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-omap3530 virtual/kernel "
 DEPENDS_dm6446-evm 	+= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-dm6446 virtual/kernel "
 DEPENDS_dm355-evm  	+= " ti-codec-engine ti-xdctools ti-codec-combo-dm355 virtual/kernel"
 
-PREFERED_VERSION_ti-codec-engine 	= "2231"
-PREFERED_VERSION_ti_dspbios 		= "533"
-PREFERED_VERSION_ti_cgt6x   		= "60"
-PREFERED_VERSION_ti_xdctools 		= "310"
+PREFERRED_VERSION_ti-codec-engine 	= "2231"
+PREFERRED_VERSION_ti_dspbios 		= "533"
+PREFERRED_VERSION_ti_cgt6x   		= "60"
+PREFERRED_VERSION_ti_xdctools 		= "310"
 
 # NOTE: Use Brijesh' DMAI development branch. The URL *must* be updated once
 # we have stable DMAI 2.x on gforge.
@@ -27,12 +28,14 @@ PR = "r9"
 # Define DMAI build time variables
 TARGET 				?= "all"
 TARGET_omap3evm 	?= "o3530_al"
+TARGET_beagleboard 	?= "o3530_al"
 TARGET_dm355-evm 	?= "dm355_al"
 TARGET_dm6446-evm 	?= "dm6446_al"
 
 CE_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine"
 CODEC_dm355-evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm355"
 CODEC_omap3evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-omap3530"
+CODEC_beagleboard ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-omap3530"
 CODEC_dm6446-evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm6446"
 FC_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
 DSPBIOS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-dspbios"
@@ -104,4 +107,5 @@ FILES_${PN}-dev += "/dmai/*"
 RDEPENDS_ti-dmai-apps_dm355-evm += "ti-dm355mm-module ti-cmem-module ti-codec-combo-dm355"
 RDEPENDS_ti-dmai-apps_dm6446-evm += "ti-cmem-module ti-dsplink-module ti-codec-combo-dm6446"
 RDEPENDS_ti-dmai-apps_omap3evm += "ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module"
+RDEPENDS_ti-dmai-apps_beagleboard += "ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module"
 

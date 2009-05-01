@@ -3,11 +3,12 @@ DESCRIPTION = "Codec Engine 2.23 for TI ARM/DSP processors"
 # compile time dependencies
 DEPENDS_dm6446-evm 	+= "ti-xdctools ti-cgt6x ti-dspbios ti-codec-combo-dm6446"
 DEPENDS_omap3evm   	+= "ti-cgt6x ti-dspbios ti-codec-combo-omap3530 ti-xdctools"
+DEPENDS_beagleboard	+= "ti-cgt6x ti-dspbios ti-codec-combo-omap3530 ti-xdctools"
 DEPENDS_dm355-evm 	+= "ti-codec-combo-dm355 ti-xdctools"
-PREFERED_VERSION_ti-dspbios		= "533"
-PREFERED_VERSION_ti-cgt6x  		= "60"
-PREFERED_VERSION_ti-xdctools	= "310"
-PREFERED_VERSION_ti-codec-combo-dm6446	= "205"
+PREFERRED_VERSION_ti-dspbios	= "533"
+PREFERRED_VERSION_ti-cgt6x  	= "60"
+PREFERRED_VERSION_ti-xdctools	= "310"
+PREFERRED_VERSION_ti-codec-combo-dm6446	= "205"
 
 # tconf from xdctools dislikes '.' in pwd :/
 PR = "r4"
