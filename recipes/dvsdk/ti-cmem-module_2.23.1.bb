@@ -14,17 +14,13 @@ SRC_URI = "ftp://156.117.95.201/codec_engine_2_23_01.tar.gz"
 # Set the source directory
 S = "${WORKDIR}/codec_engine_2_23_01"
 
-PR = "r6"
+PR = "r7"
 PV = "2231"
 
 do_compile() {
-    # CMEM - Build the cmem kernel module and associated test apps
-    # TODO - Still need to clean up UCTOOLs - don't really want to build UC 
-    # here - it's not good to just build with MVTOOLS (GLIBC) 
-    # - note target default, doesn't get passed through to underlying makefiles
     # TODO :: KERNEL_CC, etc need replacing with user CC
     # TODO :: Need to understand why OBJDUMP is required for kernel module
-    # Unset these since LDFLAGS gets picked up and used incorrectly.... need 
+    # Unset these since LDFLAGS gets picked up and used incorrectly.... need
     # investigation
 
     unset CFLAGS CPPFLAGS CXXFLAGS LDFLAGS

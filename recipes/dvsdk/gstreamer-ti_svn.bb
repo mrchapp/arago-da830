@@ -9,11 +9,12 @@ PREFERED_VERSION_gst-plugins-good  	= "0.10.14"
 PREFERED_VERSION_gst-plugins-ugly 	= "0.10.10"
 
 # Fetch source from svn repo
-SRCREV = "180"
-SRC_URI = "svn://gforge.ti.com/svn/gstreamer_ti/trunk;module=gstreamer_ti;proto=https;user=anonymous;pswd=''"
+SRCREV = "194"
+SRC_URI = "svn://gforge.ti.com/svn/gstreamer_ti/trunk;module=gstreamer_ti;proto=https;user=anonymous;pswd='' \
+	"
 
 # Again, no '.' in PWD allowed :(
-PR = "r6"
+PR = "r9"
 PV = "svnr${SRCREV}"
 
 S = "${WORKDIR}/gstreamer_ti/ti_build/ticodecplugin"
