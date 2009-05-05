@@ -1,10 +1,10 @@
 DESCRIPTION = "DMAI for TI ARM/DSP processors"
 
 # compile time dependencies
-DEPENDS_omap3evm 	+= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-omap3530 virtual/kernel "
-DEPENDS_beagleboard	+= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-omap3530 virtual/kernel "
-DEPENDS_dm6446-evm 	+= " ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-dm6446 virtual/kernel "
-DEPENDS_dm355-evm  	+= " ti-codec-engine ti-xdctools ti-codec-combo-dm355 virtual/kernel"
+DEPENDS_omap3evm 	+= " alsa-lib ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-omap3530 virtual/kernel "
+DEPENDS_beagleboard	+= "alsa-lib  ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-omap3530 virtual/kernel "
+DEPENDS_dm6446-evm 	+= "alsa-lib  ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-dm6446 virtual/kernel "
+DEPENDS_dm355-evm  	+= "alsa-lib ti-codec-engine ti-xdctools ti-codec-combo-dm355 virtual/kernel"
 
 PREFERRED_VERSION_ti-codec-engine 	= "2231"
 PREFERRED_VERSION_ti_dspbios 		= "533"
@@ -23,7 +23,7 @@ SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto
 S = "${WORKDIR}/BRIJESH_GIT_031809/davinci_multimedia_application_interface/dmai"
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "120+svnr${SRCREV}"
-PR = "r10"
+PR = "r13"
 
 # Define DMAI build time variables
 TARGET 				?= "all"
