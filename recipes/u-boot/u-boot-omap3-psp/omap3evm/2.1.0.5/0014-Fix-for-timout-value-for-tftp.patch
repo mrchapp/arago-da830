@@ -1,0 +1,27 @@
+From 116f65afbdccac8e9070c4babd1a5a9ce03a9d8e Mon Sep 17 00:00:00 2001
+From: Manikandan Pillai <mani.pillai@ti.com>
+Date: Wed, 18 Mar 2009 09:49:31 +0530
+Subject: [PATCH 14/15] Fix for timout value for tftp.
+
+Download from remote machines used to fail since timeout was
+configured to a very less value.
+---
+ net/tftp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/tftp.c b/net/tftp.c
+index 733c440..a1387f0 100644
+--- a/net/tftp.c
++++ b/net/tftp.c
+@@ -195,7 +195,7 @@ TftpSend (void)
+ 		pkt += 5 /*strlen("octet")*/ + 1;
+ 		strcpy ((char *)pkt, "timeout");
+ 		pkt += 7 /*strlen("timeout")*/ + 1;
+-		sprintf((char *)pkt, "%lu", TIMEOUT / 1000);
++		sprintf((char *)pkt, "%lu", TIMEOUT);
+ #ifdef ET_DEBUG
+ 		printf("send option \"timeout %s\"\n", (char *)pkt);
+ #endif
+-- 
+1.6.0.3
+

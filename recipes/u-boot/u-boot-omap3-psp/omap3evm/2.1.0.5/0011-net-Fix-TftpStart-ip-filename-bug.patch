@@ -1,0 +1,64 @@
+From d10dcdef1c351430387055a0fc844111f6e0ff30 Mon Sep 17 00:00:00 2001
+From: Peter Tyser <ptyser@xes-inc.com>
+Date: Mon, 1 Dec 2008 22:29:38 -0600
+Subject: [PATCH 11/15] net: Fix TftpStart() ip:filename bug
+
+net: Fix TftpStart() ip:filename bug
+
+The TftpStart() function modifies the 'BootFile'
+string when 'BootFile' contains both an IP address
+and filename (eg 1.2.3.4:/path/file). This causes
+subsequent calls to TftpStart to incorrectly parse
+the TFTP filename and server IP address to use.
+For example:
+
+=> tftp 0x100000 10.52.0.62:/home/ptyser/non_existant
+Speed: 100, half duplex
+Using eTSEC1 device
+TFTP from server 10.52.0.62; our IP address is 10.52.253.79
+                 ^^^^^^^^^^ CORRECT
+Filename '/home/ptyser/non_existant'.
+          ^^^^^^^^^^^^^^^^^^^^^^^^^ CORRECT
+Load address: 0x100000
+Loading: *
+TFTP error: 'File not found' (1)
+Starting again
+
+eTSEC2: No link.
+Speed: 100, half duplex
+Using eTSEC1 device
+TFTP from server 10.52.0.33; our IP address is 10.52.253.79
+                 ^^^^^^^^^^ WRONG
+Filename '10.52.0.62'.
+          ^^^^^^^^^^ WRONG
+Load address: 0x100000
+Loading: *
+TFTP error: 'File not found' (1)
+Starting again
+
+TftpStart() was modified to not modify the 'BootFile' string.
+
+Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+Signed-off-by: Ben Warren <biggerbadderben@gmail.com>
+---
+ net/tftp.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/net/tftp.c b/net/tftp.c
+index 3ac5a5e..733c440 100644
+--- a/net/tftp.c
++++ b/net/tftp.c
+@@ -499,9 +499,8 @@ TftpStart (void)
+ 			strncpy(tftp_filename, BootFile, MAX_LEN);
+ 			tftp_filename[MAX_LEN-1] = 0;
+ 		} else {
+-			*p++ = '\0';
+ 			TftpServerIP = string_to_ip (BootFile);
+-			strncpy(tftp_filename, p, MAX_LEN);
++			strncpy(tftp_filename, p + 1, MAX_LEN);
+ 			tftp_filename[MAX_LEN-1] = 0;
+ 		}
+ 	}
+-- 
+1.6.0.3
+

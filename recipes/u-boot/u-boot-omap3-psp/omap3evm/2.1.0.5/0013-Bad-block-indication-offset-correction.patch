@@ -1,0 +1,29 @@
+From e2af112f449632d0f4e5c464e3a008ac9dd67e33 Mon Sep 17 00:00:00 2001
+From: Manikandan Pillai <mani.pillai@ti.com>
+Date: Tue, 17 Mar 2009 14:30:53 +0530
+Subject: [PATCH 13/15] Bad block indication offset correction.
+
+The bad block table used to be done incorrect if a jffs2 filesystem
+is available on the OneNAND flash. Any block of jffs2 filesystem on
+OneNAND used to be showed as BAD block on u-boot.
+---
+ drivers/mtd/onenand/onenand_bbt.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mtd/onenand/onenand_bbt.c b/drivers/mtd/onenand/onenand_bbt.c
+index e750da5..ec18504 100644
+--- a/drivers/mtd/onenand/onenand_bbt.c
++++ b/drivers/mtd/onenand/onenand_bbt.c
+@@ -92,8 +92,7 @@ static int create_bbt(struct mtd_info *mtd, uint8_t * buf,
+ 	ops.ooblen = readlen;
+ 	ops.oobbuf = &oobbuf[0] ;
+ 	ops.datbuf = NULL;
+-	ops.len = ops.retlen = ops.oobretlen = 0;
+-	ops.ooboffs = 2;
++	ops.len = ops.retlen = ops.oobretlen = ops.ooboffs = 0;
+ 
+ 	for (i = startblock; i < numblocks;) {
+ 		int ret;
+-- 
+1.6.0.3
+

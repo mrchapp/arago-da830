@@ -1,0 +1,31 @@
+From 45cbb1953bae34b1deb72b1d6f676228653edc73 Mon Sep 17 00:00:00 2001
+From: Stefan Roese <sr@denx.de>
+Date: Thu, 27 Nov 2008 13:11:37 +0100
+Subject: [PATCH 12/15] OneNAND: Add missing mtd info struct before calling onenand_erase()
+
+OneNAND: Add missing mtd info struct before calling onenand_erase()
+
+Without this patch "saveenv" crashes when MTD partitions are enabled (e.g.
+for use in UBI) via CONFIG_MTD_PARTITIONS.
+
+Signed-off-by: Stefan Roese <sr@denx.de>
+Signed-off-by: Scott Wood <scottwood@freescale.com>
+---
+ common/env_onenand.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/common/env_onenand.c b/common/env_onenand.c
+index 2a13e23..7aaa83c 100644
+--- a/common/env_onenand.c
++++ b/common/env_onenand.c
+@@ -117,6 +117,7 @@ int saveenv(void)
+ 
+ 	instr.len = CONFIG_ENV_SIZE;
+ 	instr.addr = env_addr;
++	instr.mtd = &onenand_mtd;
+ 	if (onenand_erase(&onenand_mtd, &instr)) {
+ 		printf("OneNAND: erase failed at 0x%08lx\n", env_addr);
+ 		return 1;
+-- 
+1.6.0.3
+

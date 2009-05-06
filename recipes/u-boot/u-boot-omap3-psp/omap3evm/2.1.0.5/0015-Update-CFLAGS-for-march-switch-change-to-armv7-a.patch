@@ -1,0 +1,25 @@
+From f68feaf54c18a953af944ae32530781609ec55d0 Mon Sep 17 00:00:00 2001
+From: Sriram <srk@ti.com>
+Date: Tue, 28 Apr 2009 17:08:31 +0530
+Subject: [PATCH 15/15] Update CFLAGS for march switch: change to armv7-a
+
+---
+ cpu/arm_cortexa8/omap3/config.mk |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/omap3/config.mk b/cpu/arm_cortexa8/omap3/config.mk
+index e8e1aaf..3d10040 100644
+--- a/cpu/arm_cortexa8/omap3/config.mk
++++ b/cpu/arm_cortexa8/omap3/config.mk
+@@ -24,7 +24,7 @@ PLATFORM_RELFLAGS += -fno-strict-aliasing -fno-common -ffixed-r8 \
+ 		     -msoft-float
+ 
+ # Make ARMv5 to allow more compilers to work, even though its v7a.
+-PLATFORM_CPPFLAGS += -march=armv7a
++PLATFORM_CPPFLAGS += -march=armv7-a
+ # =========================================================================
+ #
+ # Supply options according to compiler version
+-- 
+1.6.0.3
+
