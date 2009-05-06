@@ -1,0 +1,59 @@
+From 607c921307dbea0e67ed189439def2822b3bba24 Mon Sep 17 00:00:00 2001
+From: Paul Walmsley <paul@pwsan.com>
+Date: Fri, 9 Jan 2009 17:45:30 +0200
+Subject: [PATCH 108/364] OMAP3 SRAM: mark OCM RAM as Non-cacheable Normal memory
+
+Mark the SRAM (aka OCM RAM) as Non-cacheable Normal memory[1].  This
+is to prevent the ARM from evicting existing cache lines to SDRAM
+while code is executing from the SRAM.  Necessary since one of the
+primary uses for the SRAM is to hold the code and data for the CORE
+DPLL M2 divider reprogramming code, which must execute while the SDRC
+is idled.  If the ARM attempts to write cache lines back to the while
+the SRAM code is running, the ARM will stall[2].
+
+TI deals with this problem in the CDP kernel by marking the SRAM as
+Strongly-ordered memory.
+
+Tero Kristo <tero.kristo@nokia.com> caught a bug in an earlier version of
+this patch - thanks Tero.
+
+...
+
+1. ARMv7 ARM (DDI 0406A) pp. A3-30, A3-31, B3-32.
+
+2. Private communication with Richard Woodruff <r-woodruff2@ti.com>
+
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Cc: Tero Kristo <tero.kristo@nokia.com>
+Cc: Richard Woodruff <r-woodruff2@ti.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/plat-omap/sram.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+ mode change 100755 => 100644 arch/arm/plat-omap/sram.c
+
+diff --git a/arch/arm/plat-omap/sram.c b/arch/arm/plat-omap/sram.c
+old mode 100755
+new mode 100644
+index 9946f82..5c0d463
+--- a/arch/arm/plat-omap/sram.c
++++ b/arch/arm/plat-omap/sram.c
+@@ -207,6 +207,15 @@ void __init omap_map_sram(void)
+ 		base = OMAP3_SRAM_PA;
+ 		base = ROUND_DOWN(base, PAGE_SIZE);
+ 		omap_sram_io_desc[0].pfn = __phys_to_pfn(base);
++
++		/*
++		 * SRAM must be marked as non-cached on OMAP3 since the
++		 * CORE DPLL M2 divider change code (in SRAM) runs with the
++		 * SDRAM controller disabled, and if it is marked cached,
++		 * the ARM may attempt to write cache lines back to SDRAM
++		 * which will cause the system to hang.
++		 */
++		omap_sram_io_desc[0].type = MT_MEMORY_NONCACHED;
+ 	}
+ 
+ 	omap_sram_io_desc[0].length = 1024 * 1024;	/* Use section desc */
+-- 
+1.6.0.3
+

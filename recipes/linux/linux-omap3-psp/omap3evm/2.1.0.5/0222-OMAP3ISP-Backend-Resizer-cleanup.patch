@@ -1,0 +1,50 @@
+From d4ee0df87dc1a9c81a0ce36366bf33ab7000e1be Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:46 -0600
+Subject: [PATCH 222/364] OMAP3ISP: Backend: Resizer cleanup
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/isp/ispresizer.c |    4 ++--
+ drivers/media/video/isp/ispresizer.h |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/video/isp/ispresizer.c b/drivers/media/video/isp/ispresizer.c
+index 850a219..76035b1 100644
+--- a/drivers/media/video/isp/ispresizer.c
++++ b/drivers/media/video/isp/ispresizer.c
+@@ -193,7 +193,7 @@ EXPORT_SYMBOL(ispresizer_trycrop);
+ /**
+  * ispresizer_applycrop - Apply crop to input image.
+  **/
+-void ispresizer_applycrop()
++void ispresizer_applycrop(void)
+ {
+ 	ispresizer_config_size(ispres_obj.cropwidth, ispres_obj.cropheight,
+ 						ispres_obj.outputwidth,
+@@ -475,7 +475,7 @@ EXPORT_SYMBOL(ispresizer_try_size);
+  * with ispresizer_try_size() previously.
+  **/
+ int ispresizer_config_size(u32 input_w, u32 input_h, u32 output_w,
+-								u32 output_h)
++					u32 output_h)
+ {
+ 	int i, j;
+ 	u32 res;
+diff --git a/drivers/media/video/isp/ispresizer.h b/drivers/media/video/isp/ispresizer.h
+index 467abb6..b778aa2 100644
+--- a/drivers/media/video/isp/ispresizer.h
++++ b/drivers/media/video/isp/ispresizer.h
+@@ -131,7 +131,7 @@ void ispresizer_trycrop(u32 left, u32 top, u32 width, u32 height, u32 ow,
+ 								u32 oh);
+ 
+ int ispresizer_config_size(u32 input_w, u32 input_h, u32 output_w,
+-								u32 output_h);
++					u32 output_h);
+ 
+ int ispresizer_config_inlineoffset(u32 offset);
+ 
+-- 
+1.6.0.3
+

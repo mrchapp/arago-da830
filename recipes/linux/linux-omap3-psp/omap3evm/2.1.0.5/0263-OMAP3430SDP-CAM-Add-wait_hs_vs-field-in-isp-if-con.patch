@@ -1,0 +1,33 @@
+From 26a2ff753ece67a94964d973150c7cd327976b42 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Thu, 22 Jan 2009 15:14:28 -0600
+Subject: [PATCH 263/364] OMAP3430SDP: CAM: Add wait_hs_vs field in isp if config
+
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ arch/arm/mach-omap2/board-3430sdp.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
+index 7e7ffe2..8750b7f 100644
+--- a/arch/arm/mach-omap2/board-3430sdp.c
++++ b/arch/arm/mach-omap2/board-3430sdp.c
+@@ -453,6 +453,7 @@ static struct isp_interface_config mt9p012_if_config = {
+ 	.prev_sph = 2,
+ 	.prev_slv = 0,
+ 	.wenlog = ISPCCDC_CFG_WENLOG_OR,
++	.wait_hs_vs = 2,
+ 	.u.par.par_bridge = 0x0,
+ 	.u.par.par_clk_pol = 0x0,
+ };
+@@ -578,6 +579,7 @@ static struct isp_interface_config ov3640_if_config = {
+ 	.prev_sph = 2,
+ 	.prev_slv = 1,
+ 	.wenlog = ISPCCDC_CFG_WENLOG_AND,
++	.wait_hs_vs = 2,
+ 	.u.csi.crc = 0x0,
+ 	.u.csi.mode = 0x0,
+ 	.u.csi.edge = 0x0,
+-- 
+1.6.0.3
+

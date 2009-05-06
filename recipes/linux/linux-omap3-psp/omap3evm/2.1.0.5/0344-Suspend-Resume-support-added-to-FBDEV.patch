@@ -1,0 +1,71 @@
+From 4b47dd96db0a9e92720880c329acedfd85a606fe Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Fri, 13 Mar 2009 11:49:43 +0530
+Subject: [PATCH 344/364] Suspend/Resume support added to FBDEV
+
+Suspend and Resume functionality added to Frame Buffer driver.
+
+This functionality will be moved to DSS2 library, this is
+intermediate working commit.
+
+Tested with -
+
+	- Full CPU idle mode (Hits state5)
+	- echo mem > /sys/power/state
+---
+ drivers/video/omap2/omapfb-main.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 36 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/video/omap2/omapfb-main.c b/drivers/video/omap2/omapfb-main.c
+index 0ba70ca..32b909f 100644
+--- a/drivers/video/omap2/omapfb-main.c
++++ b/drivers/video/omap2/omapfb-main.c
+@@ -1716,9 +1716,45 @@ static int omapfb_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static int omapfb_suspend(struct platform_device *pdev, pm_message_t mesg)
++{
++	struct omapfb2_device *fbdev = platform_get_drvdata(pdev);
++	struct omap_display *display;
++	int i;
++
++	for (i=0; i < fbdev->num_fbs; i++) {
++		if (fbdev->overlays[i]->manager &&
++				fbdev->overlays[i]->manager->display) {
++			display = fbdev->overlays[i]->manager->display;
++			if (display->suspend)
++				display->suspend(display);
++		}
++	}
++
++	pdev->dev.power.power_state = mesg;
++	return 0;
++}
++static int omapfb_resume(struct platform_device *pdev)
++{
++	struct omapfb2_device *fbdev = platform_get_drvdata(pdev);
++	struct omap_display *display;
++	int i;
++
++	for (i=0; i < fbdev->num_fbs; i++) {
++		if (fbdev->overlays[i]->manager &&
++				fbdev->overlays[i]->manager->display) {
++			display = fbdev->overlays[i]->manager->display;
++			if (display->suspend)
++				display->resume(display);
++		}
++	}
++	return 0;
++}
+ static struct platform_driver omapfb_driver = {
+ 	.probe          = omapfb_probe,
+ 	.remove         = omapfb_remove,
++	.suspend  	= omapfb_suspend,
++	.resume		= omapfb_resume,
+ 	.driver         = {
+ 		.name   = "omapfb",
+ 		.owner  = THIS_MODULE,
+-- 
+1.6.0.3
+

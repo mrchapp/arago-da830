@@ -1,0 +1,38 @@
+From 371683b85b0d110a2cdba3e5ee4b3c86ed37de71 Mon Sep 17 00:00:00 2001
+From: Aaro Koskinen <Aaro.Koskinen@nokia.com>
+Date: Thu, 12 Mar 2009 18:12:29 +0200
+Subject: [PATCH 347/364] OMAP3: PM: Fix INTC context save/restore
+
+Wrong index was used for ILR.
+
+Signed-off-by: Aaro Koskinen <Aaro.Koskinen@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/irq.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
+index 6cc5757..f813916 100644
+--- a/arch/arm/mach-omap2/irq.c
++++ b/arch/arm/mach-omap2/irq.c
+@@ -244,7 +244,7 @@ void omap3_intc_save_context(void)
+ 			intc_bank_read_reg(bank, INTC_THRESHOLD);
+ 		for (i = 0; i < INTCPS_NR_IRQS; i++)
+ 			intc_context[ind].ilr[i] =
+-				intc_bank_read_reg(bank, (0x100 + 0x4*ind));
++				intc_bank_read_reg(bank, (0x100 + 0x4*i));
+ 		for (i = 0; i < INTCPS_NR_MIR_REGS; i++)
+ 			intc_context[ind].mir[i] =
+ 				intc_bank_read_reg(&irq_banks[0], INTC_MIR0 +
+@@ -270,7 +270,7 @@ void omap3_intc_restore_context(void)
+ 					bank, INTC_THRESHOLD);
+ 		for (i = 0; i < INTCPS_NR_IRQS; i++)
+ 			intc_bank_write_reg(intc_context[ind].ilr[i],
+-				bank, (0x100 + 0x4*ind));
++				bank, (0x100 + 0x4*i));
+ 		for (i = 0; i < INTCPS_NR_MIR_REGS; i++)
+ 			intc_bank_write_reg(intc_context[ind].mir[i],
+ 				 &irq_banks[0], INTC_MIR0 + (0x20 * i));
+-- 
+1.6.0.3
+

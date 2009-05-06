@@ -1,0 +1,35 @@
+From 57e6f43d9338c2f398b378ab82cf2559fcb61ab4 Mon Sep 17 00:00:00 2001
+From: Tero Kristo <tero.kristo@nokia.com>
+Date: Fri, 9 Jan 2009 17:49:04 +0200
+Subject: [PATCH 127/364] OMAP3: PM: Prevented DVFS state switches when enabling off-mode
+
+resource_refresh() call tried to refresh DVFS OPP levels also. This should
+eventually be fixed in a way that DVFS VDD2 level is actually governed by
+something.
+
+Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/pm34xx.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index 9ce3b5c..b2db0ba 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -843,8 +843,12 @@ void omap3_pm_off_mode_enable(int enable)
+ 		state = PWRDM_POWER_RET;
+ 
+ #ifdef CONFIG_OMAP_PM_SRF
++	resource_lock_opp(VDD1_OPP);
++	resource_lock_opp(VDD2_OPP);
+ 	if (resource_refresh())
+ 		printk(KERN_ERR "Error: could not refresh resources\n");
++	resource_unlock_opp(VDD1_OPP);
++	resource_unlock_opp(VDD2_OPP);
+ #endif
+ 	list_for_each_entry(pwrst, &pwrst_list, node) {
+ 		pwrst->next_state = state;
+-- 
+1.6.0.3
+

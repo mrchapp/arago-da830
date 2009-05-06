@@ -1,0 +1,27 @@
+From b2d36fcc00c4c3e7b6eba6709f65b86cbf3ec769 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Date: Wed, 4 Feb 2009 17:30:59 -0800
+Subject: [PATCH 147/364] OMAP2/3: clockdomains: make virt_opp_clkdm available on 34xx also
+
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/clockdomains.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clockdomains.h b/arch/arm/mach-omap2/clockdomains.h
+index 9dfc953..c1f56f1 100644
+--- a/arch/arm/mach-omap2/clockdomains.h
++++ b/arch/arm/mach-omap2/clockdomains.h
+@@ -40,7 +40,7 @@ static struct clockdomain cm_clkdm = {
+ static struct clockdomain virt_opp_clkdm = {
+ 	.name		= "virt_opp_clkdm",
+ 	.pwrdm		= { .name = "wkup_pwrdm" },
+-	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP24XX),
++	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP24XX | CHIP_IS_OMAP3430),
+ };
+ 
+ /*
+-- 
+1.6.0.3
+

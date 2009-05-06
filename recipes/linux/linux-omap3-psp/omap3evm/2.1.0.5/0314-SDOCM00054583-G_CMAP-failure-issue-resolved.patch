@@ -1,0 +1,32 @@
+From 58ac1378bc1a285b02a31b7cc9205a4a81932217 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Tue, 17 Feb 2009 14:57:13 +0530
+Subject: [PATCH 314/364] SDOCM00054583: G_CMAP failure issue resolved
+
+The memory for CMAP allocated but not tested, since
+we are not supporting 1,2,4 & 8 bpp mode where CMAP
+is applicable.
+
+Supposed to work for above bpp mode.
+---
+ drivers/video/omap2/omapfb-main.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/video/omap2/omapfb-main.c b/drivers/video/omap2/omapfb-main.c
+index c6aa985..9252629 100644
+--- a/drivers/video/omap2/omapfb-main.c
++++ b/drivers/video/omap2/omapfb-main.c
+@@ -1294,6 +1294,10 @@ static int fbinfo_init(struct omapfb2_device *fbdev, struct fb_info *fbi)
+ 
+ 	set_fb_fix(fbi);
+ 
++	r = fb_alloc_cmap(&fbi->cmap, 256, 0);
++	if (r != 0)
++		dev_err(fbdev->dev, "unable to allocate color map memory\n");
++
+ #ifdef DEBUG
+ 	if (omapfb_debug && FB2OFB(fbi)->region.size > 0)
+ 		fill_fb(fbi);
+-- 
+1.6.0.3
+

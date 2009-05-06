@@ -1,0 +1,32 @@
+From d61fe4c32d4ac5b1bd863973eded71732171e7b9 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:54 -0600
+Subject: [PATCH 207/364] OMAP3ISP: REGS: Add CCDC SBL status regs
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/isp/ispreg.h |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/media/video/isp/ispreg.h b/drivers/media/video/isp/ispreg.h
+index a2f78a8..bde6917 100644
+--- a/drivers/media/video/isp/ispreg.h
++++ b/drivers/media/video/isp/ispreg.h
+@@ -289,6 +289,13 @@
+ #define ISPCCDC_LSC_TABLE_BASE		(0x0A0)
+ #define ISPCCDC_LSC_TABLE_OFFSET	(0x0A4)
+ 
++/* SBL */
++#define ISPSBL_CCDC_WR_0		(0x028)
++#define ISPSBL_CCDC_WR_0_DATA_READY	(1 << 21)
++#define ISPSBL_CCDC_WR_1		(0x02C)
++#define ISPSBL_CCDC_WR_2		(0x030)
++#define ISPSBL_CCDC_WR_3		(0x034)
++
+ /* Histogram registers */
+ #define ISPHIST_PID			(0x000)
+ #define ISPHIST_PCR			(0x004)
+-- 
+1.6.0.3
+

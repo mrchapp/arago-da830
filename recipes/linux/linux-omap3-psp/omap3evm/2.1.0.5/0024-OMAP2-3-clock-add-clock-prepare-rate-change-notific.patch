@@ -1,0 +1,65 @@
+From ce6d7a6eaf476c03546c678b94c5948e338e772e Mon Sep 17 00:00:00 2001
+From: Paul Walmsley <paul@pwsan.com>
+Date: Tue, 23 Dec 2008 03:13:55 -0700
+Subject: [PATCH 024/364] OMAP2/3 clock: add clock prepare-rate-change notifications
+
+Call the clock notifiers before rate or parent changes.  If a callback
+refuses the change, it should return NOTIFY_BAD; otherwise, NOTIFY_DONE.
+
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/clock.c |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clock.c b/arch/arm/mach-omap2/clock.c
+index c14f586..52637bf 100644
+--- a/arch/arm/mach-omap2/clock.c
++++ b/arch/arm/mach-omap2/clock.c
+@@ -784,6 +784,7 @@ int omap2_clk_set_rate(struct clk *clk, unsigned long rate)
+ {
+ 	int ret = -EINVAL;
+ 	unsigned long temp_rate;
++	int r;
+ 
+ 	if (!clk->set_rate)
+ 		return -EINVAL;
+@@ -793,6 +794,13 @@ int omap2_clk_set_rate(struct clk *clk, unsigned long rate)
+ 		propagate_rate(clk, TEMP_RATE);
+ 	}
+ 
++	r = omap_clk_notify_downstream(clk, CLK_PREPARE_RATE_CHANGE);
++	if (r == NOTIFY_BAD) {
++		pr_debug("clock: %s: clk_set_rate() aborted by notifier\n",
++			 clk->name);
++		return -EAGAIN;
++	}
++
+ 	pr_debug("clock: %s: set_rate from %ld Hz to %ld Hz\n", clk->name,
+ 		 clk->rate, rate);
+ 
+@@ -845,6 +853,7 @@ static u32 _omap2_clksel_get_src_field(struct clk *src_clk, struct clk *clk,
+ int omap2_clk_set_parent(struct clk *clk, struct clk *new_parent)
+ {
+ 	u32 field_val, v, parent_div;
++	int r;
+ 	unsigned long orig_rate, new_rate;
+ 
+ 	if (!clk->clksel)
+@@ -864,6 +873,13 @@ int omap2_clk_set_parent(struct clk *clk, struct clk *new_parent)
+ 		propagate_rate(clk, TEMP_RATE);
+ 	}
+ 
++	r = omap_clk_notify_downstream(clk, CLK_PREPARE_RATE_CHANGE);
++	if (r == NOTIFY_BAD) {
++		pr_debug("clock: %s: clk_set_parent() aborted by notifier\n",
++			 clk->name);
++		return -EAGAIN;
++	}
++
+ 	omap_clk_notify_downstream(clk, CLK_PRE_RATE_CHANGE);
+ 
+ 	if (clk->usecount > 0)
+-- 
+1.6.0.3
+

@@ -1,0 +1,33 @@
+From 8251dfbaaaea95c65b059a6d0efdb219edc8af2b Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Thu, 5 Mar 2009 10:30:20 +0530
+Subject: [PATCH 322/364] 720x576@50Hz added to modeb.c file
+
+There was request from Roger to add mode 720x576@50Hz
+to Fbdev, so added it. But need to re-visit this, since we
+are not getting 50Hz exactly. We are getting 55 Hz here.
+---
+ drivers/video/modedb.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/video/modedb.c b/drivers/video/modedb.c
+index 1618624..f659e90 100644
+--- a/drivers/video/modedb.c
++++ b/drivers/video/modedb.c
+@@ -264,7 +264,12 @@ static const struct fb_videomode modedb[] = {
+ 	/* 1280x800, 60 Hz, 47.403 kHz hsync, WXGA 16:10 aspect ratio */
+ 	NULL, 60, 1280, 800, 12048, 200, 64, 24, 1, 136, 3,
+ 	0, FB_VMODE_NONINTERLACED
+-    },
++   }, {
++    /* 720x576 @ 56 Hz, 31.037kHz hsync */
++    /*Need to re-visit, since we are getting 55Hz not 50Hz here*/
++    NULL, 50, 720, 576, 37000, 48, 80, 3, 7, 32, 4,
++    0, FB_VMODE_NONINTERLACED
++    },
+ };
+ 
+ #ifdef CONFIG_FB_MODE_HELPERS
+-- 
+1.6.0.3
+

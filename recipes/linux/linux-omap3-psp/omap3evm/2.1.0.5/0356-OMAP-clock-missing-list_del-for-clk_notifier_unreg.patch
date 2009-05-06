@@ -1,0 +1,40 @@
+From 2f36edec717244398e2a6932da39a7ee11d45071 Mon Sep 17 00:00:00 2001
+From: Nishanth Menon <menon.nishanth@gmail.com>
+Date: Wed, 11 Mar 2009 19:59:40 +0200
+Subject: [PATCH 356/364] OMAP: clock: missing list_del for clk_notifier_unregister
+
+clk_notifier_unregister should clean the list before freeing clock
+notifier, else clk_notifier_list is filled with dangling pointers
+
+Issue seen while repetative loading/unloading of bridgedriver
+
+Ref: http://marc.info/?t=123678326300002&r=1&w=2
+
+Signed-off-by: Nishanth Menon <nm@ti.com>
+(cherry picked from commit 850858e01ef62f41df22bef3b5602d8cca8e9aed)
+(cherry picked from commit 367fa53813ef2788963f994ba09a9ebc78cba22d)
+---
+ arch/arm/plat-omap/clock.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/plat-omap/clock.c b/arch/arm/plat-omap/clock.c
+index c8d9e96..ceabe8a 100644
+--- a/arch/arm/plat-omap/clock.c
++++ b/arch/arm/plat-omap/clock.c
+@@ -725,9 +725,11 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb)
+ 		 * XXX ugh, layering violation.  there should be some
+ 		 * support in the notifier code for this.
+ 		 */
+-		if (!cn->notifier_head.head)
++		if (!cn->notifier_head.head) {
++			/* Free up my clock node too */
++			list_del(&cn->node);
+ 			kfree(cn);
+-
++		}
+ 	} else {
+ 		r = -ENOENT;
+ 	}
+-- 
+1.6.0.3
+

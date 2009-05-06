@@ -1,0 +1,103 @@
+From 87671857dde1d979f8d6f14631c02f55a545ce58 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:45 -0600
+Subject: [PATCH 225/364] OMAP3ISP: SCM: Add configuration id counters
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+---
+ drivers/media/video/isp/isp_af.c |    5 +++++
+ drivers/media/video/isp/isph3a.c |    6 ++++++
+ 2 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/media/video/isp/isp_af.c b/drivers/media/video/isp/isp_af.c
+index 50da7da..8aec224 100644
+--- a/drivers/media/video/isp/isp_af.c
++++ b/drivers/media/video/isp/isp_af.c
+@@ -23,6 +23,7 @@
+ 
+ #include <linux/uaccess.h>
+ #include <linux/dma-mapping.h>
++#include <asm/atomic.h>
+ 
+ #include "isp.h"
+ #include "ispreg.h"
+@@ -51,6 +52,7 @@ struct isp_af_buffer {
+ 
+ 	u8 locked;
+ 	u16 frame_num;
++	u32 config_counter;
+ 	struct isp_af_xtrastats xtrastats;
+ 	struct isp_af_buffer *next;
+ };
+@@ -84,6 +86,7 @@ static struct isp_af_status {
+ 
+ 	u32 frame_count;
+ 	wait_queue_head_t stats_wait;
++	atomic_t config_counter;
+ 	spinlock_t buffer_lock;		/* For stats buffers read/write sync */
+ } afstat;
+ 
+@@ -370,6 +373,7 @@ int isp_af_configure(struct af_configuration *afconfig)
+ 	if (result < 0)
+ 		return result;
+ 	af_dev_configptr->size_paxel = buff_size;
++	atomic_inc(&afstat.config_counter);
+ 	afstat.initialized = 1;
+ 	/* Set configuration flag to indicate HW setup done */
+ 	if (af_curr_cfg->af_config)
+@@ -635,6 +639,7 @@ static void isp_af_isr(unsigned long status, isp_vbq_callback_ptr arg1,
+ 
+ 	/* timestamp stats buffer */
+ 	do_gettimeofday(&active_buff->xtrastats.ts);
++	active_buff->config_counter = atomic_read(&afstat.config_counter);
+ 
+ 	/* Exchange buffers */
+ 	active_buff = active_buff->next;
+diff --git a/drivers/media/video/isp/isph3a.c b/drivers/media/video/isp/isph3a.c
+index 3b89f4a..7a3ec47 100644
+--- a/drivers/media/video/isp/isph3a.c
++++ b/drivers/media/video/isp/isph3a.c
+@@ -47,6 +47,7 @@ struct isph3a_aewb_buffer {
+ 	unsigned long ispmmu_addr;
+ 	unsigned long mmap_addr;	/* For userspace */
+ 	struct timeval ts;
++	u32 config_counter;
+ 
+ 	u8 locked;
+ 	u16 frame_num;
+@@ -80,6 +81,8 @@ static struct isph3a_aewb_status {
+ 	unsigned int min_buf_size;
+ 	unsigned int curr_cfg_buf_size;
+ 
++	atomic_t config_counter;
++
+ 	u16 win_count;
+ 	u32 frame_count;
+ 	wait_queue_head_t stats_wait;
+@@ -292,6 +295,7 @@ static int isph3a_aewb_stats_available(struct isph3a_aewb_data *aewbdata)
+ 					"H3A stats buff, %d\n", ret);
+ 		}
+ 		aewbdata->ts = aewbstat.h3a_buff[i].ts;
++		aewbdata->config_counter = aewbstat.h3a_buff[i].config_counter;
+ 		aewbdata->field_count = h3a_xtrastats[i].field_count;
+ 		return 0;
+ 	}
+@@ -348,6 +352,7 @@ static void isph3a_aewb_isr(unsigned long status, isp_vbq_callback_ptr arg1,
+ 		return;
+ 
+ 	do_gettimeofday(&active_buff->ts);
++	active_buff->config_counter = atomic_read(&aewbstat.config_counter);
+ 	active_buff = active_buff->next;
+ 	if (active_buff->locked == 1)
+ 		active_buff = active_buff->next;
+@@ -644,6 +649,7 @@ int isph3a_aewb_configure(struct isph3a_aewb_config *aewbcfg)
+ 					aewbstat.h3a_buff[i].ispmmu_addr,
+ 					aewbstat.h3a_buff[i].mmap_addr);
+ 	}
++	atomic_inc(&aewbstat.config_counter);
+ 	isph3a_aewb_enable(aewbcfg->aewb_enable);
+ 	isph3a_print_status();
+ 
+-- 
+1.6.0.3
+

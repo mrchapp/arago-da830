@@ -1,0 +1,45 @@
+From b9fc3e9f17727714401282c703cdcd2b2825ba0b Mon Sep 17 00:00:00 2001
+From: Koen Kooi <koen@beagleboard.org>
+Date: Mon, 2 Mar 2009 13:57:31 -0800
+Subject: [PATCH 324/364] OMAP3: PM: CPUfreq support for OMAP3EVM board
+
+Uses the common OMAP3 OPP settings on OMAP3 EVM board.
+
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/board-omap3evm.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index 82b4d1d..5e9a483 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -39,10 +39,14 @@
+ #include <mach/mcspi.h>
+ #include <mach/mux.h>
+ #include <mach/display.h>
++#include <mach/omap-pm.h>
++#include <mach/clock.h>
+ 
+ #include "sdram-micron-mt46h32m32lf-6.h"
+ #include "twl4030-generic-scripts.h"
+ #include "mmc-twl4030.h"
++#include "pm.h"
++#include "omap3-opp.h"
+ #include <linux/regulator/machine.h>
+ 
+ #if defined(CONFIG_OMAP3EVM_PR785) && defined(CONFIG_TWL4030_CORE)
+@@ -530,7 +534,8 @@ struct spi_board_info omap3evm_spi_board_info[] = {
+ 
+ static void __init omap3_evm_init_irq(void)
+ {
+-	omap2_init_common_hw(mt46h32m32lf6_sdrc_params, NULL, NULL, NULL);
++	omap2_init_common_hw(mt46h32m32lf6_sdrc_params, omap3_mpu_rate_table,
++	                     omap3_dsp_rate_table, omap3_l3_rate_table);
+ 	omap_init_irq();
+ 	omap_gpio_init();
+ 	omap3evm_init_smc911x();
+-- 
+1.6.0.3
+

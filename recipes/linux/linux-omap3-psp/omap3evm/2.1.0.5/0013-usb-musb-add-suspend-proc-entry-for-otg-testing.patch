@@ -1,0 +1,40 @@
+From 021c50e0f945de824d5f436535e6d7b24d09891c Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Thu, 5 Feb 2009 17:03:57 +0530
+Subject: [PATCH 013/364] usb: musb: add suspend proc entry for otg testing
+
+This is required to suspend the bus for role switch.
+---
+ drivers/usb/musb/musb_procfs.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/musb/musb_procfs.c b/drivers/usb/musb/musb_procfs.c
+index e787a7d..d789d4d 100644
+--- a/drivers/usb/musb/musb_procfs.c
++++ b/drivers/usb/musb/musb_procfs.c
+@@ -635,6 +635,14 @@ static int musb_proc_write(struct file *file, const char __user *buffer,
+ 		return -EFAULT;
+ 
+ 	switch (cmd) {
++	case 'S':
++		if (mbase) {
++			reg = musb_readb(mbase, MUSB_POWER)
++					| MUSB_POWER_SUSPENDM;
++			musb_writeb(mbase, MUSB_POWER, reg);
++		}
++		break;
++
+ 	case 'C':
+ 		if (mbase) {
+ 			reg = musb_readb(mbase, MUSB_POWER)
+@@ -733,6 +741,7 @@ static int musb_proc_write(struct file *file, const char __user *buffer,
+ 
+ 	case '?':
+ 		INFO("?: you are seeing it\n");
++		INFO("S: suspend the usb bus\n");
+ 		INFO("C/c: soft connect enable/disable\n");
+ 		INFO("I/i: hispeed enable/disable\n");
+ 		INFO("F: force session start\n");
+-- 
+1.6.0.3
+

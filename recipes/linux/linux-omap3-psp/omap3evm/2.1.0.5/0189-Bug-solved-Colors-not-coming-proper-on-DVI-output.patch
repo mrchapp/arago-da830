@@ -1,0 +1,44 @@
+From 2262d0394111a3afe16bdc002bb435885e503c62 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Tue, 10 Feb 2009 12:26:50 +0530
+Subject: [PATCH 189/364] Bug solved:  Colors not coming proper on DVI output
+
+---
+ arch/arm/mach-omap2/board-omap3evm.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index 48985bf..74c1f09 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -330,6 +330,13 @@ static int omap3_evm_panel_enable_dvi(struct omap_display *display)
+ 		printk(KERN_ERR "cannot enable DVI, LCD is enabled\n");
+ 		return -EINVAL;
+ 	}
++	if (omap_rev() > OMAP3430_REV_ES1_0) {
++		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
++			ENABLE_VPLL2_DEDICATED, TWL4030_VPLL2_DEDICATED);
++		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
++			ENABLE_VPLL2_DEV_GRP, TWL4030_VPLL2_DEV_GRP);
++	}
++
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_GPIO, 0x80,
+ 			TWL4030_GPIODATA_IN3);
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_GPIO, 0x80,
+@@ -341,6 +348,13 @@ static int omap3_evm_panel_enable_dvi(struct omap_display *display)
+ 
+ static void omap3_evm_panel_disable_dvi(struct omap_display *display)
+ {
++	if (omap_rev() > OMAP3430_REV_ES1_0) {
++		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x0,
++				TWL4030_VPLL2_DEDICATED);
++		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x0,
++				TWL4030_VPLL2_DEV_GRP);
++	}
++
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_GPIO, 0x00,
+ 			TWL4030_GPIODATA_IN3);
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_GPIO, 0x00,
+-- 
+1.6.0.3
+

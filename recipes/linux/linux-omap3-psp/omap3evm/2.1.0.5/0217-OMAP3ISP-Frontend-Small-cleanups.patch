@@ -1,0 +1,28 @@
+From a7a3819c6ead99989a1c8ed9e0162fa937b253dd Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:49 -0600
+Subject: [PATCH 217/364] OMAP3ISP: Frontend: Small cleanups.
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+---
+ drivers/media/video/isp/ispccdc.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/video/isp/ispccdc.c b/drivers/media/video/isp/ispccdc.c
+index 15dd12a..2a74173 100644
+--- a/drivers/media/video/isp/ispccdc.c
++++ b/drivers/media/video/isp/ispccdc.c
+@@ -1173,8 +1173,8 @@ int ispccdc_config_size(u32 input_w, u32 input_h, u32 output_w, u32 output_h)
+ 					ISPCCDC_FMT_VERT);
+ 		isp_reg_writel((ispccdc_obj.ccdcout_w <<
+ 					ISPCCDC_VP_OUT_HORZ_NUM_SHIFT) |
+-					(ispccdc_obj.ccdcout_h - 1 <<
+-					ISPCCDC_VP_OUT_VERT_NUM_SHIFT),
++					(ispccdc_obj.ccdcout_h - 1) <<
++					ISPCCDC_VP_OUT_VERT_NUM_SHIFT,
+ 					OMAP3_ISP_IOMEM_CCDC,
+ 					ISPCCDC_VP_OUT);
+ 		isp_reg_writel((((ispccdc_obj.ccdcout_h - 25) &
+-- 
+1.6.0.3
+

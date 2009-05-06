@@ -1,0 +1,28 @@
+From 733b122161d30f04e29025dda8d4d7dcaa42d4ab Mon Sep 17 00:00:00 2001
+From: Sanjeev Premi <premi@ti.com>
+Date: Mon, 16 Mar 2009 14:14:27 +0530
+Subject: [PATCH 363/364] Transition to C2 via omap3_idle_bm_check()
+
+Ensure that transition to C2 happens via omap3_idle_bm_check()
+so that flag 'sleep_block' is honoured.
+---
+ arch/arm/mach-omap2/cpuidle34xx.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
+index 036d8c0..61a0ffb 100644
+--- a/arch/arm/mach-omap2/cpuidle34xx.c
++++ b/arch/arm/mach-omap2/cpuidle34xx.c
+@@ -229,7 +229,8 @@ void omap_init_power_states(void)
+ 	omap3_power_states[OMAP3_STATE_C2].threshold = 30;
+ 	omap3_power_states[OMAP3_STATE_C2].mpu_state = PWRDM_POWER_ON;
+ 	omap3_power_states[OMAP3_STATE_C2].core_state = PWRDM_POWER_ON;
+-	omap3_power_states[OMAP3_STATE_C2].flags = CPUIDLE_FLAG_TIME_VALID;
++	omap3_power_states[OMAP3_STATE_C2].flags = CPUIDLE_FLAG_TIME_VALID |
++				CPUIDLE_FLAG_CHECK_BM;
+ 
+ 	/* C3 . MPU CSWR + Core inactive */
+ 	omap3_power_states[OMAP3_STATE_C3].valid = 1;
+-- 
+1.6.0.3
+

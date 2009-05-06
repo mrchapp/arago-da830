@@ -1,0 +1,46 @@
+From 20631aa05452cd604d2219097def80f2f52a5b3a Mon Sep 17 00:00:00 2001
+From: Sanjeev Premi <premi@ti.com>
+Date: Thu, 12 Mar 2009 20:58:27 +0530
+Subject: [PATCH 357/364] PM: Fix compile warnings with !CONFIG_OMAP_PM_SRF
+
+PM: Fix compile warnings with !CONFIG_OMAP_PM_SRF
+
+Fixes the compile warnings:
+
+  CC      arch/arm/mach-omap2/pm.o
+arch/arm/mach-omap2/pm.c:47: warning: 'vdd1_locked' defined but not used
+arch/arm/mach-omap2/pm.c:48: warning: 'vdd2_locked' defined but not used
+
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+(cherry picked from commit 22ab46f52aa1912b8225fe119c75962033704ba5)
+---
+ arch/arm/mach-omap2/pm.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm.c b/arch/arm/mach-omap2/pm.c
+index 0698bbd..e89fd11 100644
+--- a/arch/arm/mach-omap2/pm.c
++++ b/arch/arm/mach-omap2/pm.c
+@@ -49,8 +49,6 @@ unsigned short clocks_off_while_idle;
+ unsigned short enable_off_mode;
+ unsigned short voltage_off_while_idle;
+ atomic_t sleep_block = ATOMIC_INIT(0);
+-static int vdd1_locked;
+-static int vdd2_locked;
+ 
+ static ssize_t idle_show(struct kobject *, struct kobj_attribute *, char *);
+ static ssize_t idle_store(struct kobject *k, struct kobj_attribute *,
+@@ -133,6 +131,9 @@ static ssize_t idle_store(struct kobject *kobj, struct kobj_attribute *attr,
+ }
+ 
+ #ifdef CONFIG_OMAP_PM_SRF
++static int vdd1_locked;
++static int vdd2_locked;
++
+ static ssize_t vdd_opp_show(struct kobject *kobj, struct kobj_attribute *attr,
+ 			 char *buf)
+ {
+-- 
+1.6.0.3
+

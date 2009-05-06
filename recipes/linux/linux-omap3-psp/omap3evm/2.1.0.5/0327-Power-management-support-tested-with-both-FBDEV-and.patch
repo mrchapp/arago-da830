@@ -1,0 +1,459 @@
+From b003e0c325d4daf785652b396e4a7d413d898e96 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Sun, 8 Mar 2009 15:01:45 +0530
+Subject: [PATCH 327/364] Power management support tested with both FBDEV and V4L2
+
+CPU Idle Support  has been validated with both V4L2 and FBDEV
+drivers.
+---
+ arch/arm/mach-omap2/board-omap3evm.c |   15 +++++--
+ arch/arm/plat-omap/dss/display.c     |   17 +++-----
+ arch/arm/plat-omap/dss/dpi.c         |   13 ++++-
+ arch/arm/plat-omap/dss/venc.c        |    5 +-
+ drivers/media/video/omap/omap_vout.c |   77 ++++++++++++++++++++--------------
+ drivers/video/omap2/omapfb-sysfs.c   |   44 +++++++++----------
+ 6 files changed, 96 insertions(+), 75 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index d06ef2c..4ed2043 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -341,15 +341,17 @@ err_1:
+ static int omap3_evm_panel_enable_lcd(struct omap_display *display)
+ {
+ 	if (dvi_enabled) {
+-		printk(KERN_DEBUG "cannot enable LCD, DVI is enabled\n");
+ 		return -EINVAL;
+ 	}
+ #if defined(CONFIG_TWL4030_CORE)
+ 	if (omap_rev() > OMAP3430_REV_ES1_0) {
+ 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+-			ENABLE_VPLL2_DEDICATED, TWL4030_PLL2_DEDICATED);
++				ENABLE_VPLL2_DEDICATED, TWL4030_PLL2_DEDICATED);
+ 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+-			ENABLE_VPLL2_DEV_GRP, TWL4030_VPLL2_DEV_GRP);
++				ENABLE_VPLL2_DEV_GRP, TWL4030_VPLL2_DEV_GRP);
++		twl4030_i2c_write_u8(TWL4030_MODULE_LED, 0x10, TWL4030_LED_EN);
++		twl4030_i2c_write_u8(TWL4030_MODULE_PWMA, 70, TWL_PWMA_PWMAOFF);
++
+ 	}
+ #endif
+ 	gpio_direction_output(LCD_PANEL_ENABLE_GPIO, 0);
+@@ -365,6 +367,8 @@ static void omap3_evm_panel_disable_lcd(struct omap_display *display)
+ 				TWL4030_PLL2_DEDICATED);
+ 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x0,
+ 				TWL4030_VPLL2_DEV_GRP);
++		twl4030_i2c_write_u8(TWL4030_MODULE_LED, 0x11, TWL4030_LED_EN);
++		twl4030_i2c_write_u8(TWL4030_MODULE_PWMA, 0, TWL_PWMA_PWMAOFF);
+ 	}
+ #endif
+ 	gpio_direction_output(LCD_PANEL_ENABLE_GPIO, 1);
+@@ -412,7 +416,6 @@ static struct omap_display_data omap3_evm_display_data_tv = {
+ static int omap3_evm_panel_enable_dvi(struct omap_display *display)
+ {
+ 	if (lcd_enabled) {
+-		printk(KERN_DEBUG "cannot enable DVI, LCD is enabled\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -422,6 +425,8 @@ static int omap3_evm_panel_enable_dvi(struct omap_display *display)
+ 			ENABLE_VPLL2_DEDICATED, TWL4030_PLL2_DEDICATED);
+ 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+ 			ENABLE_VPLL2_DEV_GRP, TWL4030_VPLL2_DEV_GRP);
++		twl4030_i2c_write_u8(TWL4030_MODULE_LED, 0x10, TWL4030_LED_EN);
++		twl4030_i2c_write_u8(TWL4030_MODULE_PWMA, 70, TWL_PWMA_PWMAOFF);
+ 	}
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_GPIO, 0x80,
+ 			REG_GPIODATADIR1);
+@@ -441,6 +446,8 @@ static void omap3_evm_panel_disable_dvi(struct omap_display *display)
+ 				TWL4030_PLL2_DEDICATED);
+ 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x0,
+ 				TWL4030_VPLL2_DEV_GRP);
++		twl4030_i2c_write_u8(TWL4030_MODULE_LED, 0x11, TWL4030_LED_EN);
++		twl4030_i2c_write_u8(TWL4030_MODULE_PWMA, 0, TWL_PWMA_PWMAOFF);
+ 	}
+ 
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_GPIO, 0x00,
+diff --git a/arch/arm/plat-omap/dss/display.c b/arch/arm/plat-omap/dss/display.c
+index e8e5b3c..97da44e 100644
+--- a/arch/arm/plat-omap/dss/display.c
++++ b/arch/arm/plat-omap/dss/display.c
+@@ -718,12 +718,6 @@ struct omap_display *omap_dss_get_display(int no)
+ 				goto err3;
+ 	}
+ 
+-	display->ref_count++;
+-	/*
+-	if (atomic_cmpxchg(&display->ref_count, 0, 1) != 0)
+-		return 0;
+-*/
+-
+ 	return display;
+ err3:
+ 	if (display->ctrl)
+@@ -741,12 +735,13 @@ EXPORT_SYMBOL(omap_dss_get_display);
+ 
+ void omap_dss_put_display(struct omap_display *display)
+ {
+-	if (--display->ref_count > 0)
+-		return;
+-/*
+-	if (atomic_cmpxchg(&display->ref_count, 1, 0) != 1)
++	/*
++	 * Please make sure that you call display->disable
++	 * before calling this function.
++	 */
++	if (display->ref_count != 0)
+ 		return;
+-*/
++
+ 	if (display->ctrl) {
+ 		if (display->ctrl->cleanup)
+ 			display->ctrl->cleanup(display);
+diff --git a/arch/arm/plat-omap/dss/dpi.c b/arch/arm/plat-omap/dss/dpi.c
+index ee2d49e..40c1ffa 100644
+--- a/arch/arm/plat-omap/dss/dpi.c
++++ b/arch/arm/plat-omap/dss/dpi.c
+@@ -110,11 +110,12 @@ static int dpi_display_enable(struct omap_display *display)
+ 	int r;
+ 	int is_tft;
+ 
+-	if (display->state != OMAP_DSS_DISPLAY_DISABLED) {
+-		DSSERR("display already enabled\n");
++	if (display->ref_count > 0) {
++		display->ref_count++;
+ 		return -EINVAL;
+ 	}
+-
++	if (display->state != OMAP_DSS_DISPLAY_DISABLED)
++		return -EINVAL;
+ 	r = panel->enable(display);
+ 	if (r)
+ 		return r;
+@@ -152,6 +153,7 @@ static int dpi_display_enable(struct omap_display *display)
+ 	dispc_enable_lcd_out(1);
+ 
+ 	display->state = OMAP_DSS_DISPLAY_ACTIVE;
++	display->ref_count++;
+ 
+ 	return 0;
+ }
+@@ -160,6 +162,10 @@ static int dpi_display_resume(struct omap_display *display);
+ 
+ static void dpi_display_disable(struct omap_display *display)
+ {
++	if (display->ref_count > 1) {
++		display->ref_count--;
++		return;
++	}
+ 	if (display->state == OMAP_DSS_DISPLAY_DISABLED)
+ 		return;
+ 
+@@ -178,6 +184,7 @@ static void dpi_display_disable(struct omap_display *display)
+ 	dss_clk_disable(DSS_CLK_ICK | DSS_CLK_FCK1);
+ 
+ 	display->state = OMAP_DSS_DISPLAY_DISABLED;
++	display->ref_count--;
+ }
+ 
+ static int dpi_display_suspend(struct omap_display *display)
+diff --git a/arch/arm/plat-omap/dss/venc.c b/arch/arm/plat-omap/dss/venc.c
+index b020bf5..fac91b2 100644
+--- a/arch/arm/plat-omap/dss/venc.c
++++ b/arch/arm/plat-omap/dss/venc.c
+@@ -422,6 +422,7 @@ static void venc_sync_lost_handler(void *arg, u32 mask)
+ 
+ static int venc_enable_display(struct omap_display *display)
+ {
++	void *isr_handle;
+ 	DSSDBG("venc_enable_display\n");
+ 
+ 	mutex_lock(&venc.venc_lock);
+@@ -454,14 +455,14 @@ static int venc_enable_display(struct omap_display *display)
+ 
+ 	dispc_go(OMAP_DSS_CHANNEL_DIGIT);
+ 
+-	omap_dispc_register_isr(venc_sync_lost_handler, NULL,
++	isr_handle = omap_dispc_register_isr(venc_sync_lost_handler, NULL,
+ 			DISPC_IRQ_SYNC_LOST_DIGIT);
+ 
+ 	dispc_enable_digit_out(1);
+ 
+ 	mdelay(20);
+ 
+-	omap_dispc_unregister_isr(venc_sync_lost_handler);
++	omap_dispc_unregister_isr(isr_handle);
+ 
+ 	display->state = OMAP_DSS_DISPLAY_ACTIVE;
+ 
+diff --git a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
+index 722cf2e..77bfd13 100644
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -67,6 +67,7 @@
+ #include <mach/dma.h>
+ #include <mach/omapfb.h>
+ #include <mach/display.h>
++#include <mach/pm.h>
+ 
+ #include "omap_voutlib.h"
+ 
+@@ -154,12 +155,6 @@ static void omap_vout_cleanup_device(struct omap_vout_device *vout);
+ /* module parameters */
+ 
+ /*
+- * This is temperory implementation for supporing CPU Idle with
+- * V4L2 driver.
+- */
+-extern atomic_t sleep_block;
+-
+-/*
+  * Maximum amount of memory to use for rendering buffers.
+  * Default is enough to four (RGB24) VGA buffers.
+  */
+@@ -944,6 +939,22 @@ static int omap_vout_release(struct file *file)
+ 	if (vout->streaming == fh) {
+ 		omap_dispc_unregister_isr(vout->isr_handle);
+ 		vout->streaming = NULL;
++		for (t = 1; t < (ovid->vid_dev->num_videos + 1); t++) {
++			struct omap_display *display =
++				ovid->vid_dev->overlays[t]->manager->display;
++			/* We are not checking retur value here since it is
++			 * this function only returns if somebody has already
++			 * enabled the display
++			 */
++			display->disable(display);
++		}
++		/*
++		 * This is temperory implementation to support CPU Idle,
++		 * we are releasing sleep_block so PM code to go into any state.
++		 * TODO: Once we get proper methoid from PM then need to
++		 * re-visit again.
++		 */
++		omap2_allow_sleep();
+ 	}
+ 
+ 	if (vout->mmap_count != 0)
+@@ -957,18 +968,6 @@ static int omap_vout_release(struct file *file)
+ 
+ 	kfree(fh);
+ 
+-	for (t = 0; t < ovid->vid_dev->num_displays; t++) {
+-		struct omap_display *display =
+-			ovid->vid_dev->displays[t];
+-		display->disable(display);
+-	}
+-	/*
+-	 * This is temperory implementation to support CPU Idle,
+-	 * we are releasing sleep_block so PM code to go into any state.
+-	 */
+-	if (atomic_read(&sleep_block) > 0)
+-		atomic_dec(&sleep_block);
+-
+ 
+ 	return r;
+ }
+@@ -1646,6 +1645,7 @@ static int vidioc_streamon(struct file *file, void *fh,
+ 	vout->first_int = 1;
+ 
+ 	if (omap_vout_calculate_offset(vout)) {
++		vout->streaming = NULL;
+ 		up(&vout->lock);
+ 		return -EINVAL;
+ 	}
+@@ -1656,27 +1656,34 @@ static int vidioc_streamon(struct file *file, void *fh,
+ 			DISPC_IRQ_EVSYNC_ODD;
+ 
+ 	handle = omap_dispc_register_isr(omap_vout_isr, vout, mask);
+-	if (handle)
++	if (handle) {
+ 		vout->isr_handle = handle;
+-	else
++	} else {
++		vout->streaming = NULL;
++		up(&vout->lock);
+ 		return -EINVAL;
++	}
+ 
+ 	/*
+ 	 * This is temperory implementation to support CPU Idle,
+ 	 * we are blocking PM code to go into any state.
++	 * TODO: Once we get proper methoid from PM then need to
++	 * re-visit again.
+ 	 */
+-	atomic_inc(&sleep_block);
++	omap2_block_sleep();
+ 
+ 	/*
+ 	 * Check for the right location of enabling the display,
+ 	 * temporory enabling here
+ 	 */
+-	for (t = 0; t < ovid->vid_dev->num_displays; t++) {
+-		struct omap_display *display = ovid->vid_dev->displays[t];
+-		r = display->enable(display);
+-		if (r < 0)
+-			/*Must be enabled in FBDEV already*/
+-			printk("Already enabled\n");
++	for (t = 1; t < (ovid->vid_dev->num_videos + 1); t++) {
++		struct omap_display *display =
++			ovid->vid_dev->overlays[t]->manager->display;
++		/* We are not checking retur value here since it is
++		 * this function only returns if somebody has already
++		 * enabled the display
++		 */
++		display->enable(display);
+ 	}
+ 	for (t = 0; t < ovid->num_overlays; t++) {
+ 		struct omap_overlay *ovl = ovid->overlays[t];
+@@ -1718,16 +1725,22 @@ static int vidioc_streamoff(struct file *file, void *fh,
+ 		 * Check for the right location of enabling
+ 		 * the display, temporory enabling here
+ 		 */
+-		for (t = 0; t < ovid->vid_dev->num_displays; t++) {
++		for (t = 1; t < (ovid->vid_dev->num_videos + 1); t++) {
+ 			struct omap_display *display =
+-				ovid->vid_dev->displays[t];
++				ovid->vid_dev->overlays[t]->manager->display;
++			/* We are not checking retur value here since it is
++			 * this function only returns if somebody has already
++			 * enabled the display
++			 */
+ 			display->disable(display);
+ 		}
+ 		/*
+ 		 * This is temperory implementation to support CPU Idle,
+ 		 * we are sleep_block, so that PM code to go into any state.
++		 * TODO: Once we get proper methoid from PM then need to
++		 * re-visit again.
+ 		 */
+-		atomic_dec(&sleep_block);
++		omap2_allow_sleep();
+ 
+ 		r = omapvid_apply_changes(vout, 0, 0);
+ 		if (r) {
+@@ -1978,6 +1991,8 @@ static int omap_vout_probe(struct platform_device *pdev)
+ 				def_display->set_update_mode(def_display,
+ 						OMAP_DSS_UPDATE_AUTO);
+ 		}
++
++		def_display->disable(def_display);
+ 	 }
+ 
+ 	r = omap_vout_create_video_devices(pdev);
+@@ -1994,8 +2009,6 @@ static int omap_vout_probe(struct platform_device *pdev)
+ 	}
+ 	printk(KERN_INFO "display->updated\n");
+ 
+-	def_display->disable(def_display);
+-
+ 	return 0;
+ 
+ error0:
+diff --git a/drivers/video/omap2/omapfb-sysfs.c b/drivers/video/omap2/omapfb-sysfs.c
+index 0d2d714..32dc65c 100755
+--- a/drivers/video/omap2/omapfb-sysfs.c
++++ b/drivers/video/omap2/omapfb-sysfs.c
+@@ -902,20 +902,23 @@ err:
+ #ifdef CONFIG_PM
+ 
+ static u32 dss_sleep_timeout = (1 * 20 * HZ);
+-static u32 can_sleep = 0;
++static int can_sleep = -1;
+ static struct omapfb2_device *omap2fb;
+-static struct timer_list timer;
+ 
++/*
++ * TODO: Try to accomodate these variables in omapfb2_device
++ * structure.
++ */
++static struct timer_list timer;
+ struct workqueue_struct *irq_work_queues; /* workqueue*/
+-struct work_struct irq_work_queue;              /* work entry */
++struct work_struct irq_work_queue;        /* work entry */
+ /*
+  * Resumes the DSS Module
+  * Here Clocks will be turned-on, Context will be restored
+  */
+-void omap_dss_resume_idle()
++void omap_dss_resume_idle(void)
+ {
+ 	if (can_sleep == 2) {
+-		omap2_block_sleep();
+ 		can_sleep = 3;
+ 		queue_work(irq_work_queues, &irq_work_queue);
+ 	}
+@@ -926,35 +929,31 @@ EXPORT_SYMBOL(omap_dss_resume_idle);
+  */
+ static void dss_idle_timer(unsigned long data)
+ {
+-	can_sleep = 1;
+-	queue_work(irq_work_queues, &irq_work_queue);
++		can_sleep = 1;
++		queue_work(irq_work_queues, &irq_work_queue);
+ }
+ 
+ void omap2fb_timeout_handler(struct work_struct *work)
+ {
+ 	int i;
++	struct omap_display *display;
++
+ 	DEFINE_WAIT(wait);
+ 
+ 	if (can_sleep == 1) {
+-		for (i = 0; i < omap2fb->num_displays; i++)
+-			omap2fb->displays[i]->disable(omap2fb->displays[i]);
+-
+-
+-		for (i = 0; i < omap2fb->num_fbs; i++)
+-			fb_blank(omap2fb->fbs[i], FB_BLANK_POWERDOWN);
+-
++		for (i = 0; i < omap2fb->num_fbs; i++) {
++			display = omap2fb->overlays[i]->manager->display;
++			display->disable(display);
++		}
+ 		can_sleep = 2;
+ 		del_timer(&timer);
+-		omap2_allow_sleep();
+ 	} else if (can_sleep == 3){
+-		for (i = 0; i < omap2fb->num_displays; i++)
++		for (i = 0; i < omap2fb->num_fbs; i++) {
++			display = omap2fb->overlays[i]->manager->display;
+ 			omap2fb->displays[i]->enable(omap2fb->displays[i]);
+-
+-		for (i = 0; i < omap2fb->num_fbs; i++)
+-			fb_blank(omap2fb->fbs[i], FB_BLANK_UNBLANK);
+-
+-		mod_timer(&timer, jiffies + dss_sleep_timeout);
++		}
+ 		can_sleep = 0;
++		mod_timer(&timer, jiffies + dss_sleep_timeout);
+ 	}
+ }
+ /*
+@@ -965,7 +964,6 @@ void dss_init_timer(struct omapfb2_device *fbdev)
+ {
+ 	omap2fb = fbdev;
+ 	can_sleep = 0;
+-	omap2_block_sleep();
+ 	setup_timer(&timer, dss_idle_timer,
+ 			(unsigned long) NULL);
+ 	mod_timer(&timer, jiffies + dss_sleep_timeout);
+@@ -974,7 +972,6 @@ void dss_init_timer(struct omapfb2_device *fbdev)
+ 	 * Enable auto-Idle mode here
+ 	 */
+ }
+-
+ /*
+  * SYSFS entry to show Time-Out value for DSS
+  */
+@@ -1000,6 +997,7 @@ static ssize_t dss_sleep_store_timeout(struct device *dev,
+ 		del_timer(&timer);
+ 	} else {
+ 		dss_sleep_timeout = value * HZ;
++		can_sleep = 0;
+ 		mod_timer(&timer, jiffies + dss_sleep_timeout);
+ 	}
+ 
+-- 
+1.6.0.3
+

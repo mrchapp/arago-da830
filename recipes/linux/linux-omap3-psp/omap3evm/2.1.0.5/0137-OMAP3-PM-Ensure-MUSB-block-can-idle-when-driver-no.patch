@@ -1,0 +1,40 @@
+From add0f82ee6d61e62b0a9197acd1e5e98f822a1ba Mon Sep 17 00:00:00 2001
+From: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+Date: Mon, 19 Jan 2009 19:09:22 +0200
+Subject: [PATCH 137/364] OMAP3: PM: Ensure MUSB block can idle when driver not loaded
+
+Otherwise, bootloaders may leave MUSB in a state which prevents
+retention.
+
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/usb-musb.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
+index d6b8066..5282563 100644
+--- a/arch/arm/mach-omap2/usb-musb.c
++++ b/arch/arm/mach-omap2/usb-musb.c
+@@ -34,6 +34,9 @@
+ #include <mach/mux.h>
+ #include <mach/usb.h>
+ 
++#define AUTOIDLE        (1 << 0)
++#define OTG_SYSCONFIG	(OMAP34XX_HSUSB_OTG_BASE + 0x404)
++
+ #ifdef CONFIG_USB_MUSB_SOC
+ static struct resource musb_resources[] = {
+ 	[0] = {
+@@ -169,5 +172,8 @@ void __init usb_musb_init(void)
+ 		return;
+ 	}
+ #endif
++	/* Enable smartidle on MUSB to improve C1 wakeup latency */
++	if (cpu_is_omap34xx())
++		omap_writel(AUTOIDLE, OTG_SYSCONFIG);
+ }
+ 
+-- 
+1.6.0.3
+

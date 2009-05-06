@@ -1,0 +1,26 @@
+From 6f19a6b1909964a7acecbca9179007420bd236b3 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Tue, 24 Feb 2009 10:13:00 +0530
+Subject: [PATCH 308/364] bug solved: Rotation ioctl was not throwing error for RGB24 with rotation
+
+---
+ drivers/media/video/omap/omap_vout.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
+index d6ee53b..f5daba2 100644
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -1359,6 +1359,9 @@ static int vidioc_s_ctrl(struct file *file, void *fh, struct v4l2_control *a)
+ 	{
+ 		int rotation = a->value;
+ 
++		if (vout->pix.pixelformat == V4L2_PIX_FMT_RGB24 &&
++				rotation != -1)
++			return -EINVAL;
+ 		if (down_interruptible(&vout->lock))
+ 			return -EINVAL;
+ 		if ((rotation == 0) || (rotation == 90) ||
+-- 
+1.6.0.3
+

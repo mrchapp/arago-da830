@@ -1,0 +1,217 @@
+From bf6080c4499b9faabcaf934e37b62d52f191a973 Mon Sep 17 00:00:00 2001
+From: Tero Kristo <tero.kristo@nokia.com>
+Date: Fri, 9 Jan 2009 17:49:02 +0200
+Subject: [PATCH 125/364] OMAP3: PM: Added DVFS OPP locking interface for VDD1 and VDD2
+
+Added two new files under /sys/power for controlling OPP locks. vdd1_lock and
+vdd2_lock. You can write to these to select desired OPP level and it will be
+locked at that level. Lock can be cleared by writing 0 to the same file.
+
+Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/pm.c           |   55 ++++++++++++++++++++++++++++++++++-
+ arch/arm/mach-omap2/pm.h           |    8 ++++-
+ arch/arm/mach-omap2/resource34xx.c |   24 +++++++++++++--
+ 3 files changed, 81 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm.c b/arch/arm/mach-omap2/pm.c
+index d33eba8..186a0f0 100644
+--- a/arch/arm/mach-omap2/pm.c
++++ b/arch/arm/mach-omap2/pm.c
+@@ -44,6 +44,8 @@ unsigned short clocks_off_while_idle;
+ unsigned short enable_off_mode;
+ unsigned short voltage_off_while_idle;
+ atomic_t sleep_block = ATOMIC_INIT(0);
++static int vdd1_locked;
++static int vdd2_locked;
+ 
+ static ssize_t idle_show(struct kobject *, struct kobj_attribute *, char *);
+ static ssize_t idle_store(struct kobject *k, struct kobj_attribute *,
+@@ -70,6 +72,11 @@ static struct kobj_attribute vdd1_opp_attr =
+ 
+ static struct kobj_attribute vdd2_opp_attr =
+ 	__ATTR(vdd2_opp, 0644, vdd_opp_show, vdd_opp_store);
++static struct kobj_attribute vdd1_lock_attr =
++	__ATTR(vdd1_lock, 0644, vdd_opp_show, vdd_opp_store);
++static struct kobj_attribute vdd2_lock_attr =
++	__ATTR(vdd2_lock, 0644, vdd_opp_show, vdd_opp_store);
++
+ #endif
+ 
+ static ssize_t idle_show(struct kobject *kobj, struct kobj_attribute *attr,
+@@ -128,6 +135,10 @@ static ssize_t vdd_opp_show(struct kobject *kobj, struct kobj_attribute *attr,
+ 		return sprintf(buf, "%hu\n", resource_get_level("vdd1_opp"));
+ 	else if (attr == &vdd2_opp_attr)
+ 		return sprintf(buf, "%hu\n", resource_get_level("vdd2_opp"));
++	else if (attr == &vdd1_lock_attr)
++		return sprintf(buf, "%hu\n", resource_get_opp_lock(VDD1_OPP));
++	else if (attr == &vdd2_lock_attr)
++		return sprintf(buf, "%hu\n", resource_get_opp_lock(VDD2_OPP));
+ 	else
+ 		return -EINVAL;
+ }
+@@ -136,22 +147,50 @@ static ssize_t vdd_opp_store(struct kobject *kobj, struct kobj_attribute *attr,
+ 			  const char *buf, size_t n)
+ {
+ 	unsigned short value;
++	int flags = 0;
+ 
+ 	if (sscanf(buf, "%hu", &value) != 1)
+ 		return -EINVAL;
+ 
++	/* Check locks */
++	if (attr == &vdd1_lock_attr) {
++		flags = OPP_IGNORE_LOCK;
++		attr = &vdd1_opp_attr;
++		if (vdd1_locked && value == 0) {
++			resource_unlock_opp(VDD1_OPP);
++			vdd1_locked = 0;
++			return n;
++		}
++		if (vdd1_locked == 0 && value != 0) {
++			resource_lock_opp(VDD1_OPP);
++			vdd1_locked = 1;
++		}
++	} else if (attr == &vdd2_lock_attr) {
++		flags = OPP_IGNORE_LOCK;
++		attr = &vdd2_opp_attr;
++		if (vdd2_locked && value == 0) {
++			resource_unlock_opp(VDD2_OPP);
++			vdd2_locked = 0;
++			return n;
++		}
++		if (vdd2_locked == 0 && value != 0) {
++			resource_lock_opp(VDD2_OPP);
++			vdd2_locked = 1;
++		}
++	}
++
+ 	if (attr == &vdd1_opp_attr) {
+ 		if (value < 1 || value > 5) {
+ 			printk(KERN_ERR "vdd_opp_store: Invalid value\n");
+ 			return -EINVAL;
+ 		}
+-		set_opp_level(VDD1_OPP, value);
++		resource_set_opp_level(VDD1_OPP, value, flags);
+ 	} else if (attr == &vdd2_opp_attr) {
+ 		if (value < 2 || value > 3) {
+ 			printk(KERN_ERR "vdd_opp_store: Invalid value\n");
+ 			return -EINVAL;
+ 		}
+-		set_opp_level(VDD2_OPP, value);
++		resource_set_opp_level(VDD2_OPP, value, flags);
+ 	} else {
+ 		return -EINVAL;
+ 	}
+@@ -228,6 +267,18 @@ static int __init omap_pm_init(void)
+ 		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
+ 		return error;
+ 	}
++
++	error = sysfs_create_file(power_kobj, &vdd1_lock_attr.attr);
++	if (error) {
++		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
++		return error;
++	}
++
++	error = sysfs_create_file(power_kobj, &vdd2_lock_attr.attr);
++	if (error) {
++		printk(KERN_ERR "sysfs_create_file failed: %d\n", error);
++		return error;
++	}
+ #endif
+ 	voltage_off_while_idle = 0;
+ 	/* Going to 0V on anything under ES2.1 will eventually cause a crash */
+diff --git a/arch/arm/mach-omap2/pm.h b/arch/arm/mach-omap2/pm.h
+index a0dadf9..451f247 100644
+--- a/arch/arm/mach-omap2/pm.h
++++ b/arch/arm/mach-omap2/pm.h
+@@ -42,7 +42,13 @@ extern int omap3_pm_set_suspend_state(struct powerdomain *pwrdm, int state);
+ #define omap3_pm_set_suspend_state(pwrdm, state) do {} while (0);
+ #endif
+ extern int set_pwrdm_state(struct powerdomain *pwrdm, u32 state);
+-extern int set_opp_level(int res, u32 target_level);
++extern int resource_set_opp_level(int res, u32 target_level, int flags);
++extern int resource_access_opp_lock(int res, int delta);
++#define resource_lock_opp(res) resource_access_opp_lock(res, 1)
++#define resource_unlock_opp(res) resource_access_opp_lock(res, -1)
++#define resource_get_opp_lock(res) resource_access_opp_lock(res, 0)
++
++#define OPP_IGNORE_LOCK 0x1
+ 
+ #ifdef CONFIG_PM_DEBUG
+ extern void omap2_pm_dump(int mode, int resume, unsigned int us);
+diff --git a/arch/arm/mach-omap2/resource34xx.c b/arch/arm/mach-omap2/resource34xx.c
+index 15e6d89..f862ee6 100644
+--- a/arch/arm/mach-omap2/resource34xx.c
++++ b/arch/arm/mach-omap2/resource34xx.c
+@@ -139,6 +139,8 @@ static struct shared_resource *vdd1_resp;
+ static struct shared_resource *vdd2_resp;
+ static struct device dummy_mpu_dev;
+ static struct device dummy_dsp_dev;
++static int vdd1_lock;
++static int vdd2_lock;
+ 
+ /**
+  * init_opp - Initialize the OPP resource
+@@ -167,7 +169,19 @@ void init_opp(struct shared_resource *resp)
+ 
+ static struct device vdd2_dev;
+ 
+-int set_opp_level(int res, u32 target_level)
++int resource_access_opp_lock(int res, int delta)
++{
++	if (res == VDD1_OPP) {
++		vdd1_lock += delta;
++		return vdd1_lock;
++	} else if (res == VDD2_OPP) {
++		vdd2_lock += delta;
++		return vdd2_lock;
++	}
++	return -EINVAL;
++}
++
++int resource_set_opp_level(int res, u32 target_level, int flags)
+ {
+ 	unsigned long mpu_freq, mpu_old_freq, l3_freq, req_l3_freq, t_opp;
+ 	struct cpufreq_freqs freqs_notify;
+@@ -187,6 +201,8 @@ int set_opp_level(int res, u32 target_level)
+ 		return 0;
+ 
+ 	if (res == VDD1_OPP) {
++		if (flags != OPP_IGNORE_LOCK && vdd1_lock)
++			return 0;
+ 		mpu_old_freq = get_freq(mpu_opps + MAX_VDD1_OPP,
+ 					curr_vdd1_prcm_set->opp_id);
+ 		mpu_freq = get_freq(mpu_opps + MAX_VDD1_OPP,
+@@ -234,6 +250,8 @@ int set_opp_level(int res, u32 target_level)
+ 		cpufreq_notify_transition(&freqs_notify, CPUFREQ_POSTCHANGE);
+ #endif
+ 	} else {
++		if (flags != OPP_IGNORE_LOCK && vdd2_lock)
++			return 0;
+ 		l3_freq = get_freq(l3_opps + MAX_VDD2_OPP,
+ 					target_level);
+ 		t_opp = ID_VDD(PRCM_VDD2) |
+@@ -265,7 +283,7 @@ int set_opp(struct shared_resource *resp, u32 target_level)
+ 	int ind;
+ 
+ 	if (resp == vdd1_resp) {
+-		set_opp_level(VDD1_OPP, target_level);
++		resource_set_opp_level(VDD1_OPP, target_level, 0);
+ 	} else if (resp == vdd2_resp) {
+ 		tput = target_level;
+ 
+@@ -281,7 +299,7 @@ int set_opp(struct shared_resource *resp, u32 target_level)
+ 		/* Set the highest OPP possible */
+ 		if (ind > MAX_VDD2_OPP)
+ 			target_level = ind-1;
+-		set_opp_level(VDD2_OPP, target_level);
++		resource_set_opp_level(VDD2_OPP, target_level, 0);
+ 	}
+ 	return 0;
+ }
+-- 
+1.6.0.3
+

@@ -1,0 +1,77 @@
+From a233f8ea214c8679e70e20ac0cfa9c26b96429bf Mon Sep 17 00:00:00 2001
+From: Tero Kristo <tero.kristo@nokia.com>
+Date: Mon, 13 Oct 2008 13:17:06 +0300
+Subject: [PATCH 068/364] OMAP3: PM: Enable SDRAM auto-refresh during sleep
+
+Fix for ES3.0 bug: SDRC not sending auto-refresh when OMAP wakes-up from OFF
+mode (warning for HS devices.)
+
+Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/pm34xx.c |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index 863fde5..a5b5827 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -50,6 +50,13 @@
+ #include "prm.h"
+ #include "pm.h"
+ #include "smartreflex.h"
++#include "sdrc.h"
++
++#define SDRC_POWER_AUTOCOUNT_SHIFT 8
++#define SDRC_POWER_AUTOCOUNT_MASK (0xffff << SDRC_POWER_AUTOCOUNT_SHIFT)
++#define SDRC_POWER_CLKCTRL_SHIFT 4
++#define SDRC_POWER_CLKCTRL_MASK (0x3 << SDRC_POWER_CLKCTRL_SHIFT)
++#define SDRC_SELF_REFRESH_ON_AUTOCOUNT (0x2 << SDRC_POWER_CLKCTRL_SHIFT)
+ 
+ /* Scratchpad offsets */
+ #define OMAP343X_TABLE_ADDRESS_OFFSET	   0x31
+@@ -272,6 +279,7 @@ void omap_sram_idle(void)
+ 	int per_next_state = PWRDM_POWER_ON;
+ 	int core_next_state = PWRDM_POWER_ON;
+ 	int core_prev_state, per_prev_state;
++	u32 sdrc_pwr = 0;
+ 
+ 	if (!_omap_sram_idle)
+ 		return;
+@@ -332,11 +340,33 @@ void omap_sram_idle(void)
+ 	}
+ 
+ 	/*
++	 * Force SDRAM controller to self-refresh mode after timeout on
++	 * autocount. This is needed on ES3.0 to avoid SDRAM controller
++	 * hang-ups.
++	 */
++	if (system_rev >= OMAP3430_REV_ES3_0 &&
++	    omap_type() != OMAP2_DEVICE_TYPE_GP &&
++	    core_next_state == PWRDM_POWER_OFF) {
++		sdrc_pwr = sdrc_read_reg(SDRC_POWER);
++		sdrc_write_reg((sdrc_pwr &
++			~(SDRC_POWER_AUTOCOUNT_MASK|SDRC_POWER_CLKCTRL_MASK)) |
++			(1 << SDRC_POWER_AUTOCOUNT_SHIFT) |
++			SDRC_SELF_REFRESH_ON_AUTOCOUNT, SDRC_POWER);
++	}
++
++	/*
+ 	 * omap3_arm_context is the location where ARM registers
+ 	 * get saved. The restore path then reads from this
+ 	 * location and restores them back.
+ 	 */
+ 	_omap_sram_idle(omap3_arm_context, save_state);
++
++	/* Restore normal SDRAM settings */
++	if (system_rev >= OMAP3430_REV_ES3_0 &&
++	    omap_type() != OMAP2_DEVICE_TYPE_GP &&
++	    core_next_state == PWRDM_POWER_OFF)
++		sdrc_write_reg(sdrc_pwr, SDRC_POWER);
++
+ 	/* Restore table entry modified during MMU restoration */
+ 	if (pwrdm_read_prev_pwrst(mpu_pwrdm) == PWRDM_POWER_OFF)
+ 		restore_table_entry();
+-- 
+1.6.0.3
+

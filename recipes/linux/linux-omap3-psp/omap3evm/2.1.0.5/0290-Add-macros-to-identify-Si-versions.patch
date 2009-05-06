@@ -1,0 +1,30 @@
+From df3664fd228c65e428442639ff3087bc579bf377 Mon Sep 17 00:00:00 2001
+From: Sanjeev Premi <premi@ti.com>
+Date: Wed, 11 Feb 2009 17:53:06 +0530
+Subject: [PATCH 290/364] Add macros to identify Si versions
+
+Added macros to easily identify Si versions 'upto ES2.1'
+and '3.0 onwards'.
+
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/plat-omap/include/mach/cpu.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/plat-omap/include/mach/cpu.h b/arch/arm/plat-omap/include/mach/cpu.h
+index d503fd6..c3821b1 100644
+--- a/arch/arm/plat-omap/include/mach/cpu.h
++++ b/arch/arm/plat-omap/include/mach/cpu.h
+@@ -421,6 +421,9 @@ IS_OMAP_TYPE(3530, 0x3530)
+ #define OMAP35XX_MASK_ES3_0	0x00003000
+ #define OMAP35XX_MASK_ES3_1	0x00004000
+ 
++#define omap_rev_le21()		((((omap_rev() & 0x0F000) >> 12) < 3) ? 1 : 0)
++#define omap_rev_ge30()		((((omap_rev() & 0x0F000) >> 12) > 2) ? 1 : 0)
++
+ /*
+  * omap_chip bits
+  *
+-- 
+1.6.0.3
+

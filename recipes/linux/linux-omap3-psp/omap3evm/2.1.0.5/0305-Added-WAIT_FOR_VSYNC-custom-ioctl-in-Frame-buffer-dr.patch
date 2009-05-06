@@ -1,0 +1,145 @@
+From 2ea0b4534be24d9da318c6618a1a378f1fd23ff8 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Tue, 17 Feb 2009 17:16:15 +0530
+Subject: [PATCH 305/364] Added WAIT_FOR_VSYNC custom ioctl in Frame buffer driver
+
+---
+ arch/arm/plat-omap/include/mach/omapfb.h |    1 +
+ drivers/video/omap2/omapfb-ioctl.c       |   57 ++++++++++++++++++++++++++++++
+ drivers/video/omap2/omapfb-main.c        |    5 ++-
+ drivers/video/omap2/omapfb.h             |    4 ++-
+ 4 files changed, 65 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/plat-omap/include/mach/omapfb.h b/arch/arm/plat-omap/include/mach/omapfb.h
+index bcf4245..70a9133 100644
+--- a/arch/arm/plat-omap/include/mach/omapfb.h
++++ b/arch/arm/plat-omap/include/mach/omapfb.h
+@@ -50,6 +50,7 @@
+ #define OMAPFB_UPDATE_WINDOW	OMAP_IOW(54, struct omapfb_update_window)
+ #define OMAPFB_SETUP_MEM	OMAP_IOW(55, struct omapfb_mem_info)
+ #define OMAPFB_QUERY_MEM	OMAP_IOW(56, struct omapfb_mem_info)
++#define OMAPFB_WAIT_FOR_VSYNC   OMAP_IOW(57, u_int32_t)
+ 
+ #define OMAPFB_CAPS_GENERIC_MASK	0x00000fff
+ #define OMAPFB_CAPS_LCDC_MASK		0x00fff000
+diff --git a/drivers/video/omap2/omapfb-ioctl.c b/drivers/video/omap2/omapfb-ioctl.c
+index 820242e..227694c 100644
+--- a/drivers/video/omap2/omapfb-ioctl.c
++++ b/drivers/video/omap2/omapfb-ioctl.c
+@@ -295,6 +295,61 @@ static int omapfb_get_update_mode(struct fb_info *fbi,
+ 	return 0;
+ }
+ 
++/* Interrupt service routine. */
++static void omapfb_isr(void *arg, unsigned int irqstatus)
++{
++	struct fb_info *fbi = (struct fb_info *) arg;
++	struct omapfb_info *ofbi = FB2OFB(fbi);
++
++	++ofbi->vsync_cnt;
++	wake_up_interruptible(&ofbi->vsync_wait);
++}
++
++static int omapfb_wait_for_vsync(struct fb_info *fbi)
++{
++	wait_queue_t wqt;
++	unsigned long cnt;
++	int ret;
++	void *handle = NULL;
++	u32 mask = 0;
++	struct omapfb_info *ofbi = FB2OFB(fbi);
++	struct omap_display *display = fb2display(fbi);
++
++	mask = DISPC_IRQ_VSYNC | DISPC_IRQ_EVSYNC_EVEN |
++			DISPC_IRQ_EVSYNC_ODD;
++
++	handle = omap_dispc_register_isr(omapfb_isr, fbi, mask);
++	if (!handle)
++		return -EINVAL;
++
++	init_waitqueue_entry(&wqt, current);
++
++	cnt = ofbi->vsync_cnt;
++	ret = wait_event_interruptible_timeout(ofbi->vsync_wait,
++			cnt != ofbi->vsync_cnt, ofbi->timeout);
++	/*
++	 * If the GFX is on TV, then wait for another VSYNC
++	 * to compensate for Interlaced scan
++	 */
++	if (display->type == OMAP_DISPLAY_TYPE_VENC) {
++		if (ret > 0) {
++			cnt = ofbi->vsync_cnt;
++			ret = wait_event_interruptible_timeout(
++					ofbi->vsync_wait,
++					cnt != ofbi->vsync_cnt,
++					ofbi->timeout);
++		}
++	}
++	omap_dispc_unregister_isr(handle);
++
++	if (ret < 0)
++		return ret;
++	if (ret == 0)
++		return -ETIMEDOUT;
++
++	return 0;
++}
++
+ int omapfb_ioctl(struct fb_info *fbi, unsigned int cmd, unsigned long arg)
+ {
+ 	struct omapfb_info *ofbi = FB2OFB(fbi);
+@@ -452,6 +507,8 @@ int omapfb_ioctl(struct fb_info *fbi, unsigned int cmd, unsigned long arg)
+ 		r = display->run_test(display, p.test_num);
+ 
+ 		break;
++	case OMAPFB_WAIT_FOR_VSYNC:
++		return omapfb_wait_for_vsync(fbi);
+ 
+ 	default:
+ 		DBG("ioctl unhandled\n");
+diff --git a/drivers/video/omap2/omapfb-main.c b/drivers/video/omap2/omapfb-main.c
+index 369d593..7ed251c 100644
+--- a/drivers/video/omap2/omapfb-main.c
++++ b/drivers/video/omap2/omapfb-main.c
+@@ -1019,7 +1019,7 @@ static struct fb_ops omapfb_ops = {
+ 	.fb_mmap	= omapfb_mmap,
+ 	.fb_setcolreg	= omapfb_setcolreg,
+ 	.fb_setcmap	= omapfb_setcmap,
+-	//.fb_write	= omapfb_write,
++	//.fb_write     = omapfb_write,
+ };
+ 
+ static void omapfb_free_fbmem(struct omapfb2_device *fbdev, int fbnum)
+@@ -1394,6 +1394,9 @@ static int omapfb_create_framebuffers(struct omapfb2_device *fbdev)
+ 		ofbi = FB2OFB(fbi);
+ 		ofbi->fbdev = fbdev;
+ 		ofbi->id = i;
++		ofbi->timeout = HZ/5;
++		/* initialize the vsync wait queue */
++		init_waitqueue_head(&ofbi->vsync_wait);
+ 		fbdev->num_fbs++;
+ 	}
+ 
+diff --git a/drivers/video/omap2/omapfb.h b/drivers/video/omap2/omapfb.h
+index e436144..9b06c7d 100644
+--- a/drivers/video/omap2/omapfb.h
++++ b/drivers/video/omap2/omapfb.h
+@@ -66,6 +66,9 @@ struct omapfb_info {
+ 	struct omapfb2_device *fbdev;
+ 	enum omapfb_rotation_type rotation_type;
+ 	int rotation;
++	unsigned long timeout;
++	wait_queue_head_t vsync_wait;
++	unsigned long vsync_cnt;
+ };
+ 
+ struct omapfb2_device {
+@@ -131,5 +134,4 @@ static inline void omapfb_unlock(struct omapfb2_device *fbdev)
+ 	mutex_unlock(&fbdev->mtx);
+ }
+ 
+-
+ #endif
+-- 
+1.6.0.3
+

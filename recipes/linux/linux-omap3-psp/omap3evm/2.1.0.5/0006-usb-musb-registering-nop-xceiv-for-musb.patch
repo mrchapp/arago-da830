@@ -1,0 +1,37 @@
+From 098a12def6456fa54b071d67fb5b2daf62ab22e7 Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Thu, 5 Feb 2009 15:37:30 +0530
+Subject: [PATCH 006/364] usb: musb: registering nop xceiv for musb
+
+Adding support for registering nop usb transceiver for musb in OMAP
+platforms. Tested with OMAP35xx EVM having OTG phy ISP1504 which is
+autonomous and doesn't require any phy programming.
+---
+ arch/arm/mach-omap2/usb-musb.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/usb-musb.c b/arch/arm/mach-omap2/usb-musb.c
+index 5d79f89..d6b8066 100644
+--- a/arch/arm/mach-omap2/usb-musb.c
++++ b/arch/arm/mach-omap2/usb-musb.c
+@@ -26,6 +26,7 @@
+ #include <asm/io.h>
+ 
+ #include <linux/usb/musb.h>
++#include <linux/usb/otg.h>
+ 
+ #include <mach/hardware.h>
+ #include <mach/irqs.h>
+@@ -160,6 +161,9 @@ static struct platform_device musb_device = {
+ void __init usb_musb_init(void)
+ {
+ #ifdef CONFIG_USB_MUSB_SOC
++#ifdef CONFIG_NOP_USB_XCEIV
++       nop_xceiv_register();
++#endif
+ 	if (platform_device_register(&musb_device) < 0) {
+ 		printk(KERN_ERR "Unable to register HS-USB (MUSB) device\n");
+ 		return;
+-- 
+1.6.0.3
+

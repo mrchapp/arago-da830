@@ -1,0 +1,32 @@
+From e5cfbaaa6d2f3c69fa1f33d737be74bf1e88d5fc Mon Sep 17 00:00:00 2001
+From: Jouni Hogander <jouni.hogander@nokia.com>
+Date: Tue, 18 Nov 2008 14:42:38 +0200
+Subject: [PATCH 084/364] OMAP2: PM: Fix omap2 build
+
+This patch fixes build in case of omap2.
+
+Signed-off-by: Jouni Hogander <jouni.hogander@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/pm.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm.h b/arch/arm/mach-omap2/pm.h
+index 6947442..946bb14 100644
+--- a/arch/arm/mach-omap2/pm.h
++++ b/arch/arm/mach-omap2/pm.h
+@@ -32,7 +32,11 @@ extern void *omap3_secure_ram_storage;
+ 
+ extern void omap2_block_sleep(void);
+ extern void omap2_allow_sleep(void);
++#ifdef CONFIG_ARCH_OMAP3
+ extern void omap3_pm_off_mode_enable(int);
++#else
++#define omap3_pm_off_mode_enable(int) do {} while (0);
++#endif
+ extern int set_pwrdm_state(struct powerdomain *pwrdm, u32 state);
+ 
+ 
+-- 
+1.6.0.3
+

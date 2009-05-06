@@ -1,0 +1,78 @@
+From 1457f6506ca57f096aca8e090a335c88f13c63a0 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Wed, 18 Feb 2009 10:42:41 +0530
+Subject: [PATCH 307/364] Bug Solved: SDOCM00054702 : Global Alpha value not read correctly.
+
+---
+ drivers/media/video/omap/omap_vout.c    |   13 +++++++++----
+ drivers/media/video/omap/omap_voutdef.h |    1 -
+ 2 files changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
+index c6582f2..d6ee53b 100644
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -1149,7 +1149,8 @@ static int vidioc_try_fmt_vid_overlay(struct file *file, void *fh,
+ 	if (err)
+ 		return err;
+ 
+-	vout->global_alpha = f->fmt.win.global_alpha;
++	if (vout->vid == OMAP_VIDEO1)
++		win->global_alpha = 255;
+ 	return 0;
+ }
+ 
+@@ -1167,8 +1168,11 @@ static int vidioc_s_fmt_vid_overlay(struct file *file, void *fh,
+ 		up(&vout->lock);
+ 		return err;
+ 	}
++	if (vout->vid == OMAP_VIDEO1)
++		vout->win.global_alpha = 255;
++	else
++		vout->win.global_alpha = f->fmt.win.global_alpha;
+ 
+-	vout->global_alpha = f->fmt.win.global_alpha;
+ 	up(&vout->lock);
+ 	return 0;
+ }
+@@ -1212,6 +1216,7 @@ static int vidioc_g_fmt_vid_overlay(struct file *file, void *fh,
+ 	win->w = vout->win.w;
+ 	win->field = vout->win.field;
+ 	win->chromakey = vout->win.chromakey;
++	win->global_alpha = vout->win.global_alpha;
+ 	return 0;
+ }
+ 
+@@ -1939,7 +1944,7 @@ static int omap_vout_setup_video_data(struct omap_vout_device *vout)
+ 	vout->dst_chroma_key_enable = 0;
+ 	vout->src_chroma_key = 0;
+ 	vout->dst_chroma_key = 0;
+-	vout->global_alpha = 255;
++	vout->win.global_alpha = 255;
+ 
+ 	omap_vout_new_format(pix, &vout->fbuf, &vout->crop, &vout->win);
+ 
+@@ -2300,7 +2305,7 @@ int omapvid_setup_overlay(struct omap_vout_device *vout,
+ 
+ 	r = ovl->setup_input(ovl, (u32)addr, (void *)addr, tv_field1_offset,
+ 		pixwidth, cropwidth, cropheight, mode, rotation, mirror,
+-			vout->global_alpha);
++			vout->win.global_alpha);
+ 
+ 	if (r)
+ 		goto err;
+diff --git a/drivers/media/video/omap/omap_voutdef.h b/drivers/media/video/omap/omap_voutdef.h
+index 99fefd6..0198ce5 100644
+--- a/drivers/media/video/omap/omap_voutdef.h
++++ b/drivers/media/video/omap/omap_voutdef.h
+@@ -155,7 +155,6 @@ struct omap_vout_device {
+ 	unsigned int dst_chroma_key_enable;
+ 	unsigned int src_chroma_key;
+ 	unsigned int dst_chroma_key;
+-	u8 global_alpha;
+ 
+ 	int ps, vr_ps, line_length, first_int, field_id;
+ 	enum v4l2_memory memory;
+-- 
+1.6.0.3
+

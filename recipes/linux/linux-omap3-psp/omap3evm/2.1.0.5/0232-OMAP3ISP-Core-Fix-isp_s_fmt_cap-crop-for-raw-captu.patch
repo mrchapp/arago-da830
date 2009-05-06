@@ -1,0 +1,36 @@
+From f8faeb964eeff72fcafc44c5751d153604bcdced Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:42 -0600
+Subject: [PATCH 232/364] OMAP3ISP: Core: Fix isp_s_fmt_cap crop for raw capture
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+---
+ drivers/media/video/isp/isp.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/video/isp/isp.c b/drivers/media/video/isp/isp.c
+index e274f92..efb3ddb 100644
+--- a/drivers/media/video/isp/isp.c
++++ b/drivers/media/video/isp/isp.c
+@@ -1858,7 +1858,7 @@ EXPORT_SYMBOL(isp_g_fmt_cap);
+ int isp_s_fmt_cap(struct v4l2_pix_format *pix_input,
+ 					struct v4l2_pix_format *pix_output)
+ {
+-	int crop_scaling_w, crop_scaling_h = 0;
++	int crop_scaling_w = 0, crop_scaling_h = 0;
+ 	int rval = 0;
+ 
+ 	rval = isp_calc_pipeline(pix_input, pix_output);
+@@ -1887,7 +1887,8 @@ int isp_s_fmt_cap(struct v4l2_pix_format *pix_input,
+ 
+ 	isp_config_pipeline(pix_input, pix_output);
+ 
+-	if (crop_scaling_h || crop_scaling_w)
++	if ((ispmodule_obj.isp_pipeline & OMAP_ISP_RESIZER) &&
++	    (crop_scaling_h || crop_scaling_w))
+ 		isp_config_crop(pix_output);
+ 
+ out:
+-- 
+1.6.0.3
+

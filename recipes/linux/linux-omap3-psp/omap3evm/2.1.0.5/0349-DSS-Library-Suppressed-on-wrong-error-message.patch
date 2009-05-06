@@ -1,0 +1,40 @@
+From a2395ebfd822051fb746b5082070bc8d2f954fec Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Fri, 13 Mar 2009 18:13:17 +0530
+Subject: [PATCH 349/364] DSS Library: Suppressed on wrong error message
+
+---
+ arch/arm/plat-omap/dss/dispc.c |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/plat-omap/dss/dispc.c b/arch/arm/plat-omap/dss/dispc.c
+index 693fddf..a397291 100644
+--- a/arch/arm/plat-omap/dss/dispc.c
++++ b/arch/arm/plat-omap/dss/dispc.c
+@@ -1939,8 +1939,21 @@ void dispc_irq_handler(void)
+ 
+ 	if (irqstatus & ~handledirqs & DISPC_IRQ_MASK_ERROR) {
+ 		if (printk_ratelimit()) {
+-			DSSERR("dispc irq error status %04x\n",
+-			       irqstatus);
++			/* Suppressing the Digital sync lost error
++			   condition as it comes first time everytime
++			   venc comes out of reset and venc will come
++			   out of reset everytime when power management
++			   is enabled and system will go to higher C
++			   states */
++			if (!(irqstatus & DISPC_IRQ_SYNC_LOST_DIGIT))
++				DSSERR("dispc irq error status %04x\n",
++						irqstatus);
++#ifdef DEBUG
++			else
++				DSSERR("dispc irq error status %04x\n",
++						irqstatus);
++#endif
++
+ 		}
+ 		if (errors++ > 100) {
+ 			DSSERR("Excessive DISPC errors\n"
+-- 
+1.6.0.3
+

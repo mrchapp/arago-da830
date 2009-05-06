@@ -1,0 +1,26 @@
+From 7712681c2008f0c53219fe4968a5ade3dd72bf0d Mon Sep 17 00:00:00 2001
+From: Sakari Ailus <sakari.ailus@nokia.com>
+Date: Mon, 26 Jan 2009 15:19:30 -0600
+Subject: [PATCH 255/364] omap34xxcam: do consult isp_vbq_setup().
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+---
+ drivers/media/video/omap34xxcam.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/video/omap34xxcam.c b/drivers/media/video/omap34xxcam.c
+index 658827f..e0b507f 100644
+--- a/drivers/media/video/omap34xxcam.c
++++ b/drivers/media/video/omap34xxcam.c
+@@ -207,7 +207,7 @@ static int omap34xxcam_vbq_setup(struct videobuf_queue *vbq, unsigned int *cnt,
+ 	while ((*size * *cnt) > ispmmu_get_mapeable_space())
+ 		(*cnt)--;
+ 
+-	return 0;
++	return isp_vbq_setup(vbq, cnt, size);
+ }
+ 
+ /**
+-- 
+1.6.0.3
+

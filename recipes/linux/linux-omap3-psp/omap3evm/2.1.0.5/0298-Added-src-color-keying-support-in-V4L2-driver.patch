@@ -1,0 +1,115 @@
+From 402044f93bd52ba1ee640edeaeeccca296313750 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Mon, 16 Feb 2009 16:52:23 +0530
+Subject: [PATCH 298/364] Added src color keying support in V4L2 driver
+
+Tested only with LCD overlay manager.
+Only the enabling part not the key part
+---
+ drivers/media/video/omap/omap_vout.c    |   57 +++++++++++++++++++++++++++++++
+ drivers/media/video/omap/omap_voutdef.h |    4 ++
+ 2 files changed, 61 insertions(+), 0 deletions(-)
+ mode change 100644 => 100755 drivers/media/video/omap/omap_voutdef.h
+
+diff --git a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
+index b2f3fda..ec46ce0 100755
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -1633,6 +1633,55 @@ static int vidioc_streamoff(struct file *file, void *fh,
+ 	return 0;
+ }
+ 
++static int vidioc_s_fbuf(struct file *file, void *fh,
++		struct v4l2_framebuffer *a)
++{
++	struct omap_vout_fh *ofh = (struct omap_vout_fh *)fh;
++	struct omap_vout_device *vout = ofh->vout;
++	struct omapvideo_info *ovid;
++	struct omap_overlay *ovl;
++	struct omap_color_key key;
++
++	ovid = &(vout->vid_info);
++	ovl = ovid->overlays[0];
++
++	if (!ovl->manager->display->set_color_keying)
++		return -EINVAL;
++
++	if ((a->flags & V4L2_FBUF_FLAG_CHROMAKEY)) {
++		vout->src_chroma_key_enable = 1;
++		key.enable = 1;
++		key.type =  OMAP_DSS_COLOR_KEY_VID_SRC;
++		key.color = vout->src_chroma_key;
++		ovl->manager->display->set_color_keying(ovl->manager->display,
++				&key);
++		return 0;
++	} else {
++		vout->src_chroma_key_enable = 0;
++		key.enable = 0;
++		key.type = OMAP_DSS_COLOR_KEY_VID_SRC;
++		key.color = vout->src_chroma_key;
++		ovl->manager->display->set_color_keying(ovl->manager->display,
++				&key);
++		return 0;
++	}
++
++}
++
++static int vidioc_g_fbuf(struct file *file, void *fh,
++		struct v4l2_framebuffer *a)
++{
++	struct omap_vout_fh *ofh = (struct omap_vout_fh *)fh;
++	struct omap_vout_device *vout = ofh->vout;
++
++	if (vout->src_chroma_key_enable == 1)
++		a->flags |= V4L2_FBUF_FLAG_CHROMAKEY;
++	else
++		a->flags &= ~V4L2_FBUF_FLAG_CHROMAKEY;
++
++	return 0;
++}
++
+ static const struct v4l2_ioctl_ops vout_ioctl_ops = {
+ 	.vidioc_querycap      			= vidioc_querycap,
+ 	.vidioc_querycap	 		= vidioc_querycap,
+@@ -1642,6 +1691,8 @@ static const struct v4l2_ioctl_ops vout_ioctl_ops = {
+ 	.vidioc_s_fmt_vid_out			= vidioc_s_fmt_vid_out,
+ 	.vidioc_queryctrl    			= vidioc_queryctrl,
+ 	.vidioc_g_ctrl       			= vidioc_g_ctrl,
++	.vidioc_s_fbuf					= vidioc_s_fbuf,
++	.vidioc_g_fbuf					= vidioc_g_fbuf,
+ 	.vidioc_s_ctrl       			= vidioc_s_ctrl,
+ 	.vidioc_try_fmt_vid_overlay 		= vidioc_try_fmt_vid_overlay,
+ 	.vidioc_s_fmt_vid_overlay		= vidioc_s_fmt_vid_overlay,
+@@ -1851,6 +1902,12 @@ static int omap_vout_setup_video_data(struct omap_vout_device *vout)
+ 	vout->fbuf.fmt.width  =  display->panel->timings.x_res;
+ 	vout->fbuf.fmt.height =  display->panel->timings.y_res;
+ 
++	/* Set the Color keying variable */
++	vout->src_chroma_key_enable = 0;
++	vout->dst_chroma_key_enable = 0;
++	vout->src_chroma_key = 0;
++	vout->dst_chroma_key = 0;
++
+ 	omap_vout_new_format(pix, &vout->fbuf, &vout->crop, &vout->win);
+ 
+ 	/*Disable the rotation. */
+diff --git a/drivers/media/video/omap/omap_voutdef.h b/drivers/media/video/omap/omap_voutdef.h
+old mode 100644
+new mode 100755
+index 06292bc..0198ce5
+--- a/drivers/media/video/omap/omap_voutdef.h
++++ b/drivers/media/video/omap/omap_voutdef.h
+@@ -151,6 +151,10 @@ struct omap_vout_device {
+ 	unsigned int vrfb_context[4];
+ 	unsigned int smsshado_size;
+ 	unsigned char pos;
++	unsigned int src_chroma_key_enable;
++	unsigned int dst_chroma_key_enable;
++	unsigned int src_chroma_key;
++	unsigned int dst_chroma_key;
+ 
+ 	int ps, vr_ps, line_length, first_int, field_id;
+ 	enum v4l2_memory memory;
+-- 
+1.6.0.3
+

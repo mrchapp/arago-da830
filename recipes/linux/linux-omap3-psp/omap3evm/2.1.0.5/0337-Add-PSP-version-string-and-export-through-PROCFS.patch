@@ -1,0 +1,164 @@
+From 9ee2e8982615388c3d5e85216f854865582ae07b Mon Sep 17 00:00:00 2001
+From: Sriram <srk@ti.com>
+Date: Tue, 10 Mar 2009 15:43:32 +0530
+Subject: [PATCH 337/364] Add PSP version string and export through PROCFS
+
+---
+ arch/arm/plat-omap/Makefile      |    3 +
+ arch/arm/plat-omap/psp-version.c |   88 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/plat-omap/psp-version.h |   37 ++++++++++++++++
+ 3 files changed, 128 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/plat-omap/psp-version.c
+ create mode 100644 arch/arm/plat-omap/psp-version.h
+
+diff --git a/arch/arm/plat-omap/Makefile b/arch/arm/plat-omap/Makefile
+index 813a151..e4db3de 100644
+--- a/arch/arm/plat-omap/Makefile
++++ b/arch/arm/plat-omap/Makefile
+@@ -32,3 +32,6 @@ obj-$(CONFIG_OMAP_PM_SRF) += omap-pm-srf.o \
+ 
+ # OMAP2/3 Display Subsystem
+ obj-y += dss/
++
++# PSP version information
++obj-$(CONFIG_MACH_OMAP3EVM) += psp-version.o
+diff --git a/arch/arm/plat-omap/psp-version.c b/arch/arm/plat-omap/psp-version.c
+new file mode 100644
+index 0000000..b48c8e2
+--- /dev/null
++++ b/arch/arm/plat-omap/psp-version.c
+@@ -0,0 +1,88 @@
++/*
++ * linux/arch/arm/mach-omap2/ti-psp-version.c
++ *
++ * Create a proc entry for showing PSP version.
++ *
++ * Copyright (C) 2008 Texas Instruments Incorporated.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/proc_fs.h>
++#include <asm/uaccess.h>
++
++#include "psp-version.h"
++
++static int init_psp_module(void);
++static void exit_psp_module(void);
++
++
++static struct proc_dir_entry	*vers_file;
++
++static int show_version(char *page, char **start,
++			     off_t off, int count,
++			     int *eof, void *data)
++{
++	int len;
++
++	len = sprintf(page, TI_PSP_DEVICE \
++			" Linux PSP version " TI_PSP_VERSION \
++			" (" TI_PSP_PLATFORM ")\n");
++
++	return len;
++}
++
++static int __init init_psp_module(void)
++{
++	int result = 0;
++
++	/*
++	 * Create the file "/proc/ti-psp-version"
++	 */
++	vers_file = create_proc_read_entry(
++			TI_PSP_ENTRY,
++			0444,
++			NULL,
++			show_version,
++			NULL);
++
++	if (vers_file != NULL) {
++		vers_file->owner = THIS_MODULE;
++
++		printk (KERN_INFO TI_PSP_DEVICE \
++					" Linux PSP version " TI_PSP_VERSION \
++					" (" TI_PSP_PLATFORM ")\n");
++	}
++	else {
++		result = -ENOMEM;
++	}
++
++	return result;	
++}
++
++static void __exit exit_psp_module(void)
++{
++	remove_proc_entry(TI_PSP_ENTRY, NULL);
++}
++
++module_init(init_psp_module);
++module_exit(exit_psp_module);
++
++MODULE_LICENSE("GPLv2");
++MODULE_AUTHOR("Texas Instruments Incorporated");
++MODULE_DESCRIPTION("Contains version of the Linux PSP release.");
+diff --git a/arch/arm/plat-omap/psp-version.h b/arch/arm/plat-omap/psp-version.h
+new file mode 100644
+index 0000000..dcc06e2
+--- /dev/null
++++ b/arch/arm/plat-omap/psp-version.h
+@@ -0,0 +1,37 @@
++/*
++ * linux/arch/arm/mach-omap2/ti-psp-version.c
++ *
++ * Create a proc entry for showing PSP version.
++ *
++ * Copyright (C) 2008 Texas Instruments Incorporated.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#ifndef __ARCH_ARM_PLAT_PSP_VERSION_H
++#define __ARCH_ARM_PLAT_PSP_VERSION_H
++
++#define TI_PSP_ENTRY		"ti-psp-version"
++#define TI_PSP_VERSION		"02.01.00.04"
++
++#if defined (CONFIG_MACH_OMAP3EVM)
++#define TI_PSP_DEVICE		"OMAP35x"
++#define TI_PSP_PLATFORM		"OMAP3EVM"
++#else
++#define TI_PSP_DEVICE		"DEVICE"
++#define TI_PSP_PLATFORM		"PLATFORM"
++#endif
++
++#endif
++
+-- 
+1.6.0.3
+

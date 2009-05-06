@@ -1,0 +1,50 @@
+From 9c8125fb7119214877a21291f67bea0eeaead407 Mon Sep 17 00:00:00 2001
+From: Ranjith Lohithakshan <ranjithl@ti.com>
+Date: Fri, 13 Mar 2009 14:52:12 +0530
+Subject: [PATCH 341/364] Fix compilation issues when CONFIG_PM_SRF is enabled
+
+---
+ arch/arm/mach-omap2/pm.c           |    5 +++++
+ arch/arm/mach-omap2/resource34xx.c |    3 +++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm.c b/arch/arm/mach-omap2/pm.c
+index 61c6dfb..0698bbd 100644
+--- a/arch/arm/mach-omap2/pm.c
++++ b/arch/arm/mach-omap2/pm.c
+@@ -36,9 +36,14 @@
+ #include <mach/resource.h>
+ #include <mach/omap-pm.h>
+ 
++#ifdef CONFIG_OMAP_PM_SRF
++#include <mach/omap34xx.h>
++#endif
++
+ #include "prm-regbits-34xx.h"
+ #include "pm.h"
+ 
++
+ unsigned short enable_dyn_sleep;
+ unsigned short clocks_off_while_idle;
+ unsigned short enable_off_mode;
+diff --git a/arch/arm/mach-omap2/resource34xx.c b/arch/arm/mach-omap2/resource34xx.c
+index 2328323..d35c900 100644
+--- a/arch/arm/mach-omap2/resource34xx.c
++++ b/arch/arm/mach-omap2/resource34xx.c
+@@ -20,10 +20,13 @@
+ #include <linux/cpufreq.h>
+ #include <mach/powerdomain.h>
+ #include <mach/clockdomain.h>
++#include <mach/omap34xx.h>
+ #include "smartreflex.h"
+ #include "resource34xx.h"
+ #include "pm.h"
+ 
++
++
+ /**
+  * init_latency - Initializes the mpu/core latency resource.
+  * @resp: Latency resource to be initalized
+-- 
+1.6.0.3
+

@@ -1,0 +1,37 @@
+From 1e6d221f7baf2e9afe61a03a2775ab69a93fcda9 Mon Sep 17 00:00:00 2001
+From: Jouni Hogander <jouni.hogander@nokia.com>
+Date: Wed, 29 Oct 2008 12:06:04 +0200
+Subject: [PATCH 078/364] OMAP3: PM: Fix wrong sequence in suspend.
+
+Powerdomain previous state is checked after restoring new states in
+suspend. This patch fixes this problem.
+
+Signed-off-by: Jouni Hogander <jouni.hogander@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/pm34xx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index b56ae69..99ef6de 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -553,7 +553,6 @@ static int omap3_pm_suspend(void)
+ restore:
+ 	/* Restore next_pwrsts */
+ 	list_for_each_entry(pwrst, &pwrst_list, node) {
+-		set_pwrdm_state(pwrst->pwrdm, pwrst->saved_state);
+ 		state = pwrdm_read_prev_pwrst(pwrst->pwrdm);
+ 		if (state > pwrst->next_state) {
+ 			printk(KERN_INFO "Powerdomain (%s) didn't enter "
+@@ -561,6 +560,7 @@ restore:
+ 			       pwrst->pwrdm->name, pwrst->next_state);
+ 			ret = -1;
+ 		}
++		set_pwrdm_state(pwrst->pwrdm, pwrst->saved_state);
+ 	}
+ 	if (ret)
+ 		printk(KERN_ERR "Could not enter target state in pm_suspend\n");
+-- 
+1.6.0.3
+

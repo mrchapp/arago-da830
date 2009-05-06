@@ -1,0 +1,75 @@
+From 8137fd5c8af3e314adae42ec196671308872c0b5 Mon Sep 17 00:00:00 2001
+From: Paul Walmsley <paul@pwsan.com>
+Date: Fri, 9 Jan 2009 17:45:34 +0200
+Subject: [PATCH 112/364] OMAP3 SDRC: Add 166MHz, 83MHz SDRC settings for the BeagleBoard
+
+The BeagleBoard u-boot uses DPLL3 settings that result in 83000000 /
+166000000 Hz clock rates for the SDRC, rather than the derated DPLL3
+settings used by earlier bootloaders.
+
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/sdram-micron-mt46h32m32lf-6.h |   22 +++++++++++++++++---
+ 1 files changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/sdram-micron-mt46h32m32lf-6.h b/arch/arm/mach-omap2/sdram-micron-mt46h32m32lf-6.h
+index ef35415..b6c1db3 100644
+--- a/arch/arm/mach-omap2/sdram-micron-mt46h32m32lf-6.h
++++ b/arch/arm/mach-omap2/sdram-micron-mt46h32m32lf-6.h
+@@ -20,34 +20,48 @@
+ /* XXX Using ARE = 0x1 (no autorefresh burst) -- can this be changed? */
+ static struct omap_sdrc_params mt46h32m32lf6_sdrc_params[] = {
+ 	[0] = {
+-		.rate	     = 165941176,
++		.rate	     = 166000000,
+ 		.actim_ctrla = 0x9a9db4c6,
+ 		.actim_ctrlb = 0x00011217,
+ 		.rfr_ctrl    = 0x0004dc01,
+ 		.mr	     = 0x00000032,
+ 	},
+ 	[1] = {
++		.rate	     = 165941176,
++		.actim_ctrla = 0x9a9db4c6,
++		.actim_ctrlb = 0x00011217,
++		.rfr_ctrl    = 0x0004dc01,
++		.mr	     = 0x00000032,
++	},
++	[2] = {
+ 		.rate	     = 133333333,
+ 		.actim_ctrla = 0x7a19b485,
+ 		.actim_ctrlb = 0x00011213,
+ 		.rfr_ctrl    = 0x0003de01,
+ 		.mr	     = 0x00000032,
+ 	},
+-	[2] = {
++	[3] = {
++		.rate	     = 83000000,
++		.actim_ctrla = 0x51512283,
++		.actim_ctrlb = 0x0001120c,
++		.rfr_ctrl    = 0x00025501,
++		.mr	     = 0x00000032,
++	},
++	[4] = {
+ 		.rate	     = 82970588,
+ 		.actim_ctrla = 0x51512283,
+ 		.actim_ctrlb = 0x0001120c,
+ 		.rfr_ctrl    = 0x00025501,
+ 		.mr	     = 0x00000032,
+ 	},
+-	[3] = {
++	[5] = {
+ 		.rate	     = 66666666,
+ 		.actim_ctrla = 0x410d2243,
+ 		.actim_ctrlb = 0x0001120a,
+ 		.rfr_ctrl    = 0x0001d601,
+ 		.mr	     = 0x00000032,
+ 	},
+-	[4] = {
++	[6] = {
+ 		.rate	     = 0
+ 	},
+ };
+-- 
+1.6.0.3
+

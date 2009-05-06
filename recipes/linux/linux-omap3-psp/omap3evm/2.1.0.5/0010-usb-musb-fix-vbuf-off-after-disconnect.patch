@@ -1,0 +1,27 @@
+From b356ca17ae43eb054b5292a04c0e947cab349497 Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Thu, 5 Feb 2009 15:55:15 +0530
+Subject: [PATCH 010/364] usb: musb: fix vbuf off after disconnect
+
+vbus is switched off after device disconnect even when
+musb is configured only as host.
+---
+ drivers/usb/musb/musb_core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index 5583cb1..a1aa394 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -768,7 +768,7 @@ static irqreturn_t musb_stage2_irq(struct musb *musb, u8 int_usb,
+ 		case OTG_STATE_A_HOST:
+ 		case OTG_STATE_A_SUSPEND:
+ 			musb_root_disconnect(musb);
+-			if (musb->a_wait_bcon != 0)
++			if (musb->a_wait_bcon != 0 && is_otg_enabled(musb))
+ 				musb_platform_try_idle(musb, jiffies
+ 					+ msecs_to_jiffies(musb->a_wait_bcon));
+ 			break;
+-- 
+1.6.0.3
+

@@ -1,0 +1,38 @@
+From 3743d46c31fc362442f5e9d4de564838f2ec5e53 Mon Sep 17 00:00:00 2001
+From: Gupta, Ramesh <grgupta@ti.com>
+Date: Thu, 12 Feb 2009 14:50:56 +0530
+Subject: [PATCH 351/364] OMAP: clock: export notifier register functions
+
+This Patch exports symbols clk_notifier_register/unregister
+function for other kernel modules usage.
+
+Signed-off-by: Ramesh Gupta G <grgupta@ti.com>
+(cherry picked from commit fcdb2d5dc855d8e82a2bfeaed188cae5fc1404e5)
+(cherry picked from commit ee5a58e3fe519f456a2aa980bd229add7f4f3a93)
+---
+ arch/arm/plat-omap/clock.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/plat-omap/clock.c b/arch/arm/plat-omap/clock.c
+index e0940a1..c8d9e96 100644
+--- a/arch/arm/plat-omap/clock.c
++++ b/arch/arm/plat-omap/clock.c
+@@ -680,6 +680,7 @@ int clk_notifier_register(struct clk *clk, struct notifier_block *nb)
+ 
+ 	return r;
+ }
++EXPORT_SYMBOL(clk_notifier_register);
+ 
+ /**
+  * clk_notifier_unregister - remove a clock change notifier
+@@ -735,6 +736,7 @@ int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb)
+ 
+ 	return r;
+ }
++EXPORT_SYMBOL(clk_notifier_unregister);
+ 
+ 
+ 
+-- 
+1.6.0.3
+
