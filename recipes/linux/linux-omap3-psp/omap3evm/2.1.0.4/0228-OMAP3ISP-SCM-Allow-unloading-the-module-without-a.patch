@@ -1,0 +1,97 @@
+From 39c088777d9669419ccad07ccfaaf070a51b4195 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:44 -0600
+Subject: [PATCH 228/364] OMAP3ISP: SCM: Allow unloading the module without a crash.
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+---
+ drivers/media/video/isp/isp_af.c  |   20 +++++++++++---------
+ drivers/media/video/isp/isph3a.c  |   19 +++++++++----------
+ drivers/media/video/isp/isphist.c |    4 ----
+ 3 files changed, 20 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/media/video/isp/isp_af.c b/drivers/media/video/isp/isp_af.c
+index be00f68..a3877a9 100644
+--- a/drivers/media/video/isp/isp_af.c
++++ b/drivers/media/video/isp/isp_af.c
+@@ -730,14 +730,17 @@ void __exit isp_af_exit(void)
+ {
+ 	int i;
+ 
+-	if (afstat.af_buff) {
+-		/* Free buffers */
+-		for (i = 0; i < H3A_MAX_BUFF; i++) {
+-			ispmmu_unmap(afstat.af_buff[i].ispmmu_addr);
+-			dma_free_coherent(NULL, afstat.min_buf_size,
+-					(void *)afstat.af_buff[i].virt_addr,
+-					(dma_addr_t)afstat.af_buff[i].phy_addr);
+-		}
++	/* Free buffers */
++	for (i = 0; i < H3A_MAX_BUFF; i++) {
++		if (!afstat.af_buff[i].phy_addr)
++			continue;
++
++		ispmmu_unmap(afstat.af_buff[i].ispmmu_addr);
++
++		dma_free_coherent(NULL,
++				  afstat.min_buf_size,
++				  (void *)afstat.af_buff[i].virt_addr,
++				  (dma_addr_t)afstat.af_buff[i].phy_addr);
+ 	}
+ 	kfree(af_dev_configptr->config);
+ 	kfree(af_dev_configptr);
+@@ -745,5 +748,4 @@ void __exit isp_af_exit(void)
+ 	memset(&afstat, 0, sizeof(afstat));
+ 
+ 	af_major = -1;
+-	isp_af_enable(0);
+ }
+diff --git a/drivers/media/video/isp/isph3a.c b/drivers/media/video/isp/isph3a.c
+index 9553f2d..47b1d90 100644
+--- a/drivers/media/video/isp/isph3a.c
++++ b/drivers/media/video/isp/isph3a.c
+@@ -808,17 +808,16 @@ int __init isph3a_aewb_init(void)
+ void __exit isph3a_aewb_cleanup(void)
+ {
+ 	int i;
+-	isph3a_aewb_enable(0);
+-	isp_unset_callback(CBK_H3A_AWB_DONE);
+ 
+-	if (aewbstat.h3a_buff) {
+-		for (i = 0; i < H3A_MAX_BUFF; i++) {
+-			ispmmu_unmap(aewbstat.h3a_buff[i].ispmmu_addr);
+-			dma_free_coherent(NULL,
+-				aewbstat.min_buf_size,
+-				(void *)aewbstat.h3a_buff[i].virt_addr,
+-				(dma_addr_t)aewbstat.h3a_buff[i].phy_addr);
+-		}
++	for (i = 0; i < H3A_MAX_BUFF; i++) {
++		if (!aewbstat.h3a_buff[i].phy_addr)
++			continue;
++
++		ispmmu_unmap(aewbstat.h3a_buff[i].ispmmu_addr);
++		dma_free_coherent(NULL,
++				  aewbstat.min_buf_size,
++				  (void *)aewbstat.h3a_buff[i].virt_addr,
++				  (dma_addr_t)aewbstat.h3a_buff[i].phy_addr);
+ 	}
+ 	memset(&aewbstat, 0, sizeof(aewbstat));
+ 	memset(&aewb_regs, 0, sizeof(aewb_regs));
+diff --git a/drivers/media/video/isp/isphist.c b/drivers/media/video/isp/isphist.c
+index d24397a..2833d28 100644
+--- a/drivers/media/video/isp/isphist.c
++++ b/drivers/media/video/isp/isphist.c
+@@ -507,10 +507,6 @@ int __init isp_hist_init(void)
+  **/
+ void __exit isp_hist_cleanup(void)
+ {
+-	isp_hist_enable(0);
+-	mdelay(100);
+-	isp_unset_callback(CBK_HIST_DONE);
+-
+ 	memset(&histstat, 0, sizeof(histstat));
+ 	memset(&hist_regs, 0, sizeof(hist_regs));
+ }
+-- 
+1.5.6
+

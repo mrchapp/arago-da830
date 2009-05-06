@@ -1,0 +1,446 @@
+From ceda0d05aa200b192cc04b6d568bfc87f887512d Mon Sep 17 00:00:00 2001
+From: Sanjeev Premi <premi@ti.com>
+Date: Tue, 10 Feb 2009 18:43:01 +0530
+Subject: [PATCH 152/364] Runtime check for OMAP35x
+
+Added runtime check via omap2_set_globals_35xx()
+Also added runtime check for the OMAP35x variants.
+
+Verbose information from an earlier patch submitted
+on linux-omap list by Tony Lindgren <tony@atomide.com>
+
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/id.c                  |  159 ++++++++++++++++++++++++-----
+ arch/arm/plat-omap/common.c               |   18 ++++
+ arch/arm/plat-omap/include/mach/common.h  |    1 +
+ arch/arm/plat-omap/include/mach/control.h |   19 ++++
+ arch/arm/plat-omap/include/mach/cpu.h     |   82 +++++++++++++++-
+ 5 files changed, 254 insertions(+), 25 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
+index 7cd1b2e..d84bcf9 100644
+--- a/arch/arm/mach-omap2/id.c
++++ b/arch/arm/mach-omap2/id.c
+@@ -75,6 +75,12 @@ EXPORT_SYMBOL(omap_type);
+ #define OMAP_TAP_DIE_ID_2	0x0220
+ #define OMAP_TAP_DIE_ID_3	0x0224
+ 
++#define FEAT_OMAP3503	((OMAP343X_SGX_NONE << OMAP343X_FEATURE_SGX_SHIFT) | \
++				OMAP343X_FEATURE_IVA2_HW_NONE)
++#define FEAT_OMAP3515	OMAP343X_FEATURE_IVA2_HW_NONE
++#define FEAT_OMAP3525	(OMAP343X_SGX_NONE << OMAP343X_FEATURE_SGX_SHIFT)
++#define FEAT_OMAP3530	0
++
+ #define read_tap_reg(reg)	__raw_readl(tap_base  + (reg))
+ 
+ struct omap_id {
+@@ -152,12 +158,131 @@ void __init omap24xx_check_revision(void)
+ 	pr_info("\n");
+ }
+ 
++static u32 __init omap34xx_get_features(char *feat_name)
++{
++	u32 features, module;
++
++	features = omap_ctrl_readl(OMAP343X_CONTROL_FEATURE_OMAP_STATUS) &
++				(OMAP343X_FEATURE_SGX_MASK |
++					OMAP343X_FEATURE_IVA2_HW_NONE);
++
++	module = (features & OMAP343X_FEATURE_SGX_MASK) >>
++					OMAP343X_FEATURE_SGX_SHIFT;
++	switch (module) {
++	case OMAP343X_SGX_FULL:
++		strcat(feat_name, "full speed SGX, ");
++		break;
++	case OMAP343X_SGX_HALF:
++		strcat(feat_name, "half speed SGX, ");
++		break;
++	case OMAP343X_SGX_NONE:
++		strcat(feat_name, "no SGX, ");
++		break;
++	default:
++		strcat(feat_name, "unknown SGX, ");
++		break;
++	}
++
++	module = features & OMAP343X_FEATURE_IVA2_HW_NONE;
++	switch (module) {
++	case 0:
++		strcat(feat_name, "IVA2");
++		break;
++	case OMAP343X_FEATURE_IVA2_HW_NONE:
++		strcat(feat_name, "no IVA2");
++		break;
++	default:
++		break;
++	}
++
++	return features;
++}
++
++static void __init omap34xx_set_revision(u8 rev, char *rev_name, char *features)
++{
++	u32 coprocessors;
++
++	coprocessors = omap34xx_get_features(features);
++
++	switch (rev) {
++	case 0:
++		omap_revision = OMAP3430_REV_ES2_0;
++		strcat(rev_name, "ES2.0");
++		break;
++	case 2:
++		omap_revision = OMAP3430_REV_ES2_1;
++		strcat(rev_name, "ES2.1");
++		break;
++	case 3:
++		omap_revision = OMAP3430_REV_ES3_0;
++		strcat(rev_name, "ES3.0");
++		break;
++	case 4:
++		omap_revision = OMAP3430_REV_ES3_1;
++		strcat(rev_name, "ES3.1");
++		break;
++	default:
++		/* Use the latest known revision as default */
++		omap_revision = OMAP3430_REV_ES3_1;
++		strcat(rev_name, "Unknown revision");
++	}
++}
++
++static void __init omap35xx_set_revision(u8 rev, char *rev_name, char *features)
++{
++	u32 coprocessors;
++
++	/* Get the subrevision based on the onboard coprocessors */
++	coprocessors = omap34xx_get_features(features);
++	switch (coprocessors) {
++	case FEAT_OMAP3503:
++		omap_revision |= OMAP3503_MASK;
++		break;
++	case FEAT_OMAP3515:
++		omap_revision |= OMAP3515_MASK;
++		break;
++	case FEAT_OMAP3525:
++		omap_revision |= OMAP3525_MASK;
++		break;
++	case FEAT_OMAP3530:
++		omap_revision |= OMAP3530_MASK;
++		break;
++	default:
++		break;
++	}
++
++	/* Get the silicon revision */
++	switch (rev) {
++	case 0:	/* Take care of some older boards */
++	case 1:
++		omap_revision |= OMAP35XX_MASK_ES2_0;
++		strcat(rev_name, "ES2.0");
++		break;
++	case 2:
++		omap_revision |= OMAP35XX_MASK_ES2_1;
++		strcat(rev_name, "ES2.1");
++		break;
++	case 3:
++		omap_revision |= OMAP35XX_MASK_ES3_0;
++		strcat(rev_name, "ES3.0");
++		break;
++	case 4:
++		omap_revision |= OMAP35XX_MASK_ES3_1;
++		strcat(rev_name, "ES3.1");
++		break;
++	default:
++		/* Use the latest known revision as default */
++		omap_revision |= OMAP35XX_MASK_ES3_0;
++		strcat(rev_name, "Unknown revision");
++	}
++}
++
+ void __init omap34xx_check_revision(void)
+ {
+ 	u32 cpuid, idcode;
+ 	u16 hawkeye;
+ 	u8 rev;
+-	char *rev_name = "ES1.0";
++	char rev_name[32] = "", feat_name[32] = "";
+ 
+ 	/*
+ 	 * We cannot access revision registers on ES1.0.
+@@ -181,32 +306,14 @@ void __init omap34xx_check_revision(void)
+ 	rev = (idcode >> 28) & 0xff;
+ 
+ 	if (hawkeye == 0xb7ae) {
+-		switch (rev) {
+-		case 0:
+-			omap_revision = OMAP3430_REV_ES2_0;
+-			rev_name = "ES2.0";
+-			break;
+-		case 2:
+-			omap_revision = OMAP3430_REV_ES2_1;
+-			rev_name = "ES2.1";
+-			break;
+-		case 3:
+-			omap_revision = OMAP3430_REV_ES3_0;
+-			rev_name = "ES3.0";
+-			break;
+-		case 4:
+-			omap_revision = OMAP3430_REV_ES3_1;
+-			rev_name = "ES3.1";
+-			break;
+-		default:
+-			/* Use the latest known revision as default */
+-			omap_revision = OMAP3430_REV_ES3_1;
+-			rev_name = "Unknown revision\n";
+-		}
++		if (cpu_is_omap35xx())
++			omap35xx_set_revision(rev, rev_name, feat_name);
++		else
++			omap34xx_set_revision(rev, rev_name, feat_name);
+ 	}
+ 
+ out:
+-	pr_info("OMAP%04x %s\n", omap_rev() >> 16, rev_name);
++	pr_info("OMAP%04x %s (%s)\n", omap_rev() >> 16, rev_name, feat_name);
+ }
+ 
+ /*
+@@ -241,6 +348,10 @@ void __init omap2_check_revision(void)
+ 			omap_chip.oc |= CHIP_IS_OMAP3430ES1;
+ 		else if (omap_rev() > OMAP3430_REV_ES1_0)
+ 			omap_chip.oc |= CHIP_IS_OMAP3430ES2;
++	} else if (cpu_is_omap35xx()) {
++		/* 35xx are treated as 3430ES2 for power and clockdomains */
++		omap_chip.oc = CHIP_IS_OMAP3430;
++		omap_chip.oc |= CHIP_IS_OMAP3430ES2;
+ 	} else {
+ 		pr_err("Uninitialized omap_chip, please fix!\n");
+ 	}
+diff --git a/arch/arm/plat-omap/common.c b/arch/arm/plat-omap/common.c
+index 8c53125..5ad7372 100644
+--- a/arch/arm/plat-omap/common.c
++++ b/arch/arm/plat-omap/common.c
+@@ -333,3 +333,21 @@ void __init omap2_set_globals_343x(void)
+ }
+ #endif
+ 
++#ifdef CONFIG_ARCH_OMAP35XX
++static struct omap_globals omap35xx_globals = {
++	.class	= OMAP35XX_CLASS,
++	.tap	= OMAP2_IO_ADDRESS(0x4830A000),
++	.sdrc	= OMAP2_IO_ADDRESS(OMAP343X_SDRC_BASE),
++	.sms	= OMAP2_IO_ADDRESS(OMAP343X_SMS_BASE),
++	.ctrl	= OMAP2_IO_ADDRESS(OMAP343X_CTRL_BASE),
++	.prm	= OMAP2_IO_ADDRESS(OMAP3430_PRM_BASE),
++	.cm	= OMAP2_IO_ADDRESS(OMAP3430_CM_BASE),
++};
++
++void __init omap2_set_globals_35xx(void)
++{
++	omap2_globals = &omap35xx_globals;
++
++	__omap2_set_globals();
++}
++#endif	/* CONFIG_ARCH_OMAP35XX */
+diff --git a/arch/arm/plat-omap/include/mach/common.h b/arch/arm/plat-omap/include/mach/common.h
+index af4105f..f41cba2 100644
+--- a/arch/arm/plat-omap/include/mach/common.h
++++ b/arch/arm/plat-omap/include/mach/common.h
+@@ -60,6 +60,7 @@ struct omap_globals {
+ void omap2_set_globals_242x(void);
+ void omap2_set_globals_243x(void);
+ void omap2_set_globals_343x(void);
++void omap2_set_globals_35xx(void);
+ 
+ /* These get called from omap2_set_globals_xxxx(), do not call these */
+ void omap2_set_globals_tap(struct omap_globals *);
+diff --git a/arch/arm/plat-omap/include/mach/control.h b/arch/arm/plat-omap/include/mach/control.h
+index 67907a9..4d634e4 100644
+--- a/arch/arm/plat-omap/include/mach/control.h
++++ b/arch/arm/plat-omap/include/mach/control.h
+@@ -231,6 +231,25 @@
+ #define OMAP2_SYSBOOT_1_MASK		(1 << 1)
+ #define OMAP2_SYSBOOT_0_MASK		(1 << 0)
+ 
++/* CONTROL_FEATURE_OMAP_STATUS register and bits */
++#define OMAP343X_CONTROL_FEATURE_OMAP_STATUS	0x044c
++#define OMAP343X_FEATURE_SGX_MASK	(0x3 << 13)
++#define OMAP343X_FEATURE_SGX_SHIFT	13
++#define		OMAP343X_SGX_FULL	0
++#define		OMAP343X_SGX_HALF	1
++#define		OMAP343X_SGX_NONE	2
++#define OMAP343X_FEATURE_IVA2_HW_NONE	(1 << 12)
++#define OMAP343X_FEATURE_L2_CACHE_MASK	(0x3 << 10)
++#define OMAP343X_FEATURE_L2_CACHE_SHIFT	10
++#define		OMAP343X_L2_0KB		0
++#define		OMAP343X_L2_64KB	1
++#define		OMAP343X_L2_128KB	2
++#define		OMAP343X_L2_256KB	3
++#define OMAP343X_FEATURE_ARM_MHZ_MASK	(0x3 << 8)
++#define OMAP343X_FEATURE_ARM_MHZ_SHIFT	8
++#define OMAP343X_FEATURE_IVA2_MHZ_MASK	(0x3 << 6)
++#define OMAP343X_FEATURE_IVA2_MHZ_SHIFT	6
++
+ /* CONTROL_FUSE_SR bits */
+ #define OMAP343X_SR2_SENNENABLE_MASK	(0x3 << 10)
+ #define OMAP343X_SR2_SENNENABLE_SHIFT	10
+diff --git a/arch/arm/plat-omap/include/mach/cpu.h b/arch/arm/plat-omap/include/mach/cpu.h
+index a8e1178..d503fd6 100644
+--- a/arch/arm/plat-omap/include/mach/cpu.h
++++ b/arch/arm/plat-omap/include/mach/cpu.h
+@@ -93,7 +93,7 @@ unsigned int omap_rev(void);
+ #  define OMAP_NAME omap2430
+ # endif
+ #endif
+-#ifdef CONFIG_ARCH_OMAP3430
++#if defined(CONFIG_ARCH_OMAP3430) && !defined(CONFIG_ARCH_OMAP35XX)
+ # ifdef OMAP_NAME
+ #  undef  MULTI_OMAP2
+ #  define MULTI_OMAP2
+@@ -102,6 +102,45 @@ unsigned int omap_rev(void);
+ # endif
+ #endif
+ 
++#ifdef CONFIG_ARCH_OMAP35XX
++# ifdef CONFIG_ARCH_OMAP3503
++#  ifdef OMAP_NAME
++#   undef  MULTI_OMAP2
++#   define MULTI_OMAP2
++#  else
++#   define OMAP_NAME omap3503
++#  endif
++# endif  /* ifdef CONFIG_ARCH_OMAP3503 */
++
++# ifdef CONFIG_ARCH_OMAP3515
++#  ifdef OMAP_NAME
++#   undef  MULTI_OMAP2
++#   define MULTI_OMAP2
++#  else
++#   define OMAP_NAME omap3515
++#  endif
++# endif  /* ifdef CONFIG_ARCH_OMAP3515 */
++
++# ifdef CONFIG_ARCH_OMAP3525
++#  ifdef OMAP_NAME
++#   undef  MULTI_OMAP2
++#   define MULTI_OMAP2
++#  else
++#   define OMAP_NAME omap3525
++#  endif
++# endif  /* ifdef CONFIG_ARCH_OMAP3525 */
++
++# ifdef CONFIG_ARCH_OMAP3530
++#  ifdef OMAP_NAME
++#   undef  MULTI_OMAP2
++#   define MULTI_OMAP2
++#  else
++#   define OMAP_NAME omap3530
++#  endif
++# endif  /* ifdef CONFIG_ARCH_OMAP3530 */
++
++#endif  /* ifdef CONFIG_ARCH_OMAP35XX */
++
+ /*
+  * Macros to group OMAP into cpu classes.
+  * These can be used in most places.
+@@ -112,6 +151,7 @@ unsigned int omap_rev(void);
+  * cpu_is_omap242x():	True for OMAP2420, OMAP2422, OMAP2423
+  * cpu_is_omap243x():	True for OMAP2430
+  * cpu_is_omap343x():	True for OMAP3430
++ * cpu_is_omap35xx():	True for OMAP3503, OMAP3515, OMAP3525, OMAP3530
+  */
+ #define GET_OMAP_CLASS	(omap_rev() & 0xff)
+ 
+@@ -147,6 +187,7 @@ IS_OMAP_SUBCLASS(343x, 0x343)
+ #define cpu_is_omap243x()		0
+ #define cpu_is_omap34xx()		0
+ #define cpu_is_omap343x()		0
++#define cpu_is_omap35xx()		0
+ 
+ #if defined(MULTI_OMAP1)
+ # if defined(CONFIG_ARCH_OMAP730)
+@@ -191,6 +232,10 @@ IS_OMAP_SUBCLASS(343x, 0x343)
+ #  define cpu_is_omap34xx()		is_omap34xx()
+ #  define cpu_is_omap343x()		is_omap343x()
+ # endif
++# if defined(CONFIG_ARCH_OMAP35XX)
++#  undef  cpu_is_omap35xx
++#  define cpu_is_omap35xx()		is_omap35xx()
++# endif
+ #else
+ # if defined(CONFIG_ARCH_OMAP24XX)
+ #  undef  cpu_is_omap24xx
+@@ -212,6 +257,10 @@ IS_OMAP_SUBCLASS(343x, 0x343)
+ #  undef  cpu_is_omap343x
+ #  define cpu_is_omap343x()		1
+ # endif
++# if defined(CONFIG_ARCH_OMAP35XX)
++#  undef  cpu_is_omap35xx
++#  define cpu_is_omap35xx()		1
++# endif
+ #endif
+ 
+ /*
+@@ -230,6 +279,10 @@ IS_OMAP_SUBCLASS(343x, 0x343)
+  * cpu_is_omap2423():	True for OMAP2423
+  * cpu_is_omap2430():	True for OMAP2430
+  * cpu_is_omap3430():	True for OMAP3430
++ * cpu_is_omap3503():	True for OMAP3503
++ * cpu_is_omap3515():	True for OMAP3515
++ * cpu_is_omap3525():	True for OMAP3525
++ * cpu_is_omap3530():	True for OMAP3530
+  */
+ #define GET_OMAP_TYPE	((omap_rev() >> 16) & 0xffff)
+ 
+@@ -252,6 +305,10 @@ IS_OMAP_TYPE(2422, 0x2422)
+ IS_OMAP_TYPE(2423, 0x2423)
+ IS_OMAP_TYPE(2430, 0x2430)
+ IS_OMAP_TYPE(3430, 0x3430)
++IS_OMAP_TYPE(3503, 0x3503)
++IS_OMAP_TYPE(3515, 0x3515)
++IS_OMAP_TYPE(3525, 0x3525)
++IS_OMAP_TYPE(3530, 0x3530)
+ 
+ #define cpu_is_omap310()		0
+ #define cpu_is_omap730()		0
+@@ -319,6 +376,18 @@ IS_OMAP_TYPE(3430, 0x3430)
+ # define cpu_is_omap3430()		is_omap3430()
+ #endif
+ 
++#if defined(CONFIG_ARCH_OMAP35XX)
++# undef cpu_is_omap3503
++# undef cpu_is_omap3515
++# undef cpu_is_omap3525
++# undef cpu_is_omap3530
++
++# define cpu_is_omap3503()		is_omap3503()
++# define cpu_is_omap3515()		is_omap3515()
++# define cpu_is_omap3525()		is_omap3525()
++# define cpu_is_omap3530()		is_omap3530()
++#endif	/* if defined(CONFIG_ARCH_OMAP35XX) */
++
+ /* Macros to detect if we have OMAP1 or OMAP2 */
+ #define cpu_class_is_omap1()	(cpu_is_omap730() || cpu_is_omap15xx() || \
+ 				cpu_is_omap16xx())
+@@ -341,6 +410,17 @@ IS_OMAP_TYPE(3430, 0x3430)
+ #define OMAP3430_REV_ES3_0	0x34303034
+ #define OMAP3430_REV_ES3_1	0x34304034
+ 
++#define OMAP35XX_CLASS		0x35000035
++#define OMAP3503_MASK		0x00030000
++#define OMAP3515_MASK		0x00150000
++#define OMAP3525_MASK		0x00250000
++#define OMAP3530_MASK		0x00300000
++
++#define OMAP35XX_MASK_ES2_0	0x00001000
++#define OMAP35XX_MASK_ES2_1	0x00002000
++#define OMAP35XX_MASK_ES3_0	0x00003000
++#define OMAP35XX_MASK_ES3_1	0x00004000
++
+ /*
+  * omap_chip bits
+  *
+-- 
+1.5.6
+

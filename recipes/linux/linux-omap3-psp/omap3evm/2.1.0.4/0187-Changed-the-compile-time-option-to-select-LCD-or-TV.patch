@@ -1,0 +1,88 @@
+From 1be6a675b1c00d1884ffb1977cbd0e5e1f8d5fc7 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Fri, 6 Feb 2009 10:29:53 +0530
+Subject: [PATCH 187/364] Changed the compile time option to select LCD or TV manager
+
+---
+ arch/arm/plat-omap/dss/display.c |    6 +++-
+ drivers/media/video/omap/Kconfig |   39 ++++++++++++++++++++++++++++++-------
+ 2 files changed, 35 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/plat-omap/dss/display.c b/arch/arm/plat-omap/dss/display.c
+index 53265de..b93e745 100644
+--- a/arch/arm/plat-omap/dss/display.c
++++ b/arch/arm/plat-omap/dss/display.c
+@@ -622,12 +622,14 @@ void initialize_overlays(const char *def_disp_name)
+ 
+ 	/* Set the TV MGR as the default mgr for video based on config
+ 	   option */
+-#ifdef CONFIG_VID1_OMAP_ON_TV
++#ifdef CONFIG_VID1_TV_MANAGER
+ 	ovl = omap_dss_get_overlay(1);
++	omap_dss_unset_manager(ovl);
+ 	omap_dss_set_manager(ovl, tv_mgr);
+ #endif
+-#ifdef CONFIG_VID2_OMAP_ON_TV
++#ifdef CONFIG_VID2_TV_MANAGER
+ 	ovl = omap_dss_get_overlay(2);
++	omap_dss_unset_manager(ovl);
+ 	omap_dss_set_manager(ovl, tv_mgr);
+ #endif
+ 	/* setup L4 overlay as an example */
+diff --git a/drivers/media/video/omap/Kconfig b/drivers/media/video/omap/Kconfig
+index 3e1da6e..00bd425 100644
+--- a/drivers/media/video/omap/Kconfig
++++ b/drivers/media/video/omap/Kconfig
+@@ -10,18 +10,41 @@ config VIDEO_OMAP_VIDEOOUT
+ 	depends on VIDEO_OMAP3
+ 	default VIDEO_OMAP3
+ 
+-config VID1_OMAP_ON_TV
+-	bool "Default Overlay manager for Video1 pipeline will be TV"
+-	depends on VIDEO_OMAP_VIDEOOUT
+-	default n
++choice
++        prompt "VID1 Overlay manager"
++        depends on VIDEO_OMAP_VIDEOOUT
++        default VID1_LCD_MANAGER
++
++config VID1_TV_MANAGER
++        bool "Use TV Manager"
++        help
++          Select this option if you want VID1 pipeline on TV Overlay manager
++
++config VID1_LCD_MANAGER
++        bool "Use LCD Managaer"
++        help
++          Select this option if you want VID1 pipeline on LCD Overlay manager
++endchoice
+ 
+-config VID2_OMAP_ON_TV
+-	bool "Default Overlay manager for Video2 pipeline will be TV"
++choice
++	prompt "VID2 Overlay manager"
+ 	depends on VIDEO_OMAP_VIDEOOUT
+-	default n
++	default VID2_LCD_MANAGER
++
++config VID2_TV_MANAGER
++	bool "Use TV Manager"
++	help
++	  Select this option if you want VID2 pipeline on TV Overlay manager
++
++config VID2_LCD_MANAGER
++	bool "Use LCD Managaer"
++	help
++	  Select this option if you want VID2 pipeline on LCD Overlay manager
++endchoice
++
+ choice
+         prompt "TV Mode"
+-        depends on VID1_OMAP_ON_TV || VID2_OMAP_ON_TV
++        depends on VID2_TV_MANAGER || VID1_TV_MANAGER
+         default NTSC_M
+ 
+ config NTSC_M
+-- 
+1.5.6
+

@@ -1,0 +1,27 @@
+From adc298fb1bd468b7fc9700a1b80922ca8aa56172 Mon Sep 17 00:00:00 2001
+From: Anuj Aggarwal <anuj.aggarwal@ti.com>
+Date: Tue, 17 Mar 2009 15:45:33 +0530
+Subject: [PATCH 364/364] Change default configuration for OMAP3 EVM
+
+Default RAM disk size in defconfig needs to be increased to support
+large ramdisk based file systems.
+---
+ arch/arm/configs/omap3_evm_defconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/configs/omap3_evm_defconfig b/arch/arm/configs/omap3_evm_defconfig
+index 4f024a8..623a8ab 100644
+--- a/arch/arm/configs/omap3_evm_defconfig
++++ b/arch/arm/configs/omap3_evm_defconfig
+@@ -563,7 +563,7 @@ CONFIG_BLK_DEV_LOOP=y
+ # CONFIG_BLK_DEV_UB is not set
+ CONFIG_BLK_DEV_RAM=y
+ CONFIG_BLK_DEV_RAM_COUNT=16
+-CONFIG_BLK_DEV_RAM_SIZE=16384
++CONFIG_BLK_DEV_RAM_SIZE=32768
+ # CONFIG_BLK_DEV_XIP is not set
+ # CONFIG_CDROM_PKTCDVD is not set
+ # CONFIG_ATA_OVER_ETH is not set
+-- 
+1.5.6
+

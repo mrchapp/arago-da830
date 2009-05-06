@@ -1,0 +1,64 @@
+From e7cfddd97ac03b3693455de86590347d235c9a80 Mon Sep 17 00:00:00 2001
+From: Kalle Jokiniemi <ext-kalle.jokiniemi@nokia.com>
+Date: Fri, 26 Sep 2008 11:04:20 +0300
+Subject: [PATCH 064/364] OMAP3: PM: Fix cpu idle init sequencing
+
+Previously omap3_idle_init was called in device_init, while
+omap_pm_init is called at late_initcall. This causes the cpu
+idle driver to call omap_sram_idle before it is properly
+initialized. This patch fixes the issue by moving omap3_idle_init
+into omap3_pm_init.
+
+Signed-off-by: Kalle Jokiniemi <ext-kalle.jokiniemi@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/cpuidle34xx.c |    1 -
+ arch/arm/mach-omap2/pm.h          |    6 ++++++
+ arch/arm/mach-omap2/pm34xx.c      |    3 +--
+ 3 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
+index 6cfc17c..5ddc0ad 100644
+--- a/arch/arm/mach-omap2/cpuidle34xx.c
++++ b/arch/arm/mach-omap2/cpuidle34xx.c
+@@ -276,5 +276,4 @@ int omap3_idle_init(void)
+ 	core_pd = pwrdm_lookup("core_pwrdm");
+ 	return 0;
+ }
+-device_initcall(omap3_idle_init);
+ #endif /* CONFIG_CPU_IDLE */
+diff --git a/arch/arm/mach-omap2/pm.h b/arch/arm/mach-omap2/pm.h
+index 4ca318c..aef66cf 100644
+--- a/arch/arm/mach-omap2/pm.h
++++ b/arch/arm/mach-omap2/pm.h
+@@ -17,6 +17,12 @@
+ extern int omap2_pm_init(void);
+ extern int omap3_pm_init(void);
+ 
++#ifdef CONFIG_CPU_IDLE
++int omap3_idle_init(void);
++#else
++static inline int omap3_idle_init(void) { return 0; }
++#endif
++
+ extern unsigned short enable_dyn_sleep;
+ extern unsigned short clocks_off_while_idle;
+ extern unsigned short enable_off_mode;
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index 418687d..8354607 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -842,9 +842,8 @@ int __init omap3_pm_init(void)
+ 	omap_push_sram_idle();
+ 	suspend_set_ops(&omap_pm_ops);
+ 
+-#ifndef CONFIG_CPU_IDLE
+ 	pm_idle = omap3_pm_idle;
+-#endif
++	omap3_idle_init();
+ 
+ 	pwrdm_add_wkdep(neon_pwrdm, mpu_pwrdm);
+ 	/*
+-- 
+1.5.6
+

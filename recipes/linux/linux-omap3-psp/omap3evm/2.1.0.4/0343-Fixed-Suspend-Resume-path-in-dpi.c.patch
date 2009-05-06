@@ -1,0 +1,93 @@
+From 59a028946ca197dd9613f5f704298af1ae1d5284 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Fri, 13 Mar 2009 11:45:13 +0530
+Subject: [PATCH 343/364] Fixed Suspend/Resume path in dpi.c
+
+In suspend function after disabling LCD out we were not
+waiting till the frame done interrupt, which is really important.
+Due to this L3_ICLK cloclk will be held active for DSS domain and
+"echo mem > /sys/power/state" will always be held from going to
+full power down state.
+
+Added functionality to wait for frame done interrupt.
+---
+ arch/arm/plat-omap/dss/dpi.c              |   31 +++++++++++++++++++++++++++++
+ arch/arm/plat-omap/include/mach/display.h |    2 +
+ 2 files changed, 33 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/plat-omap/dss/dpi.c b/arch/arm/plat-omap/dss/dpi.c
+index 40c1ffa..dbadaff 100644
+--- a/arch/arm/plat-omap/dss/dpi.c
++++ b/arch/arm/plat-omap/dss/dpi.c
+@@ -24,6 +24,8 @@
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/errno.h>
++#include <linux/completion.h>
++#include <linux/jiffies.h>
+ 
+ #include <mach/board.h>
+ #include <mach/display.h>
+@@ -186,17 +188,46 @@ static void dpi_display_disable(struct omap_display *display)
+ 	display->state = OMAP_DSS_DISPLAY_DISABLED;
+ 	display->ref_count--;
+ }
++/*
++ * Interrupt Service Routine for frame done interrupt.
++ */
++static void dpi_display_isr(void *arg, unsigned int irqstatus)
++{
++	struct omap_display *display = (struct omap_display *)arg;
++
++	complete(&display->frame_done);
++}
+ 
+ static int dpi_display_suspend(struct omap_display *display)
+ {
++	void *handle = NULL;
++
+ 	if (display->state != OMAP_DSS_DISPLAY_ACTIVE)
+ 		return -EINVAL;
+ 
+ 	if (display->panel->suspend)
+ 		display->panel->suspend(display);
+ 
++	/*
++	 * Wait for frame done interrupt
++	 */
++	handle = omap_dispc_register_isr(dpi_display_isr, display,
++			DISPC_IRQ_FRAMEDONE);
++	if (!handle)
++		return -EINVAL;
++
++	init_completion(&display->frame_done);
++
+ 	dispc_enable_lcd_out(0);
++	if (!wait_for_completion_timeout(&display->frame_done,
++				msecs_to_jiffies(500))) {
++		DSSERR("Timeout waiting for FRAME DONE\n");
++	}
+ 
++	if (omap_dispc_unregister_isr(handle) < 0) {
++		DSSERR("Failed to unregister the ISR\n");
++		return -EINVAL;
++	}
+ 	dss_clk_disable(DSS_CLK_ICK | DSS_CLK_FCK1);
+ 
+ 	display->state = OMAP_DSS_DISPLAY_SUSPENDED;
+diff --git a/arch/arm/plat-omap/include/mach/display.h b/arch/arm/plat-omap/include/mach/display.h
+index 318f082..73994f6 100644
+--- a/arch/arm/plat-omap/include/mach/display.h
++++ b/arch/arm/plat-omap/include/mach/display.h
+@@ -414,6 +414,8 @@ struct omap_display {
+ 	/*atomic_t ref_count;*/
+ 	int ref_count;
+ 
++	struct completion frame_done;
++
+ 	enum omap_display_type type;
+ 	const char *name;
+ 
+-- 
+1.5.6
+

@@ -1,0 +1,44 @@
+From a9f99d21d3ee42d3fb99b0805ba0c6f76ce56da1 Mon Sep 17 00:00:00 2001
+From: Anuj Aggarwal <anuj.aggarwal@ti.com>
+Date: Mon, 9 Mar 2009 14:39:46 +0530
+Subject: [PATCH 335/364] Audio: Adding PM code in audio driver
+
+Modification is required to make the audio driver successfully work
+after the system wakes from the off mode.
+
+Signed-off-by: Anuj Aggarwal <anuj.aggarwal@ti.com>
+---
+ sound/soc/omap/omap-pcm.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/sound/soc/omap/omap-pcm.c b/sound/soc/omap/omap-pcm.c
+index b0362df..f3d2c19 100644
+--- a/sound/soc/omap/omap-pcm.c
++++ b/sound/soc/omap/omap-pcm.c
+@@ -28,6 +28,7 @@
+ #include <sound/soc.h>
+ 
+ #include <mach/dma.h>
++#include <mach/pm.h>
+ #include "omap-pcm.h"
+ 
+ static const struct snd_pcm_hardware omap_pcm_hardware = {
+@@ -183,6 +184,7 @@ static int omap_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+ 	case SNDRV_PCM_TRIGGER_RESUME:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+ 		prtd->period_index = 0;
++		omap2_block_sleep();
+ 		omap_start_dma(prtd->dma_ch);
+ 		break;
+ 
+@@ -191,6 +193,7 @@ static int omap_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+ 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+ 		prtd->period_index = -1;
+ 		omap_stop_dma(prtd->dma_ch);
++		omap2_allow_sleep();
+ 		break;
+ 	default:
+ 		ret = -EINVAL;
+-- 
+1.5.6
+

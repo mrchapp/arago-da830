@@ -1,0 +1,167 @@
+From 101135123cdc8d0f61c1a02dac2d88341d883980 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:36 -0600
+Subject: [PATCH 242/364] OMAP3ISP: Core: Remove isp_get_xclk and make isp_*_ctx static
+
+Also remove prototypes for functions which do not exist
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/isp/isp.c |   59 +++++-----------------------------------
+ drivers/media/video/isp/isp.h |   10 -------
+ 2 files changed, 8 insertions(+), 61 deletions(-)
+
+diff --git a/drivers/media/video/isp/isp.c b/drivers/media/video/isp/isp.c
+index 41531ab..e08088f 100644
+--- a/drivers/media/video/isp/isp.c
++++ b/drivers/media/video/isp/isp.c
+@@ -50,6 +50,10 @@ static struct isp_device *omap3isp;
+ //#define PRINTK(...) printk(__VA_ARGS__)
+ #define PRINTK(...) do { } while (0)
+ 
++static void isp_save_ctx(void);
++
++static void isp_restore_ctx(void);
++
+ void *isp_tmp_buf_kernel;
+ struct scatterlist *isp_tmp_buf_sglist_alloc;
+ static int num_sc;
+@@ -638,51 +642,6 @@ u32 isp_set_xclk(u32 xclk, u8 xclksel)
+ EXPORT_SYMBOL(isp_set_xclk);
+ 
+ /**
+- * isp_get_xclk - Returns the frequency in Hz of the desired cam_xclk.
+- * @xclksel: XCLK to retrieve (0 = A, 1 = B).
+- *
+- * This function returns the External Clock (XCLKA or XCLKB) value generated
+- * by the ISP.
+- **/
+-u32 isp_get_xclk(u8 xclksel)
+-{
+-	u32 xclkdiv;
+-	u32 xclk;
+-
+-	switch (xclksel) {
+-	case 0:
+-		xclkdiv = isp_reg_readl(OMAP3_ISP_IOMEM_MAIN, ISP_TCTRL_CTRL) & ISPTCTRL_CTRL_DIVA_MASK;
+-		xclkdiv = xclkdiv >> ISPTCTRL_CTRL_DIVA_SHIFT;
+-		break;
+-	case 1:
+-		xclkdiv = isp_reg_readl(OMAP3_ISP_IOMEM_MAIN, ISP_TCTRL_CTRL) & ISPTCTRL_CTRL_DIVB_MASK;
+-		xclkdiv = xclkdiv >> ISPTCTRL_CTRL_DIVB_SHIFT;
+-		break;
+-	default:
+-		DPRINTK_ISPCTRL("ISP_ERR: isp_get_xclk(): Invalid requested "
+-						"xclk. Must be 0 (A) or 1 (B)."
+-						"\n");
+-		return -EINVAL;
+-	}
+-
+-	switch (xclkdiv) {
+-	case 0:
+-	case 1:
+-		xclk = 0;
+-		break;
+-	case 0x1f:
+-		xclk = CM_CAM_MCLK_HZ;
+-		break;
+-	default:
+-		xclk = CM_CAM_MCLK_HZ / xclkdiv;
+-		break;
+-	}
+-
+-	return xclk;
+-}
+-EXPORT_SYMBOL(isp_get_xclk);
+-
+-/**
+  * isp_power_settings - Sysconfig settings, for Power Management.
+  * @isp_sysconfig: Structure containing the power settings for ISP to configure
+  *
+@@ -1960,8 +1919,8 @@ EXPORT_SYMBOL(isp_try_fmt_cap);
+  * isppreview_try_size, or ispresizer_try_size (depending on the pipeline
+  * configuration) if there is an error.
+  **/
+-int isp_try_size(struct v4l2_pix_format *pix_input,
+-					struct v4l2_pix_format *pix_output)
++static int isp_try_size(struct v4l2_pix_format *pix_input,
++			struct v4l2_pix_format *pix_output)
+ {
+ 	int rval = 0;
+ 
+@@ -2087,7 +2046,7 @@ EXPORT_SYMBOL(isp_try_fmt);
+  * Routine for saving the context of each module in the ISP.
+  * CCDC, HIST, H3A, PREV, RESZ and MMU.
+  **/
+-void isp_save_ctx(void)
++static void isp_save_ctx(void)
+ {
+ 	isp_save_context(isp_reg_list);
+ 	ispccdc_save_context();
+@@ -2097,7 +2056,6 @@ void isp_save_ctx(void)
+ 	isppreview_save_context();
+ 	ispresizer_save_context();
+ }
+-EXPORT_SYMBOL(isp_save_ctx);
+ 
+ /**
+  * isp_restore_ctx - Restores ISP, CCDC, HIST, H3A, PREV, RESZ & MMU context.
+@@ -2105,7 +2063,7 @@ EXPORT_SYMBOL(isp_save_ctx);
+  * Routine for restoring the context of each module in the ISP.
+  * CCDC, HIST, H3A, PREV, RESZ and MMU.
+  **/
+-void isp_restore_ctx(void)
++static void isp_restore_ctx(void)
+ {
+ 	isp_restore_context(isp_reg_list);
+ 	ispccdc_restore_context();
+@@ -2115,7 +2073,6 @@ void isp_restore_ctx(void)
+ 	isppreview_restore_context();
+ 	ispresizer_restore_context();
+ }
+-EXPORT_SYMBOL(isp_restore_ctx);
+ 
+ /**
+  * isp_get - Adquires the ISP resource.
+diff --git a/drivers/media/video/isp/isp.h b/drivers/media/video/isp/isp.h
+index 4d5b90c..969d27b 100644
+--- a/drivers/media/video/isp/isp.h
++++ b/drivers/media/video/isp/isp.h
+@@ -262,22 +262,16 @@ void isp_vbq_release(struct videobuf_queue *vbq, struct videobuf_buffer *vb);
+ int isp_set_callback(enum isp_callback_type type, isp_callback_t callback,
+ 					isp_vbq_callback_ptr arg1, void *arg2);
+ 
+-void omapisp_unset_callback(void);
+-
+ int isp_unset_callback(enum isp_callback_type type);
+ 
+ u32 isp_set_xclk(u32 xclk, u8 xclksel);
+ 
+-u32 isp_get_xclk(u8 xclksel);
+-
+ int isp_configure_interface(struct isp_interface_config *config);
+ 
+ int isp_get(void);
+ 
+ int isp_put(void);
+ 
+-void isp_set_pipeline(int soc_type);
+-
+ void isp_config_pipeline(struct v4l2_pix_format *pix_input,
+ 					struct v4l2_pix_format *pix_output);
+ 
+@@ -317,10 +311,6 @@ void isp_save_context(struct isp_reg *);
+ 
+ void isp_restore_context(struct isp_reg *);
+ 
+-void isp_save_ctx(void);
+-
+-void isp_restore_ctx(void);
+-
+ void isp_print_status(void);
+ 
+ dma_addr_t isp_buf_get(void);
+-- 
+1.5.6
+

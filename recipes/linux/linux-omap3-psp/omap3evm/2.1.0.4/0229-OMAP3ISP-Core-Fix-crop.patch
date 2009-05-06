@@ -1,0 +1,60 @@
+From 8a1af5fecc13b8d6884a1118bdee75ff037c728c Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:43 -0600
+Subject: [PATCH 229/364] OMAP3ISP: Core: Fix crop
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+---
+ drivers/media/video/isp/isp.c |   29 +++++++++++++++++++----------
+ 1 files changed, 19 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/media/video/isp/isp.c b/drivers/media/video/isp/isp.c
+index 13372be..648e0ec 100644
+--- a/drivers/media/video/isp/isp.c
++++ b/drivers/media/video/isp/isp.c
+@@ -2126,15 +2126,24 @@ int isp_s_crop(struct v4l2_crop *a, struct v4l2_pix_format *pix)
+ 	struct v4l2_crop *crop = a;
+ 	int rval = 0;
+ 
+-	if ((crop->c.left + crop->c.width) > pix->width) {
+-		rval = -EINVAL;
+-		goto out;
+-	}
+-
+-	if ((crop->c.top + crop->c.height) > pix->height) {
+-		rval = -EINVAL;
+-		goto out;
+-	}
++	if (crop->c.left < 0)
++		crop->c.left = 0;
++	if (crop->c.width < 0)
++		crop->c.width = 0;
++	if (crop->c.top < 0)
++		crop->c.top = 0;
++	if (crop->c.height < 0)
++		crop->c.height = 0;
++
++	if (crop->c.left >= pix->width)
++		crop->c.left = pix->width - 1;
++	if (crop->c.top >= pix->height)
++		crop->c.top = pix->height - 1;
++
++	if (crop->c.left + crop->c.width > pix->width)
++		crop->c.width = pix->width - crop->c.left;
++	if (crop->c.top + crop->c.height > pix->height)
++		crop->c.height = pix->height - crop->c.top;
+ 
+ 	ispcroprect.left = crop->c.left;
+ 	ispcroprect.top = crop->c.top;
+@@ -2144,7 +2153,7 @@ int isp_s_crop(struct v4l2_crop *a, struct v4l2_pix_format *pix)
+ 	isp_config_crop(pix);
+ 
+ 	ispmodule_obj.applyCrop = 1;
+-out:
++
+ 	return rval;
+ }
+ EXPORT_SYMBOL(isp_s_crop);
+-- 
+1.5.6
+

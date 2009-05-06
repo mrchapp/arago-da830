@@ -1,0 +1,26 @@
+From 9e4c07235879b5ae931abb1f5e93d104b6a265ab Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Thu, 5 Feb 2009 15:48:43 +0530
+Subject: [PATCH 009/364] usb: musb: init musb->gadget_driver to null
+
+musb->gadget_driver has garbage value causing gadget driver
+registration failure.
+---
+ drivers/usb/musb/musb_gadget.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index 4ea3053..4229143 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -1638,6 +1638,7 @@ int __init musb_gadget_setup(struct musb *musb)
+ 	musb->g.dev.dma_mask = musb->controller->dma_mask;
+ 	musb->g.dev.release = musb_gadget_release;
+ 	musb->g.name = musb_driver_name;
++	musb->gadget_driver = NULL;
+ 
+ 	if (is_otg_enabled(musb))
+ 		musb->g.is_otg = 1;
+-- 
+1.5.6
+

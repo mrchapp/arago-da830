@@ -1,0 +1,207 @@
+From 26c6344d83d9a6cdbb61b840408f4012081bd143 Mon Sep 17 00:00:00 2001
+From: Manikandan Pillai <mani.pillai@ti.com>
+Date: Wed, 11 Feb 2009 17:20:12 +0530
+Subject: [PATCH 272/364] Fix the MMC/SD hotplug issue
+
+MMC hotplug was not functioning properly since the SYS_nIRQ
+MUX was setup as GPIO by default in the u-boot and was not
+being set properly in the Linux kernel.
+
+Signed-off-by: Manikandan Pillai <mani.pillai@ti.com>
+---
+ arch/arm/mach-omap2/board-omap3evm.c  |   69 +++++++++++++++++++++++++++++++-
+ arch/arm/mach-omap2/mux.c             |    8 ++++
+ arch/arm/plat-omap/include/mach/mux.h |    1 +
+ drivers/mmc/host/omap_hsmmc.c         |   11 +++--
+ 4 files changed, 82 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index af703cb..0cf7509 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -19,6 +19,7 @@
+ #include <linux/err.h>
+ #include <linux/clk.h>
+ #include <linux/input.h>
++#include <linux/leds.h>
+ 
+ #include <linux/spi/spi.h>
+ #include <linux/spi/ads7846.h>
+@@ -48,6 +49,13 @@
+ #error config err : only one of OMAP3EVM_PR785 or TWL4030_CORE can be defined
+ #endif
+ 
++#if defined(CONFIG_TWL4030_CORE)
++static int omap3evm_twl_gpio_setup(struct device *dev,
++               unsigned gpio, unsigned ngpio);
++#endif
++
++
++
+ static struct resource omap3evm_smc911x_resources[] = {
+ 	[0] =	{
+ 		.start  = OMAP3EVM_ETHR_START,
+@@ -100,6 +108,10 @@ static struct twl4030_gpio_platform_data omap3evm_gpio_data = {
+ 	.gpio_base	= OMAP_MAX_GPIO_LINES,
+ 	.irq_base	= TWL4030_GPIO_IRQ_BASE,
+ 	.irq_end	= TWL4030_GPIO_IRQ_END,
++        .pulldowns      = BIT(2) | BIT(6) | BIT(8) | BIT(13)
++                                | BIT(16) | BIT(17),
++        .setup          = omap3evm_twl_gpio_setup,
++
+ };
+ 
+ static struct twl4030_usb_data omap3evm_usb_data = {
+@@ -540,16 +552,67 @@ static struct twl4030_hsmmc_info mmc[] __initdata = {
+ 		.mmc		= 1,
+ 		.wires		= 4,
+ 		.gpio_cd	= -EINVAL,
+-		.gpio_wp	= -EINVAL,
++		.gpio_wp	= 63,
+ 	},
+ 	{}	/* Terminator */
+ };
++
++static struct gpio_led gpio_leds[] = {
++       {
++               .name                   = "omap3evm::ledb",
++               /* normally not visible (board underside) */
++               .default_trigger        = "default-on",
++               .gpio                   = -EINVAL,      /* gets replaced */
++               .active_low             = true,
++       },
++};
++
++static struct gpio_led_platform_data gpio_led_info = {
++       .leds           = gpio_leds,
++       .num_leds       = ARRAY_SIZE(gpio_leds),
++};
++
++static struct platform_device leds_gpio = {
++       .name   = "leds-gpio",
++       .id     = -1,
++       .dev    = {
++               .platform_data  = &gpio_led_info,
++       },
++};
++
++
++static int omap3evm_twl_gpio_setup(struct device *dev,
++               unsigned gpio, unsigned ngpio)
++{
++       /* gpio + 0 is "mmc0_cd" (input/IRQ) */
++       mmc[0].gpio_cd = gpio + 0;
++       twl4030_mmc_init(mmc);
++
++       /* Most GPIOs are for USB OTG.  Some are mostly sent to
++        * the P2 connector; notably LEDA for the LCD backlight.
++        */
++
++       /* TWL4030_GPIO_MAX + 1 == ledB (out, active low LED) */
++       gpio_leds[2].gpio = gpio + TWL4030_GPIO_MAX + 1;
++
++       platform_device_register(&leds_gpio);
++
++       return 0;
++}
++
++static void omap_init_twl4030(void)
++{
++       if (cpu_is_omap343x()) {
++               omap_cfg_reg(AF26_34XX_GPIO0);
++               omap_cfg_reg(L8_34XX_GPIO63);
++       }
++}
++
+ #endif
+ 
+ #if defined(CONFIG_OMAP3EVM_PR785)
+ static void omap_init_pr785(void)
+ {
+-       struct platform_device *pdev;
+        /* Initialize the mux settings for PR785 power module board */
+        if (cpu_is_omap343x()) {
+                omap_cfg_reg(AF26_34XX_GPIO0);
+@@ -575,7 +638,7 @@ static void __init omap3_evm_init(void)
+ 
+ 	omap_serial_init();
+ #if defined(CONFIG_TWL4030_CORE)
+-	twl4030_mmc_init(mmc);
++        omap_init_twl4030();
+ #endif
+ #if defined(CONFIG_OMAP3EVM_PR785)
+        omap_init_pr785();
+diff --git a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
+index d226d81..d159d20 100644
+--- a/arch/arm/mach-omap2/mux.c
++++ b/arch/arm/mach-omap2/mux.c
+@@ -459,10 +459,18 @@ MUX_CFG_34XX("AH8_34XX_GPIO29", 0x5fa,
+ 		OMAP34XX_MUX_MODE4 | OMAP34XX_PIN_INPUT)
+ MUX_CFG_34XX("J25_34XX_GPIO170", 0x1c6,
+ 		OMAP34XX_MUX_MODE4 | OMAP34XX_PIN_INPUT)
++#if defined(CONFIG_TWL4030_CORE)
++MUX_CFG_34XX("AF26_34XX_GPIO0", 0x1e0,
++		OMAP34XX_MUX_MODE0 | OMAP34XX_PIN_INPUT_PULLUP)
++#endif
++#if defined(CONFIG_OMAP3EVM_PR785)
+ MUX_CFG_34XX("AF26_34XX_GPIO0", 0x1e0,
+ 		OMAP34XX_MUX_MODE4 | OMAP34XX_PIN_OUTPUT)
++#endif
+ MUX_CFG_34XX("AF22_34XX_GPIO9", 0xa18,
+ 		OMAP34XX_MUX_MODE4 | OMAP34XX_PIN_OUTPUT)
++MUX_CFG_34XX("L8_34XX_GPIO63", 0x0ce,
++		OMAP34XX_MUX_MODE4 | OMAP34XX_PIN_OUTPUT)
+ MUX_CFG_34XX("AF6_34XX_GPIO140_UP", 0x16c,
+ 		OMAP34XX_MUX_MODE4 | OMAP34XX_PIN_INPUT_PULLUP)
+ MUX_CFG_34XX("AE6_34XX_GPIO141", 0x16e,
+diff --git a/arch/arm/plat-omap/include/mach/mux.h b/arch/arm/plat-omap/include/mach/mux.h
+index ace037f..8d73a9a 100644
+--- a/arch/arm/plat-omap/include/mach/mux.h
++++ b/arch/arm/plat-omap/include/mach/mux.h
+@@ -792,6 +792,7 @@ enum omap34xx_index {
+ 	J25_34XX_GPIO170,
+ 	AF26_34XX_GPIO0,
+ 	AF22_34XX_GPIO9,
++	L8_34XX_GPIO63,
+ 	AF6_34XX_GPIO140_UP,
+ 	AE6_34XX_GPIO141,
+ 	AF5_34XX_GPIO142,
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index db37490..9fa39d2 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -518,6 +518,9 @@ static void mmc_omap_detect(struct work_struct *work)
+ 	struct mmc_omap_host *host = container_of(work, struct mmc_omap_host,
+ 						mmc_carddetect_work);
+ 
++	struct omap_mmc_slot_data *slot = &mmc_slot(host);
++	host->carddetect = slot->card_detect(slot->card_detect_irq);
++
+ 	sysfs_notify(&host->mmc->class_dev.kobj, NULL, "cover_switch");
+ 	if (host->carddetect) {
+ 		mmc_detect_change(host->mmc, (HZ * 200) / 1000);
+@@ -947,7 +950,7 @@ static int __init omap_mmc_probe(struct platform_device *pdev)
+ 		goto err1;
+ 	}
+ 
+-	host->dbclk = clk_get(&pdev->dev, "mmchsdb_fck");
++	host->dbclk = clk_get(&pdev->dev, "mmchs_fck");
+ 	/*
+ 	 * MMC can still work without debounce clock.
+ 	 */
+@@ -1017,9 +1020,9 @@ static int __init omap_mmc_probe(struct platform_device *pdev)
+ 	/* Request IRQ for card detect */
+ 	if ((mmc_slot(host).card_detect_irq) && (mmc_slot(host).card_detect)) {
+ 		ret = request_irq(mmc_slot(host).card_detect_irq,
+-				  omap_mmc_cd_handler,
+-				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING
+-					  | IRQF_DISABLED,
++				omap_mmc_cd_handler,
++				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING
++					| IRQF_DISABLED,
+ 				  mmc_hostname(mmc), host);
+ 		if (ret) {
+ 			dev_dbg(mmc_dev(host->mmc),
+-- 
+1.5.6
+

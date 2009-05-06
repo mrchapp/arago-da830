@@ -1,0 +1,47 @@
+From 4009d488d0e5dc61b4baeb4b9271329be88cb50d Mon Sep 17 00:00:00 2001
+From: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+Date: Wed, 1 Oct 2008 18:11:13 +0300
+Subject: [PATCH 041/364] OMAP: Add debug observablity (debobs) Kconfig item
+
+Signed-off-by: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/Makefile |    3 +++
+ arch/arm/plat-omap/Kconfig   |    7 +++++++
+ 2 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index c989b4b..efb49fb 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -38,6 +38,9 @@ obj-$(CONFIG_ARCH_OMAP3)		+= clock34xx.o
+ obj-$(CONFIG_OMAP_MBOX_FWK)	+= mailbox_mach.o
+ mailbox_mach-objs		:= mailbox.o
+ 
++# Debobs
++obj-$(CONFIG_OMAP3_DEBOBS)	+= debobs.o
++
+ # Specific board support
+ obj-$(CONFIG_MACH_OMAP_GENERIC)		+= board-generic.o
+ obj-$(CONFIG_MACH_OMAP_H4)		+= board-h4.o board-h4-mmc.o
+diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
+index 9627e2e..a287297 100644
+--- a/arch/arm/plat-omap/Kconfig
++++ b/arch/arm/plat-omap/Kconfig
+@@ -208,6 +208,13 @@ config OMAP_32K_TIMER_HZ
+ 	  Kernel internal timer frequency should be a divisor of 32768,
+ 	  such as 64 or 128.
+ 
++config OMAP3_DEBOBS
++	bool "OMAP 3430 Debug observability support"
++	depends on ARCH_OMAP3 && DEBUG_FS
++	default n
++	help
++	  Use ETK pads for debug observability
++
+ config OMAP_TICK_GPTIMER
+ 	int "GPTIMER used for system tick timer"
+ 	depends on ARCH_OMAP2 || ARCH_OMAP3
+-- 
+1.5.6
+

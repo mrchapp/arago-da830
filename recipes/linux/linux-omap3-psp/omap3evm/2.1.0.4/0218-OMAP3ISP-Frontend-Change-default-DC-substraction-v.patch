@@ -1,0 +1,27 @@
+From 77850384e0c6a356a5f7378ab3755c88ffbc7bbf Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:48 -0600
+Subject: [PATCH 218/364] OMAP3ISP: Frontend: Change default DC substraction value
+
+Signed-off-by: Gjorgji Rosikopulos <grosikopulos@mm-sol.com>
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/isp/ispccdc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/video/isp/ispccdc.c b/drivers/media/video/isp/ispccdc.c
+index 2a74173..94f20f4 100644
+--- a/drivers/media/video/isp/ispccdc.c
++++ b/drivers/media/video/isp/ispccdc.c
+@@ -638,7 +638,7 @@ int ispccdc_config_datapath(enum ccdc_input input, enum ccdc_output output)
+ 		syncif.vdpol = 0;
+ 		ispccdc_config_sync_if(syncif);
+ 		ispccdc_config_imgattr(colptn);
+-		blkcfg.dcsubval = 42;
++		blkcfg.dcsubval = 64;
+ 		ispccdc_config_black_clamp(blkcfg);
+ 		if (is_isplsc_activated()) {
+ 			ispccdc_config_lsc(&lsc_config);
+-- 
+1.5.6
+

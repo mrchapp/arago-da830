@@ -1,0 +1,73 @@
+From 5e1458c938f8c0c86b1ef8944318a8e9aab9c004 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Date: Tue, 27 Jan 2009 11:15:34 -0800
+Subject: [PATCH 146/364] OMAP3: GPIO: disable GPIO debounce clocks on idle
+
+Ensure GPIO debounce clocks are disabled when idle.  Otherwise,
+clocks will prevent PER powerdomain from entering retention.
+
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/pm34xx.c |    4 ++++
+ arch/arm/plat-omap/gpio.c    |    8 ++++++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index 5ac0393..bf309f2 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -466,6 +466,10 @@ static int omap3_fclks_active(void)
+ 	fck_core1 &= ~(OMAP3430_EN_UART1 | OMAP3430_EN_UART2);
+ 	fck_per &= ~OMAP3430_EN_UART3;
+ 
++	/* Ignore GPIO clocks.  Handled by GPIO prepare-idle hooks */
++	fck_per &= ~(OMAP3430_EN_GPIO2 | OMAP3430_EN_GPIO3 |
++		     OMAP3430_EN_GPIO4 | OMAP3430_EN_GPIO5 | OMAP3430_EN_GPIO6);
++
+ 	if (fck_core1 | fck_core3 | fck_sgx | fck_dss |
+ 	    fck_cam | fck_per | fck_usbhost)
+ 		return 1;
+diff --git a/arch/arm/plat-omap/gpio.c b/arch/arm/plat-omap/gpio.c
+index 30cbe5f..96d673a 100644
+--- a/arch/arm/plat-omap/gpio.c
++++ b/arch/arm/plat-omap/gpio.c
+@@ -154,6 +154,7 @@ struct gpio_bank {
+ 	spinlock_t lock;
+ 	struct gpio_chip chip;
+ 	struct clk *dbck;
++	u32 dbck_enable_mask;
+ };
+ 
+ #define METHOD_MPUIO		0
+@@ -489,6 +490,7 @@ void omap_set_gpio_debounce(int gpio, int enable)
+ 		goto done;
+ 
+ 	if (cpu_is_omap34xx()) {
++		bank->dbck_enable_mask = val;
+ 		if (enable)
+ 			clk_enable(bank->dbck);
+ 		else
+@@ -1633,6 +1635,9 @@ void omap2_gpio_prepare_for_idle(int power_state)
+ 		struct gpio_bank *bank = &gpio_bank[i];
+ 		u32 l1, l2;
+ 
++		if (cpu_is_omap34xx() && bank->dbck_enable_mask)
++			clk_disable(bank->dbck);
++
+ 		if (power_state > PWRDM_POWER_OFF)
+ 			continue;
+ 
+@@ -1676,6 +1681,9 @@ void omap2_gpio_resume_after_idle(void)
+ 		struct gpio_bank *bank = &gpio_bank[i];
+ 		u32 l;
+ 
++		if (cpu_is_omap34xx() && bank->dbck_enable_mask)
++			clk_enable(bank->dbck);
++
+ 		if (!workaround_enabled)
+ 			continue;
+ 
+-- 
+1.5.6
+

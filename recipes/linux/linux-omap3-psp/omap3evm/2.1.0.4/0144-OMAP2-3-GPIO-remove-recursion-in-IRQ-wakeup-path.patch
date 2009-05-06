@@ -1,0 +1,59 @@
+From c889d29621ca38b98845ed85155da226d87d2d79 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Date: Wed, 28 Jan 2009 10:29:09 -0800
+Subject: [PATCH 144/364] OMAP2/3: GPIO: remove recursion in IRQ wakeup path
+
+Now that the generic IRQ and GPIO frameworks are used for enabling and
+disabling GPIO IRQ wakeup sources, there is no longer a need to call
+[enable|disable]_irq_wake() in the low-level code.  Doing so results
+in recursive calls to [enable|disable]_irq_wake().
+
+This was discovered in the suspend/resume path on OMAP3/Beagle using
+the gpio-keys driver which disables/re-enables GPIO IRQ wakeups in the
+suspend/resume path.
+
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/plat-omap/gpio.c |   14 ++++----------
+ 1 files changed, 4 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/plat-omap/gpio.c b/arch/arm/plat-omap/gpio.c
+index 35d11c2..16dc321 100644
+--- a/arch/arm/plat-omap/gpio.c
++++ b/arch/arm/plat-omap/gpio.c
+@@ -856,13 +856,10 @@ static int _set_gpio_wakeup(struct gpio_bank *bank, int gpio, int enable)
+ 	case METHOD_MPUIO:
+ 	case METHOD_GPIO_1610:
+ 		spin_lock_irqsave(&bank->lock, flags);
+-		if (enable) {
++		if (enable)
+ 			bank->suspend_wakeup |= (1 << gpio);
+-			enable_irq_wake(bank->irq);
+-		} else {
+-			disable_irq_wake(bank->irq);
++		else
+ 			bank->suspend_wakeup &= ~(1 << gpio);
+-		}
+ 		spin_unlock_irqrestore(&bank->lock, flags);
+ 		return 0;
+ #endif
+@@ -875,13 +872,10 @@ static int _set_gpio_wakeup(struct gpio_bank *bank, int gpio, int enable)
+ 			return -EINVAL;
+ 		}
+ 		spin_lock_irqsave(&bank->lock, flags);
+-		if (enable) {
++		if (enable)
+ 			bank->suspend_wakeup |= (1 << gpio);
+-			enable_irq_wake(bank->irq);
+-		} else {
+-			disable_irq_wake(bank->irq);
++		else
+ 			bank->suspend_wakeup &= ~(1 << gpio);
+-		}
+ 		spin_unlock_irqrestore(&bank->lock, flags);
+ 		return 0;
+ #endif
+-- 
+1.5.6
+

@@ -1,0 +1,106 @@
+From dcdce2a328ef6d3a851c7d09ff8e7c406504b95b Mon Sep 17 00:00:00 2001
+From: Rajendra Nayak <rnayak@ti.com>
+Date: Mon, 10 Nov 2008 16:57:57 +0530
+Subject: [PATCH 085/364] OMAP3 SRF: Add CORE rate table param in OMAP-PM
+
+This patch modifies the omap_pm_if_init API in OMAP-PM
+layer to take the L3 interconnect/CORE OPP table
+as an additional parameter.
+
+Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/io.c                  |    2 +-
+ arch/arm/plat-omap/include/mach/omap-pm.h |    4 +++-
+ arch/arm/plat-omap/omap-pm-noop.c         |    5 ++++-
+ arch/arm/plat-omap/omap-pm-srf.c          |    5 ++++-
+ 4 files changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/io.c b/arch/arm/mach-omap2/io.c
+index 7612aa8..2889b87 100644
+--- a/arch/arm/mach-omap2/io.c
++++ b/arch/arm/mach-omap2/io.c
+@@ -206,7 +206,7 @@ void __init omap2_init_common_hw(struct omap_sdrc_params *sp)
+ 	clkdm_init(clockdomains_omap, clkdm_pwrdm_autodeps);
+ 	omapdev_init(omapdevs);
+ 	omap2_clk_init();
+-	omap_pm_if_init(NULL, NULL);
++	omap_pm_if_init(NULL, NULL, NULL);
+ 	omap2_sdrc_init(sp);
+ 	gpmc_init();
+ }
+diff --git a/arch/arm/plat-omap/include/mach/omap-pm.h b/arch/arm/plat-omap/include/mach/omap-pm.h
+index 91c24dd..b4b01ac 100644
+--- a/arch/arm/plat-omap/include/mach/omap-pm.h
++++ b/arch/arm/plat-omap/include/mach/omap-pm.h
+@@ -57,12 +57,14 @@ int __init omap_pm_if_early_init(void);
+  * omap_pm_if_init - OMAP PM init code called after clock fw init
+  * @mpu_opp_table: array ptr to struct omap_opp for MPU
+  * @dsp_opp_table: array ptr to struct omap_opp for DSP
++ * @l3_opp_table : array ptr to struct omap_opp for CORE
+  *
+  * The main initialization code.  OPP tables are passed in here.  The
+  * "_if_" is to avoid name collisions with the PM idle-loop code.
+  */
+ int __init omap_pm_if_init(struct omap_opp *mpu_opp_table,
+-			   struct omap_opp *dsp_opp_table);
++			   struct omap_opp *dsp_opp_table,
++			   struct omap_opp *l3_opp_table);
+ 
+ /**
+  * omap_pm_if_exit - OMAP PM exit code
+diff --git a/arch/arm/plat-omap/omap-pm-noop.c b/arch/arm/plat-omap/omap-pm-noop.c
+index 5defb0e..fb7c3b2 100644
+--- a/arch/arm/plat-omap/omap-pm-noop.c
++++ b/arch/arm/plat-omap/omap-pm-noop.c
+@@ -28,6 +28,7 @@
+ 
+ static struct omap_opp *dsp_opps;
+ static struct omap_opp *mpu_opps;
++static struct omap_opp *l3_opps;
+ 
+ /*
+  * Device-driver-originated constraints (via board-*.c files)
+@@ -316,10 +317,12 @@ int __init omap_pm_if_early_init(void)
+ 
+ /* Must be called after clock framework is initialized */
+ int __init omap_pm_if_init(struct omap_opp *mpu_opp_table,
+-			   struct omap_opp *dsp_opp_table)
++			   struct omap_opp *dsp_opp_table,
++			   struct omap_opp *l3_opp_table)
+ {
+ 	mpu_opps = mpu_opp_table;
+ 	dsp_opps = dsp_opp_table;
++	l3_opps = l3_opp_table;
+ 	return 0;
+ }
+ 
+diff --git a/arch/arm/plat-omap/omap-pm-srf.c b/arch/arm/plat-omap/omap-pm-srf.c
+index 8e8bf90..2088faf 100644
+--- a/arch/arm/plat-omap/omap-pm-srf.c
++++ b/arch/arm/plat-omap/omap-pm-srf.c
+@@ -29,6 +29,7 @@
+ 
+ static struct omap_opp *dsp_opps;
+ static struct omap_opp *mpu_opps;
++static struct omap_opp *l3_opps;
+ 
+ #define LAT_RES_POSTAMBLE "_latency"
+ #define MAX_LATENCY_RES_NAME 30
+@@ -346,10 +347,12 @@ int __init omap_pm_if_early_init(void)
+ 
+ /* Must be called after clock framework is initialized */
+ int __init omap_pm_if_init(struct omap_opp *mpu_opp_table,
+-			   struct omap_opp *dsp_opp_table)
++			   struct omap_opp *dsp_opp_table,
++			   struct omap_opp *l3_opp_table)
+ {
+ 	mpu_opps = mpu_opp_table;
+ 	dsp_opps = dsp_opp_table;
++	l3_opps = l3_opp_table;
+ 	resource_init(resources_omap);
+ 	return 0;
+ }
+-- 
+1.5.6
+

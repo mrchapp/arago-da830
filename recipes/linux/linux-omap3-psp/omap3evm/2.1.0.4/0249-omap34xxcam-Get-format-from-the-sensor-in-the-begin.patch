@@ -1,0 +1,36 @@
+From 04790bd597225485af9b91bdf036e3cedfe6704c Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:33 -0600
+Subject: [PATCH 249/364] omap34xxcam: Get format from the sensor in the beginning and configure ISP
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+---
+ drivers/media/video/omap34xxcam.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/video/omap34xxcam.c b/drivers/media/video/omap34xxcam.c
+index 68db134..80bc5dd 100644
+--- a/drivers/media/video/omap34xxcam.c
++++ b/drivers/media/video/omap34xxcam.c
+@@ -1515,10 +1515,15 @@ static int omap34xxcam_open(struct file *file)
+ 	fh->vdev = vdev;
+ 
+ 	/* FIXME: Check that we have sensor now... */
+-	if (vdev->vdev_sensor_config.sensor_isp)
++	if (vdev->vdev_sensor_config.sensor_isp) {
+ 		vidioc_int_g_fmt_cap(vdev->vdev_sensor, &format);
+-	else
+-		isp_g_fmt_cap(&format.fmt.pix);
++	} else {
++		struct v4l2_format f;
++
++		vidioc_int_g_fmt_cap(vdev->vdev_sensor, &f);
++		format = f;
++		isp_s_fmt_cap(&f.fmt.pix, &format.fmt.pix);
++	}
+ 
+ 	mutex_unlock(&vdev->mutex);
+ 	/* FIXME: how about fh->pix when there are more users? */
+-- 
+1.5.6
+

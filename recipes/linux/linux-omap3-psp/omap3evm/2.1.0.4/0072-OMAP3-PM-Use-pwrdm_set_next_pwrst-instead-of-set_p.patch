@@ -1,0 +1,48 @@
+From 4b79e74a1deb9806627249870dc34d27d5d99fe6 Mon Sep 17 00:00:00 2001
+From: Jouni Hogander <jouni.hogander@nokia.com>
+Date: Tue, 28 Oct 2008 10:59:05 +0200
+Subject: [PATCH 072/364] OMAP3: PM: Use pwrdm_set_next_pwrst instead of set_pwrdm_state in idle loop
+
+It is more efficient to use pwrdm_set_next_pwrst for mpu, core and neon
+instead of set_pwrdm_state in idle loop. It is anyway known that those are
+active in idle loop. So no need to use set_pwrdm_state.
+
+Signed-off-by: Jouni Hogander <jouni.hogander@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/cpuidle34xx.c |    5 ++---
+ arch/arm/mach-omap2/pm34xx.c      |    2 +-
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
+index 5ddc0ad..62fbb2e 100644
+--- a/arch/arm/mach-omap2/cpuidle34xx.c
++++ b/arch/arm/mach-omap2/cpuidle34xx.c
+@@ -93,9 +93,8 @@ static int omap3_enter_idle(struct cpuidle_device *dev,
+ 			core_state = PWRDM_POWER_RET;
+ 	}
+ 
+-	set_pwrdm_state(mpu_pd, mpu_state);
+-	set_pwrdm_state(core_pd, core_state);
+-	set_pwrdm_state(per_pd, core_state); /* PER only changes w/CORE */
++	pwrdm_set_next_pwrst(mpu_pd, mpu_state);
++	pwrdm_set_next_pwrst(core_pd, core_state);
+ 
+ 	if (omap_irq_pending())
+ 		goto return_sleep_time;
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index a5b5827..72cdfac 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -312,7 +312,7 @@ void omap_sram_idle(void)
+ 
+ 	/* NEON control */
+ 	if (pwrdm_read_pwrst(neon_pwrdm) == PWRDM_POWER_ON)
+-		set_pwrdm_state(neon_pwrdm, mpu_next_state);
++		pwrdm_set_next_pwrst(neon_pwrdm, mpu_next_state);
+ 
+ 	/* CORE & PER */
+ 	core_next_state = pwrdm_read_next_pwrst(core_pwrdm);
+-- 
+1.5.6
+

@@ -1,0 +1,83 @@
+From 2f8968999d5c66af74776cbb667461a8f475cf67 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Fri, 13 Feb 2009 19:42:49 +0530
+Subject: [PATCH 292/364] Interdependancy between ISP and Camera removed
+
+There was some dependancy of ISP on OMAP Camera macro
+and due to that ISP+resizer used crash.
+
+Removed dependancy frm device.c file
+---
+ arch/arm/mach-omap2/devices.c |   31 +++++++++++++++++++++----------
+ 1 files changed, 21 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
+index 48234a6..3b538a1 100644
+--- a/arch/arm/mach-omap2/devices.c
++++ b/arch/arm/mach-omap2/devices.c
+@@ -59,6 +59,24 @@ static inline void omap_init_camera(void)
+ static struct resource omap34xxcam_resources[] = {
+ };
+ 
++static struct platform_device omap_cam_device = {
++	.name		= "omap34xxcam",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(omap34xxcam_resources),
++	.resource	= omap34xxcam_resources,
++};
++
++static inline void omap_init_camera(void)
++{
++	platform_device_register(&omap_cam_device);
++}
++#else
++static inline void omap_init_camera(void)
++{
++}
++#endif
++
++#if defined (CONFIG_VIDEO_OMAP3_ISP)
+ static struct resource omap3isp_resources[] = {
+ 	{
+ 		.start		= OMAP3_ISP_BASE,
+@@ -126,13 +144,6 @@ static struct resource omap3isp_resources[] = {
+ 	}
+ };
+ 
+-static struct platform_device omap_cam_device = {
+-	.name		= "omap34xxcam",
+-	.id		= -1,
+-	.num_resources	= ARRAY_SIZE(omap34xxcam_resources),
+-	.resource	= omap34xxcam_resources,
+-};
+-
+ static struct platform_device omap_isp_device = {
+ 	.name		= "omap3isp",
+ 	.id		= -1,
+@@ -140,13 +151,12 @@ static struct platform_device omap_isp_device = {
+ 	.resource	= omap3isp_resources,
+ };
+ 
+-static inline void omap_init_camera(void)
++static inline void omap_init_isp(void)
+ {
+-	platform_device_register(&omap_cam_device);
+ 	platform_device_register(&omap_isp_device);
+ }
+ #else
+-static inline void omap_init_camera(void)
++static inline void omap_init_isp(void)
+ {
+ }
+ #endif
+@@ -648,6 +658,7 @@ static int __init omap2_init_devices(void)
+ 	 * in alphabetical order so they're easier to sort through.
+ 	 */
+ 	omap_hsmmc_reset();
++	omap_init_isp();
+ 	omap_init_camera();
+ 	omap_init_mbox();
+ 	omap_init_mcspi();
+-- 
+1.5.6
+

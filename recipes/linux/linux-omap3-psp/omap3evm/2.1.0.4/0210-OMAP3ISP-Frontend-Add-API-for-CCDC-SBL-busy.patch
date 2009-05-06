@@ -1,0 +1,57 @@
+From ae488aa5fa25a156577ba7c9d06c1dd7da0ce113 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:52 -0600
+Subject: [PATCH 210/364] OMAP3ISP: Frontend: Add API for CCDC SBL busy
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/isp/ispccdc.c |   18 ++++++++++++++++++
+ drivers/media/video/isp/ispccdc.h |    2 ++
+ 2 files changed, 20 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/media/video/isp/ispccdc.c b/drivers/media/video/isp/ispccdc.c
+index e0335ec..1335142 100644
+--- a/drivers/media/video/isp/ispccdc.c
++++ b/drivers/media/video/isp/ispccdc.c
+@@ -1356,6 +1356,24 @@ void ispccdc_enable(u8 enable)
+ }
+ EXPORT_SYMBOL(ispccdc_enable);
+ 
++/*
++ * Returns zero if the CCDC is idle and the image has been written to
++ * memory, too.
++ */
++int ispccdc_sbl_busy(void)
++{
++	return ispccdc_busy()
++		| (isp_reg_readl(OMAP3_ISP_IOMEM_SBL, ISPSBL_CCDC_WR_0) &
++				ISPSBL_CCDC_WR_0_DATA_READY)
++		| (isp_reg_readl(OMAP3_ISP_IOMEM_SBL, ISPSBL_CCDC_WR_1) &
++				ISPSBL_CCDC_WR_0_DATA_READY)
++		| (isp_reg_readl(OMAP3_ISP_IOMEM_SBL, ISPSBL_CCDC_WR_2) &
++				ISPSBL_CCDC_WR_0_DATA_READY)
++		| (isp_reg_readl(OMAP3_ISP_IOMEM_SBL, ISPSBL_CCDC_WR_3) &
++				ISPSBL_CCDC_WR_0_DATA_READY);
++}
++EXPORT_SYMBOL(ispccdc_sbl_busy);
++
+ /**
+  * ispccdc_busy - Gets busy state of the CCDC.
+  **/
+diff --git a/drivers/media/video/isp/ispccdc.h b/drivers/media/video/isp/ispccdc.h
+index 8af213d..c1403cf 100644
+--- a/drivers/media/video/isp/ispccdc.h
++++ b/drivers/media/video/isp/ispccdc.h
+@@ -186,6 +186,8 @@ int ispccdc_set_outaddr(u32 addr);
+ 
+ void ispccdc_enable(u8 enable);
+ 
++int ispccdc_sbl_busy(void);
++
+ int ispccdc_busy(void);
+ 
+ void ispccdc_save_context(void);
+-- 
+1.5.6
+

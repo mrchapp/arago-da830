@@ -1,0 +1,25 @@
+From 1db5e2a7c4cce2378b2ed9215414668972766b93 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Mon, 2 Mar 2009 10:10:22 +0530
+Subject: [PATCH 313/364] Initialized global alpha to 255 in graphics driver
+
+---
+ drivers/video/omap2/omapfb-main.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/video/omap2/omapfb-main.c b/drivers/video/omap2/omapfb-main.c
+index 7ed251c..c6aa985 100644
+--- a/drivers/video/omap2/omapfb-main.c
++++ b/drivers/video/omap2/omapfb-main.c
+@@ -1255,6 +1255,8 @@ static int fbinfo_init(struct omapfb2_device *fbdev, struct fb_info *fbi)
+ 	ofbi->rotation_type = def_rotate_type;
+ 	ofbi->rotation = def_rotate;
+ 	var->rotate = ofbi->rotation;
++	/* Set global alpha to 255 */
++	var->reserved[0] = 255;
+ 
+ 	if (display) {
+ 		int w, h;
+-- 
+1.5.6
+

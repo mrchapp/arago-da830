@@ -1,0 +1,39 @@
+From ce943a1b8652370cfe0516445cfd9a85a75f30b0 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 14:51:09 -0600
+Subject: [PATCH 192/364] V4L2: Add COLORFX user control
+
+This is a common feature on many cameras. the options are:
+Default colors,
+B & W,
+Sepia
+
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ include/linux/videodev2.h |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+index 664aed2..be91fd4 100644
+--- a/include/linux/videodev2.h
++++ b/include/linux/videodev2.h
+@@ -881,8 +881,15 @@ enum v4l2_power_line_frequency {
+ #define V4L2_CID_COLOR_KILLER                   (V4L2_CID_BASE+30)
+ #define V4L2_CID_ROTATION			(V4L2_CID_BASE+31)
+ #define V4L2_CID_BG_COLOR			(V4L2_CID_BASE+32)
++#define V4L2_CID_COLORFX			(V4L2_CID_BASE+33)
++enum v4l2_colorfx {
++	V4L2_COLORFX_NONE	= 0,
++	V4L2_COLORFX_BW		= 1,
++	V4L2_COLORFX_SEPIA	= 2,
++};
++
+ /* last CID + 1 */
+-#define V4L2_CID_LASTP1                         (V4L2_CID_BASE+33)
++#define V4L2_CID_LASTP1                         (V4L2_CID_BASE+34)
+ 
+ /*  MPEG-class control IDs defined by V4L2 */
+ #define V4L2_CID_MPEG_BASE 			(V4L2_CTRL_CLASS_MPEG | 0x900)
+-- 
+1.5.6
+

@@ -1,0 +1,26 @@
+From 1f8751061acc48cfe15909aee862d0f79050f8ab Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Thu, 5 Feb 2009 17:07:04 +0530
+Subject: [PATCH 014/364] usb: musb: remove auto selection of USB_SUSPEND with OTG
+
+As suspend/resume is not implemented with musb so disabling
+it when OTG is defined.
+---
+ drivers/usb/core/Kconfig |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
+index e1759d1..94ab83a 100644
+--- a/drivers/usb/core/Kconfig
++++ b/drivers/usb/core/Kconfig
+@@ -105,7 +105,6 @@ config USB_SUSPEND
+ config USB_OTG
+ 	bool
+ 	depends on USB && EXPERIMENTAL
+-	select USB_SUSPEND
+ 	default n
+ 
+ 
+-- 
+1.5.6
+

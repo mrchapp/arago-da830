@@ -1,0 +1,68 @@
+From 098c38f9426c24500e13027fceb5e0badd4064cf Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Wed, 14 Jan 2009 15:58:45 +0530
+Subject: [PATCH 177/364] Kconfig option added to select overlay manager
+
+Kconfig option added to select the default overlay manger
+for video1 and video2 planes
+---
+ arch/arm/plat-omap/dss/display.c |   12 +++++++++++-
+ drivers/media/video/omap/Kconfig |   10 ++++++++++
+ 2 files changed, 21 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/plat-omap/dss/display.c b/arch/arm/plat-omap/dss/display.c
+index 8567482..375bc8d 100644
+--- a/arch/arm/plat-omap/dss/display.c
++++ b/arch/arm/plat-omap/dss/display.c
+@@ -539,6 +539,7 @@ void initialize_overlays(const char *def_disp_name)
+ 	struct omap_overlay_manager *lcd_mgr;
+ 	struct omap_overlay_manager *tv_mgr;
+ 	struct omap_overlay_manager *def_mgr = NULL;
++	struct omap_overlay *ovl;
+ 
+ 	lcd_mgr = omap_dss_get_overlay_manager(OMAP_DSS_OVL_MGR_LCD);
+ 	tv_mgr = omap_dss_get_overlay_manager(OMAP_DSS_OVL_MGR_TV);
+@@ -598,12 +599,21 @@ void initialize_overlays(const char *def_disp_name)
+ 	/* connect all dispc overlays to def_mgr */
+ 	if (def_mgr) {
+ 		for (i = 0; i < 3; i++) {
+-			struct omap_overlay *ovl;
+ 			ovl = omap_dss_get_overlay(i);
+ 			omap_dss_set_manager(ovl, def_mgr);
+ 		}
+ 	}
+ 
++	/* Set the TV MGR as the default mgr for video based on config
++	   option */
++#ifdef CONFIG_VID1_OMAP_ON_TV
++	ovl = omap_dss_get_overlay(1);
++	omap_dss_set_manager(ovl, tv_mgr);
++#endif
++#ifdef CONFIG_VID2_OMAP_ON_TV
++	ovl = omap_dss_get_overlay(2);
++	omap_dss_set_manager(ovl, tv_mgr);
++#endif
+ 	/* setup L4 overlay as an example */
+ 	{
+ 		static struct omap_overlay ovl = {
+diff --git a/drivers/media/video/omap/Kconfig b/drivers/media/video/omap/Kconfig
+index ac81f4c..327122c 100644
+--- a/drivers/media/video/omap/Kconfig
++++ b/drivers/media/video/omap/Kconfig
+@@ -10,3 +10,13 @@ config VIDEO_OMAP_VIDEOOUT
+ 	depends on VIDEO_OMAP3
+ 	default VIDEO_OMAP3
+ 
++config VID1_OMAP_ON_TV
++	bool "Default Overlay manager for Video1 pipeline will be TV"
++	depends on VIDEO_OMAP_VIDEOOUT
++	default n
++
++config VID2_OMAP_ON_TV
++	bool "Default Overlay manager for Video2 pipeline will be TV"
++	depends on VIDEO_OMAP_VIDEOOUT
++	default n
++
+-- 
+1.5.6
+

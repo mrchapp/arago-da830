@@ -1,0 +1,39 @@
+From 8e4a7ded182867583579d689e66f5574ff6ad228 Mon Sep 17 00:00:00 2001
+From: Paul Walmsley <paul@pwsan.com>
+Date: Tue, 23 Dec 2008 03:13:55 -0700
+Subject: [PATCH 023/364] OMAP2/3 clock: add clock pre-rate-change notification
+
+Call the clock notifiers immediately before changing the clock's rate or
+parent.
+
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/clock.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clock.c b/arch/arm/mach-omap2/clock.c
+index 16d2dd4..c14f586 100644
+--- a/arch/arm/mach-omap2/clock.c
++++ b/arch/arm/mach-omap2/clock.c
+@@ -796,6 +796,8 @@ int omap2_clk_set_rate(struct clk *clk, unsigned long rate)
+ 	pr_debug("clock: %s: set_rate from %ld Hz to %ld Hz\n", clk->name,
+ 		 clk->rate, rate);
+ 
++	omap_clk_notify_downstream(clk, CLK_PRE_RATE_CHANGE);
++
+ 	ret = clk->set_rate(clk, rate);
+ 
+ 	temp_rate = clk->rate;
+@@ -862,6 +864,8 @@ int omap2_clk_set_parent(struct clk *clk, struct clk *new_parent)
+ 		propagate_rate(clk, TEMP_RATE);
+ 	}
+ 
++	omap_clk_notify_downstream(clk, CLK_PRE_RATE_CHANGE);
++
+ 	if (clk->usecount > 0)
+ 		_omap2_clk_disable(clk);
+ 
+-- 
+1.5.6
+

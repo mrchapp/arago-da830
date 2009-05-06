@@ -1,0 +1,37 @@
+From 954f47147c89cc6f0b8f93614bc8d70cd534e330 Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Thu, 5 Feb 2009 15:44:31 +0530
+Subject: [PATCH 007/364] usb: musb: add back otg_get_transceiver
+
+It got removed somehow in mainline and will be updated again.
+Kernel panic is observed with gadget config without this patch.
+---
+ drivers/usb/musb/omap2430.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index 901dffd..93252c9 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -226,12 +226,18 @@ int musb_platform_set_mode(struct musb *musb, u8 musb_mode)
+ 
+ int __init musb_platform_init(struct musb *musb)
+ {
++	struct otg_transceiver *x = otg_get_transceiver();
+ 	u32 l;
+ 
+ #if defined(CONFIG_ARCH_OMAP2430)
+ 	omap_cfg_reg(AE5_2430_USB0HS_STP);
+ #endif
++	if (!x) {
++		pr_err("omap: musb: null transceiver found\n");
++		return -ENODEV;
++	}
+ 
++	musb->xceiv = *x;
+ 	musb_platform_resume(musb);
+ 
+ 	l = omap_readl(OTG_SYSCONFIG);
+-- 
+1.5.6
+

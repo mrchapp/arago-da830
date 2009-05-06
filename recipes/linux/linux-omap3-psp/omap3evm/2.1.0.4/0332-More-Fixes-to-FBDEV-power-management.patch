@@ -1,0 +1,51 @@
+From f08fb58d77a9dfe9f546aa638e76958a22fd3de9 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Mon, 9 Mar 2009 16:29:40 +0530
+Subject: [PATCH 332/364] More Fixes to FBDEV power management.
+
+Wakeup from sleep was enabling all the displays.
+Fixed to enable only the required displays
+---
+ drivers/video/omap2/omapfb-sysfs.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/video/omap2/omapfb-sysfs.c b/drivers/video/omap2/omapfb-sysfs.c
+index c6a38aa..4dfac97 100755
+--- a/drivers/video/omap2/omapfb-sysfs.c
++++ b/drivers/video/omap2/omapfb-sysfs.c
+@@ -109,7 +109,6 @@ static int omapfb_detach_framebuffer(struct fb_info *fbi,
+ 	return 0;
+ }
+ 
+-
+ static ssize_t show_framebuffers(struct device *dev,
+ 		struct device_attribute *attr,
+ 		char *buf)
+@@ -960,7 +959,7 @@ void omap2fb_workqueue_handler(struct work_struct *work)
+ 	} else if (omap2fb_can_sleep == 3){
+ 		for (i = 0; i < omap2fb->num_fbs; i++) {
+ 			display = omap2fb->overlays[i]->manager->display;
+-			omap2fb->displays[i]->enable(omap2fb->displays[i]);
++			display->enable(display);
+ 		}
+ 		omap2fb_can_sleep = 0;
+ 		mod_timer(&omap2fb->timer, jiffies + omap2fb->sleep_timeout);
+@@ -1021,7 +1020,6 @@ static ssize_t dss_sleep_store_timeout(struct device *dev,
+ }
+ #endif
+ 
+-
+ static DEVICE_ATTR(framebuffers, S_IRUGO | S_IWUSR,
+ 		show_framebuffers, store_framebuffers);
+ static DEVICE_ATTR(overlays, S_IRUGO | S_IWUSR,
+@@ -1058,7 +1056,6 @@ void omapfb_create_sysfs(struct omapfb2_device *fbdev)
+ 	if (r)
+ 		dev_err(fbdev->dev, "failed to create sysfs clk file\n");
+ 
+-
+ #ifdef CONFIG_PM
+ 	/*
+ 	 * Create Work queue for the FBDEV time out handling.
+-- 
+1.5.6
+

@@ -1,0 +1,257 @@
+From fa17e3aec4da18e25a121af9aa61e72819f17f39 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Mon, 9 Mar 2009 11:41:48 +0530
+Subject: [PATCH 329/364] Cleanup PM support implementation
+
+Code cleaned up implemented under PM support
+---
+ arch/arm/mach-omap2/serial.c       |    4 +-
+ drivers/video/omap2/omapfb-ioctl.c |    6 ++--
+ drivers/video/omap2/omapfb-main.c  |    1 -
+ drivers/video/omap2/omapfb-sysfs.c |   70 +++++++++++++++++++++---------------
+ drivers/video/omap2/omapfb.h       |    6 +++-
+ 5 files changed, 51 insertions(+), 36 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
+index ed03c7f..7ef302f 100644
+--- a/arch/arm/mach-omap2/serial.c
++++ b/arch/arm/mach-omap2/serial.c
+@@ -229,7 +229,7 @@ static inline void omap_uart_disable_clocks(struct omap_uart_state *uart)
+ 	clk_disable(uart->fck);
+ }
+ #ifdef CONFIG_FB_OMAP2
+-extern void omap_dss_resume_idle();
++extern void omap2fb_resume_idle(void);
+ #endif
+ 
+ static void omap_uart_block_sleep(struct omap_uart_state *uart)
+@@ -244,7 +244,7 @@ static void omap_uart_block_sleep(struct omap_uart_state *uart)
+ 	 * interrupt will be wake-up event for DSS
+ 	 */
+ #ifdef CONFIG_FB_OMAP2
+-	omap_dss_resume_idle();
++	omap2fb_resume_idle();
+ #endif
+ }
+ 
+diff --git a/drivers/video/omap2/omapfb-ioctl.c b/drivers/video/omap2/omapfb-ioctl.c
+index 227694c..3141085 100644
+--- a/drivers/video/omap2/omapfb-ioctl.c
++++ b/drivers/video/omap2/omapfb-ioctl.c
+@@ -308,7 +308,7 @@ static void omapfb_isr(void *arg, unsigned int irqstatus)
+ static int omapfb_wait_for_vsync(struct fb_info *fbi)
+ {
+ 	wait_queue_t wqt;
+-	unsigned long cnt;
++	unsigned long cnt, timeout = HZ/5;
+ 	int ret;
+ 	void *handle = NULL;
+ 	u32 mask = 0;
+@@ -326,7 +326,7 @@ static int omapfb_wait_for_vsync(struct fb_info *fbi)
+ 
+ 	cnt = ofbi->vsync_cnt;
+ 	ret = wait_event_interruptible_timeout(ofbi->vsync_wait,
+-			cnt != ofbi->vsync_cnt, ofbi->timeout);
++			cnt != ofbi->vsync_cnt, timeout);
+ 	/*
+ 	 * If the GFX is on TV, then wait for another VSYNC
+ 	 * to compensate for Interlaced scan
+@@ -337,7 +337,7 @@ static int omapfb_wait_for_vsync(struct fb_info *fbi)
+ 			ret = wait_event_interruptible_timeout(
+ 					ofbi->vsync_wait,
+ 					cnt != ofbi->vsync_cnt,
+-					ofbi->timeout);
++					timeout);
+ 		}
+ 	}
+ 	omap_dispc_unregister_isr(handle);
+diff --git a/drivers/video/omap2/omapfb-main.c b/drivers/video/omap2/omapfb-main.c
+index 9daf51a..0ba70ca 100644
+--- a/drivers/video/omap2/omapfb-main.c
++++ b/drivers/video/omap2/omapfb-main.c
+@@ -1418,7 +1418,6 @@ static int omapfb_create_framebuffers(struct omapfb2_device *fbdev)
+ 		ofbi = FB2OFB(fbi);
+ 		ofbi->fbdev = fbdev;
+ 		ofbi->id = i;
+-		ofbi->timeout = HZ/5;
+ 		/* initialize the vsync wait queue */
+ 		init_waitqueue_head(&ofbi->vsync_wait);
+ 		fbdev->num_fbs++;
+diff --git a/drivers/video/omap2/omapfb-sysfs.c b/drivers/video/omap2/omapfb-sysfs.c
+index 32dc65c..f510c6a 100755
+--- a/drivers/video/omap2/omapfb-sysfs.c
++++ b/drivers/video/omap2/omapfb-sysfs.c
+@@ -900,60 +900,66 @@ err:
+ 	return r;
+ }
+ #ifdef CONFIG_PM
++/*
++ * Default time-out value for Fbdev
++ */
++#define OMAP2FB_DEF_SLEEP_TIMEOUT (1 * 20 * HZ)
+ 
+-static u32 dss_sleep_timeout = (1 * 20 * HZ);
+-static int can_sleep = -1;
++static int omap2fb_can_sleep = -1;
++/*
++ * TODO: This needs to removed, had to keep this due to uart
++ * wakeup hook.
++ */
+ static struct omapfb2_device *omap2fb;
+ 
+ /*
+  * TODO: Try to accomodate these variables in omapfb2_device
+  * structure.
+  */
+-static struct timer_list timer;
+-struct workqueue_struct *irq_work_queues; /* workqueue*/
+-struct work_struct irq_work_queue;        /* work entry */
++static struct workqueue_struct *irq_work_queues; /* workqueue*/
++static struct work_struct irq_work_queue;        /* work entry */
+ /*
+- * Resumes the DSS Module
++ * Resumes the FBDEV Module
+  * Here Clocks will be turned-on, Context will be restored
+  */
+-void omap_dss_resume_idle(void)
++void omap2fb_resume_idle(void)
+ {
+-	if (can_sleep == 2) {
+-		can_sleep = 3;
++	if (omap2fb_can_sleep == 2) {
++		omap2fb_can_sleep = 3;
+ 		queue_work(irq_work_queues, &irq_work_queue);
+ 	}
+ }
+-EXPORT_SYMBOL(omap_dss_resume_idle);
++EXPORT_SYMBOL(omap2fb_resume_idle);
+ /*
+  * Timer Call-back function
+  */
+-static void dss_idle_timer(unsigned long data)
++static void omap2fb_timer_clbk(unsigned long data)
+ {
+-		can_sleep = 1;
++		omap2fb_can_sleep = 1;
+ 		queue_work(irq_work_queues, &irq_work_queue);
+ }
+ 
+-void omap2fb_timeout_handler(struct work_struct *work)
++void omap2fb_workqueue_handler(struct work_struct *work)
+ {
+ 	int i;
+ 	struct omap_display *display;
+ 
+ 	DEFINE_WAIT(wait);
+ 
+-	if (can_sleep == 1) {
++	if (omap2fb_can_sleep == 1) {
+ 		for (i = 0; i < omap2fb->num_fbs; i++) {
+ 			display = omap2fb->overlays[i]->manager->display;
+ 			display->disable(display);
+ 		}
+-		can_sleep = 2;
+-		del_timer(&timer);
+-	} else if (can_sleep == 3){
++		omap2fb_can_sleep = 2;
++		del_timer(&omap2fb->timer);
++	} else if (omap2fb_can_sleep == 3){
+ 		for (i = 0; i < omap2fb->num_fbs; i++) {
+ 			display = omap2fb->overlays[i]->manager->display;
+ 			omap2fb->displays[i]->enable(omap2fb->displays[i]);
+ 		}
+-		can_sleep = 0;
+-		mod_timer(&timer, jiffies + dss_sleep_timeout);
++		omap2fb_can_sleep = 0;
++		mod_timer(&omap2fb->timer, jiffies + omap2fb->sleep_timeout);
+ 	}
+ }
+ /*
+@@ -963,10 +969,11 @@ void omap2fb_timeout_handler(struct work_struct *work)
+ void dss_init_timer(struct omapfb2_device *fbdev)
+ {
+ 	omap2fb = fbdev;
+-	can_sleep = 0;
+-	setup_timer(&timer, dss_idle_timer,
+-			(unsigned long) NULL);
+-	mod_timer(&timer, jiffies + dss_sleep_timeout);
++	omap2fb_can_sleep = 0;
++	fbdev->sleep_timeout = OMAP2FB_DEF_SLEEP_TIMEOUT;
++	setup_timer(&fbdev->timer, omap2fb_timer_clbk,
++			(unsigned long) fbdev);
++	mod_timer(&fbdev->timer, jiffies + fbdev->sleep_timeout);
+ 
+ 	/*
+ 	 * Enable auto-Idle mode here
+@@ -978,7 +985,10 @@ void dss_init_timer(struct omapfb2_device *fbdev)
+ static ssize_t dss_sleep_show_timeout(struct device *dev,
+                                struct device_attribute *attr, char *buf)
+ {
+-	return sprintf(buf, "%u\n", dss_sleep_timeout / HZ);
++	struct platform_device *pdev = to_platform_device(dev);
++	struct omapfb2_device *fbdev = platform_get_drvdata(pdev);
++
++	return sprintf(buf, "%u\n", fbdev->sleep_timeout / HZ);
+ }
+ 
+ /*
+@@ -988,17 +998,19 @@ static ssize_t dss_sleep_store_timeout(struct device *dev,
+                struct device_attribute *attr, const char *buf, size_t n)
+ {
+ 	unsigned int value;
++	struct platform_device *pdev = to_platform_device(dev);
++	struct omapfb2_device *fbdev = platform_get_drvdata(pdev);
+ 
+ 	if (sscanf(buf, "%u", &value) != 1) {
+ 		printk(KERN_ERR "sleep_timeout_store: Invalid value\n");
+ 		return -EINVAL;
+ 	}
+ 	if (value == 0) {
+-		del_timer(&timer);
++		del_timer(&fbdev->timer);
+ 	} else {
+-		dss_sleep_timeout = value * HZ;
+-		can_sleep = 0;
+-		mod_timer(&timer, jiffies + dss_sleep_timeout);
++		fbdev->sleep_timeout = value * HZ;
++		omap2fb_can_sleep = 0;
++		mod_timer(&fbdev->timer, jiffies + fbdev->sleep_timeout);
+ 	}
+ 
+ 	return n;
+@@ -1057,7 +1069,7 @@ void omapfb_create_sysfs(struct omapfb2_device *fbdev)
+ 		printk("Could not create omap2fb workqueue\n");
+ 		return;
+ 	}
+-	INIT_WORK(&irq_work_queue, omap2fb_timeout_handler);
++	INIT_WORK(&irq_work_queue, omap2fb_workqueue_handler);
+ 
+ 	dss_init_timer(fbdev);
+ #endif
+diff --git a/drivers/video/omap2/omapfb.h b/drivers/video/omap2/omapfb.h
+index 9b06c7d..11d2645 100644
+--- a/drivers/video/omap2/omapfb.h
++++ b/drivers/video/omap2/omapfb.h
+@@ -66,7 +66,6 @@ struct omapfb_info {
+ 	struct omapfb2_device *fbdev;
+ 	enum omapfb_rotation_type rotation_type;
+ 	int rotation;
+-	unsigned long timeout;
+ 	wait_queue_head_t vsync_wait;
+ 	unsigned long vsync_cnt;
+ };
+@@ -88,6 +87,11 @@ struct omapfb2_device {
+ 	struct omap_overlay *overlays[10];
+ 	int num_managers;
+ 	struct omap_overlay_manager *managers[10];
++	/*
++	 * Frame-buffer PM suppor
++	 */
++	u32 sleep_timeout;
++	struct timer_list timer;
+ };
+ 
+ u32 omapfb_get_region_paddr(struct omapfb_info *ofbi);
+-- 
+1.5.6
+

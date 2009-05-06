@@ -1,0 +1,43 @@
+From 0c1364062a8cbaf76d10c1a798862014367cf4df Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Fri, 13 Feb 2009 10:43:55 +0530
+Subject: [PATCH 281/364] Bug SDOCM00053650: fixed issue of g_input tied to CVBS
+
+During startup of system,, where the input is still not
+initialized the G_INPUT was tied to CVBS input only.
+
+Now it tries to set both the inputs.
+---
+ drivers/media/video/omap34xxcam.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/video/omap34xxcam.c b/drivers/media/video/omap34xxcam.c
+index da0e03a..a5db34e 100644
+--- a/drivers/media/video/omap34xxcam.c
++++ b/drivers/media/video/omap34xxcam.c
+@@ -919,13 +919,20 @@ static int vidioc_g_input(struct file *file, void *fh, unsigned int *i)
+ 
+ 	mutex_lock(&vdev->mutex);
+ 	if (vdev->vdev_sensor_mode) {
+-		if (vdev->slave_config[OMAP34XXCAM_SLAVE_SENSOR].cur_input
+-				== 0) {
++		if ((vdev->slave_config[OMAP34XXCAM_SLAVE_SENSOR].cur_input
++				!= INPUT_CVBS_VI4A) &&
++				(vdev->slave_config[OMAP34XXCAM_SLAVE_SENSOR].
++				 cur_input != INPUT_SVIDEO_VI2C_VI1C)) {
+ 			struct v4l2_routing route;
+ 			route.input = INPUT_CVBS_VI4A;
+ 			route.output = 0;
+ 			rval = vidioc_int_s_video_routing(vdev->vdev_sensor,
+ 					&route);
++			if (rval) {
++				route.input = INPUT_SVIDEO_VI2C_VI1C;
++				rval = vidioc_int_s_video_routing(
++						vdev->vdev_sensor, &route);
++			}
+ 			if (!rval)
+ 				vdev->slave_config[OMAP34XXCAM_SLAVE_SENSOR]
+ 					.cur_input = route.input;
+-- 
+1.5.6
+

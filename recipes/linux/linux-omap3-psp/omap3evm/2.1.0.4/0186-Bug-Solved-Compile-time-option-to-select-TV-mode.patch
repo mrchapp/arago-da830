@@ -1,0 +1,57 @@
+From 11bb8613bb9e14c97535c6782c8ae998d8531c1f Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Thu, 5 Feb 2009 17:49:14 +0530
+Subject: [PATCH 186/364] Bug Solved: Compile time option to select TV mode
+
+---
+ arch/arm/plat-omap/dss/venc.c    |    9 +++++++--
+ drivers/media/video/omap/Kconfig |   15 +++++++++++++++
+ 2 files changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/plat-omap/dss/venc.c b/arch/arm/plat-omap/dss/venc.c
+index 81319e4..59abae1 100644
+--- a/arch/arm/plat-omap/dss/venc.c
++++ b/arch/arm/plat-omap/dss/venc.c
+@@ -371,8 +371,13 @@ static void venc_enable_clocks(int enable)
+ int venc_init(void)
+ {
+ 	u8 rev_id;
+-	int use_pal = 1; /* XXX */
+-
++	int use_pal = 0;
++#ifdef CONFIG_NTSC_M
++	use_pal = 0;
++#endif
++#ifdef CONFIG_PAL_BDGHI
++	use_pal = 1; /* XXX */
++#endif
+ 	mutex_init(&venc.venc_lock);
+ 
+ 	if (use_pal)
+diff --git a/drivers/media/video/omap/Kconfig b/drivers/media/video/omap/Kconfig
+index 327122c..3e1da6e 100644
+--- a/drivers/media/video/omap/Kconfig
++++ b/drivers/media/video/omap/Kconfig
+@@ -19,4 +19,19 @@ config VID2_OMAP_ON_TV
+ 	bool "Default Overlay manager for Video2 pipeline will be TV"
+ 	depends on VIDEO_OMAP_VIDEOOUT
+ 	default n
++choice
++        prompt "TV Mode"
++        depends on VID1_OMAP_ON_TV || VID2_OMAP_ON_TV
++        default NTSC_M
+ 
++config NTSC_M
++        bool "Use NTSC_M mode"
++        help
++          Select this option if you want NTSC_M mode on TV
++
++config PAL_BDGHI
++        bool "Use PAL_BDGHI mode"
++        help
++          Select this option if you want PAL_BDGHI mode on TV
++
++endchoice
+-- 
+1.5.6
+

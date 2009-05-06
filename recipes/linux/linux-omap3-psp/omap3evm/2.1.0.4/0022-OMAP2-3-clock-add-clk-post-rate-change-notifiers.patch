@@ -1,0 +1,63 @@
+From 5c365504a01368e958b55abf5560f13d2e993319 Mon Sep 17 00:00:00 2001
+From: Paul Walmsley <paul@pwsan.com>
+Date: Tue, 23 Dec 2008 03:13:54 -0700
+Subject: [PATCH 022/364] OMAP2/3 clock: add clk post-rate-change notifiers
+
+Calls the  clock post-rate-change notifier whenever clock rates are changed
+in the OMAP clock framework.  This is primarily in *_recalc() functions.
+
+One item to note is that the post-rate-change notifier is called even
+if the new clock rate is identical to the old rate.  This is because
+the process of changing the rate may have temporarily disabled or
+glitched the clock or one of its parents, and some devices may be
+sensitive to such changes.
+
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/clock.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clock.c b/arch/arm/mach-omap2/clock.c
+index c8652f2..16d2dd4 100644
+--- a/arch/arm/mach-omap2/clock.c
++++ b/arch/arm/mach-omap2/clock.c
+@@ -783,6 +783,7 @@ int omap2_clksel_set_rate(struct clk *clk, unsigned long rate)
+ int omap2_clk_set_rate(struct clk *clk, unsigned long rate)
+ {
+ 	int ret = -EINVAL;
++	unsigned long temp_rate;
+ 
+ 	if (!clk->set_rate)
+ 		return -EINVAL;
+@@ -797,6 +798,11 @@ int omap2_clk_set_rate(struct clk *clk, unsigned long rate)
+ 
+ 	ret = clk->set_rate(clk, rate);
+ 
++	temp_rate = clk->rate;
++	clk->rate = clk->temp_rate;
++	omap_clk_notify_downstream(clk, CLK_POST_RATE_CHANGE);
++	clk->rate = temp_rate;
++
+ 	return ret;
+ }
+ 
+@@ -872,11 +878,14 @@ int omap2_clk_set_parent(struct clk *clk, struct clk *new_parent)
+ 		_omap2_clk_enable(clk);
+ 
+ 	clk->parent = new_parent;
+-	clk->rate = new_rate;
+ 
+ 	pr_debug("clock: %s: set parent to %s (orig rate %ld, new rate %ld)\n",
+ 		 clk->name, clk->parent->name, orig_rate, new_rate);
+ 
++	omap_clk_notify_downstream(clk, CLK_POST_RATE_CHANGE);
++
++	clk->rate = new_rate;
++
+ 	return 0;
+ }
+ 
+-- 
+1.5.6
+

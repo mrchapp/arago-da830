@@ -1,0 +1,30 @@
+From ab2a4ac7612b8fc4add2104e86259aa84b966e65 Mon Sep 17 00:00:00 2001
+From: Sanjeev Premi <premi@ti.com>
+Date: Mon, 9 Mar 2009 13:48:19 +0530
+Subject: [PATCH 334/364] PM: cpuidle - Revert temporary changes
+
+Remove call to omap3_can_sleep() from within omap3_enter_idle().
+This was a temporary change. Actual fix will be added in next
+patch.
+
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/cpuidle34xx.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
+index 3ce223d..5e50c46 100644
+--- a/arch/arm/mach-omap2/cpuidle34xx.c
++++ b/arch/arm/mach-omap2/cpuidle34xx.c
+@@ -100,8 +100,6 @@ static int omap3_enter_idle(struct cpuidle_device *dev,
+ 	if (omap_irq_pending())
+ 		goto return_sleep_time;
+ 
+-	if (!omap3_can_sleep())
+-		goto return_sleep_time;
+ 	/* Execute ARM wfi */
+ 	omap_sram_idle();
+ 
+-- 
+1.5.6
+

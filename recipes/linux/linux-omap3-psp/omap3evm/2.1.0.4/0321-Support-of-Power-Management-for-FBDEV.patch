@@ -1,0 +1,63 @@
+From d65a448c25f2d2c1e4fbaccfab7e3ebac73bae78 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Tue, 3 Mar 2009 10:21:58 +0530
+Subject: [PATCH 321/364] Support of Power Management for FBDEV
+
+Power management support tested for Frame Buffer driver
+with followinfg known/TODO constraints -
+
+	- Disable other drivers, like USB, MMC and Sound
+	- Disable V4L2, since it alsi requires same
+	  handling as FBDEV
+	- No timer, the default FBDEV timer of 10 Mins
+	  used.
+
+With this CPU Idle is working fine under this commit.
+
+TODO:
+	- Add simillar support for V4L2
+---
+ arch/arm/plat-omap/dss/dss.c      |    8 ++------
+ drivers/video/omap2/omapfb-main.c |    5 +++++
+ 2 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/plat-omap/dss/dss.c b/arch/arm/plat-omap/dss/dss.c
+index bf4175f..579438f 100644
+--- a/arch/arm/plat-omap/dss/dss.c
++++ b/arch/arm/plat-omap/dss/dss.c
+@@ -368,14 +368,10 @@ void dss_clk_enable(enum dss_clock clks)
+ 	dss_clk_enable_no_ctx(clks);
+ 
+ 	if (cpu_is_omap34xx()) {
+-		int id = dss_get_ctx_id();
++		unsigned num_clks = count_clk_bits(clks);
+ 
+-		if (id != dss.ctx_id) {
+-			DSSDBG("ctx id %u -> id %u\n",
+-					dss.ctx_id, id);
++		if (dss.num_clks_enabled == num_clks)
+ 			restore_all_ctx();
+-			dss.ctx_id = id;
+-		}
+ 	}
+ }
+ 
+diff --git a/drivers/video/omap2/omapfb-main.c b/drivers/video/omap2/omapfb-main.c
+index 9a30e1f..9daf51a 100644
+--- a/drivers/video/omap2/omapfb-main.c
++++ b/drivers/video/omap2/omapfb-main.c
+@@ -988,6 +988,11 @@ static int omapfb_blank(int blank, struct fb_info *fbi)
+ 
+ 		break;
+ 
++	case FB_BLANK_NORMAL:
++		/* FB_BLANK_NORMAL could be implemented.
++		   * Needs DSS additions. */
++	case FB_BLANK_VSYNC_SUSPEND:
++	case FB_BLANK_HSYNC_SUSPEND:
+ 	case FB_BLANK_POWERDOWN:
+ 		if (display->state != OMAP_DSS_DISPLAY_ACTIVE) {
+ 			r = -EINVAL;
+-- 
+1.5.6
+

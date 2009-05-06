@@ -1,0 +1,29 @@
+From 45b2aefc0fc0046ae068c08774dd2d5ee50e1e3f Mon Sep 17 00:00:00 2001
+From: Carlos Chinea <carlos.chinea@nokia.com>
+Date: Mon, 1 Dec 2008 16:24:40 +0200
+Subject: [PATCH 101/364] OMAP3:PM: Update SSI omapdev record
+
+-Adds the ssi platform_device name and id to the SSI omapdev record
+
+Signed-off-by: Carlos Chinea <carlos.chinea@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/omapdev3xxx.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/omapdev3xxx.h b/arch/arm/mach-omap2/omapdev3xxx.h
+index 199282f..dce87df 100644
+--- a/arch/arm/mach-omap2/omapdev3xxx.h
++++ b/arch/arm/mach-omap2/omapdev3xxx.h
+@@ -132,6 +132,8 @@ static struct omapdev sad2d_3xxx_omapdev = {
+ static struct omapdev ssi_3xxx_omapdev = {
+ 	.name		= "ssi_omapdev",
+ 	.pwrdm		= { .name = "core_pwrdm" },
++	.pdev_name	= "omap_ssi",
++	.pdev_id	= -1,
+ 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
+ };
+ 
+-- 
+1.5.6
+

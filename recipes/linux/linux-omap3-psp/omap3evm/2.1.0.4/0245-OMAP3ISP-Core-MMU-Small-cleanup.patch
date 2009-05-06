@@ -1,0 +1,34 @@
+From c2d8ff910e7606297938ade55f7f298bff9f1dd9 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:35 -0600
+Subject: [PATCH 245/364] OMAP3ISP: Core: MMU Small cleanup
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/isp/ispmmu.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/video/isp/ispmmu.c b/drivers/media/video/isp/ispmmu.c
+index 5dd2ae1..eb7f6c6 100644
+--- a/drivers/media/video/isp/ispmmu.c
++++ b/drivers/media/video/isp/ispmmu.c
+@@ -677,7 +677,6 @@ void __exit ispmmu_cleanup(void)
+  **/
+ void ispmmu_save_context(void)
+ {
+-	DPRINTK_ISPMMU(" Saving context\n");
+ 	isp_save_context(ispmmu_reg_list);
+ }
+ EXPORT_SYMBOL_GPL(ispmmu_save_context);
+@@ -687,7 +686,6 @@ EXPORT_SYMBOL_GPL(ispmmu_save_context);
+  **/
+ void ispmmu_restore_context(void)
+ {
+-	DPRINTK_ISPMMU(" Restoring context\n");
+ 	isp_restore_context(ispmmu_reg_list);
+ }
+ EXPORT_SYMBOL_GPL(ispmmu_restore_context);
+-- 
+1.5.6
+
