@@ -3,7 +3,7 @@ PSPREL = "2.1.0.1"
 
 require linux-omap3_psp2.inc
 
-PR .= "-r2"
+PR = "psp${PSPREL}-r3"
 
 SRCREV = "0ec95b96fd77036a13398c66901e11cd301190d0"
 
