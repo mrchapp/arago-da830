@@ -1,0 +1,38 @@
+From e5d150151c991d7ce29cf8d1a5c629a2a2977d8c Mon Sep 17 00:00:00 2001
+From: Minkyu Kang <mk7.kang@samsung.com>
+Date: Wed, 18 Feb 2009 00:05:52 +0900
+Subject: [PATCH 10/12] bootm: Reduce the unnecessary memmove
+
+bootm: Reduce the unnecessary memmove
+
+Although load address and image start address are same address,
+bootm command always does memmove.
+That is unnecessary memmove and can be taken few milliseconds
+(about 500 msec to 1000 msec).
+If skip this memmove, we can reduce the boot time.
+
+Signed-off-by: Minkyu Kang <mk7.kang@samsung.com>
+---
+ common/cmd_bootm.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/common/cmd_bootm.c b/common/cmd_bootm.c
+index a8f85e9..178efa8 100644
+--- a/common/cmd_bootm.c
++++ b/common/cmd_bootm.c
+@@ -340,8 +340,10 @@ static int bootm_load_os(image_info_t os, ulong *load_end, int boot_progress)
+ 		} else {
+ 			printf ("   Loading %s ... ", type_name);
+ 
+-			memmove_wd ((void *)load,
+-				   (void *)image_start, image_len, CHUNKSZ);
++			if (load != image_start) {
++				memmove_wd ((void *)load,
++						(void *)image_start, image_len, CHUNKSZ);
++			}
+ 		}
+ 		*load_end = load + image_len;
+ 		puts("OK\n");
+-- 
+1.5.6
+

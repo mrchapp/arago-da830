@@ -1,0 +1,328 @@
+From 5482cf9fa7a101d66224f6478cb545df4d6e8610 Mon Sep 17 00:00:00 2001
+From: Manikandan Pillai <mani.pillai@ti.com>
+Date: Thu, 29 Jan 2009 15:38:31 +0530
+Subject: [PATCH 06/12] Fix for timeout issues on U-Boot.
+
+---
+ cpu/arm_cortexa8/config.mk       |    4 ++--
+ cpu/arm_cortexa8/omap3/config.mk |    2 +-
+ drivers/net/smc911x.c            |    9 ++-------
+ include/configs/omap3_evm.h      |    1 +
+ net/bootp.c                      |   10 +++++-----
+ net/net.c                        |   16 ++++++++--------
+ net/nfs.c                        |    6 +++---
+ net/rarp.c                       |    6 +++---
+ net/sntp.c                       |    4 ++--
+ net/tftp.c                       |    8 ++++----
+ 10 files changed, 31 insertions(+), 35 deletions(-)
+
+diff --git a/cpu/arm_cortexa8/config.mk b/cpu/arm_cortexa8/config.mk
+index b021762..e8e1aaf 100644
+--- a/cpu/arm_cortexa8/config.mk
++++ b/cpu/arm_cortexa8/config.mk
+@@ -24,7 +24,7 @@ PLATFORM_RELFLAGS += -fno-strict-aliasing -fno-common -ffixed-r8 \
+ 		     -msoft-float
+ 
+ # Make ARMv5 to allow more compilers to work, even though its v7a.
+-PLATFORM_CPPFLAGS += -march=armv5
++PLATFORM_CPPFLAGS += -march=armv7a
+ # =========================================================================
+ #
+ # Supply options according to compiler version
+@@ -33,4 +33,4 @@ PLATFORM_CPPFLAGS += -march=armv5
+ PLATFORM_CPPFLAGS +=$(call cc-option)
+ PLATFORM_CPPFLAGS +=$(call cc-option,-mno-thumb-interwork,)
+ PLATFORM_RELFLAGS +=$(call cc-option,-mshort-load-bytes,\
+-		    $(call cc-option,-malignment-traps,))
+\ No newline at end of file
++		    $(call cc-option,-malignment-traps,))
+diff --git a/cpu/arm_cortexa8/omap3/config.mk b/cpu/arm_cortexa8/omap3/config.mk
+index fbb753e..e8e1aaf 100644
+--- a/cpu/arm_cortexa8/omap3/config.mk
++++ b/cpu/arm_cortexa8/omap3/config.mk
+@@ -24,7 +24,7 @@ PLATFORM_RELFLAGS += -fno-strict-aliasing -fno-common -ffixed-r8 \
+ 		     -msoft-float
+ 
+ # Make ARMv5 to allow more compilers to work, even though its v7a.
+-PLATFORM_CPPFLAGS += -march=armv5
++PLATFORM_CPPFLAGS += -march=armv7a
+ # =========================================================================
+ #
+ # Supply options according to compiler version
+diff --git a/drivers/net/smc911x.c b/drivers/net/smc911x.c
+index 648c94c..0fff820 100644
+--- a/drivers/net/smc911x.c
++++ b/drivers/net/smc911x.c
+@@ -57,11 +57,6 @@ static inline void reg_write(u32 addr, u32 val)
+ #error "SMC911X: undefined bus width"
+ #endif /* CONFIG_DRIVER_SMC911X_16_BIT */
+ 
+-u32 pkt_data_pull(u32 addr) \
+-	__attribute__ ((weak, alias ("reg_read")));
+-void pkt_data_push(u32 addr, u32 val) \
+-	__attribute__ ((weak, alias ("reg_write")));
+-
+ #define mdelay(n)       udelay((n)*1000)
+ 
+ /* Below are the register offsets and bit definitions
+@@ -646,7 +641,7 @@ int eth_send(volatile void *packet, int length)
+ 	tmplen = (length + 3) / 4;
+ 
+ 	while (tmplen--)
+-		pkt_data_push(TX_DATA_FIFO, *data++);
++		reg_write(TX_DATA_FIFO, *data++);
+ 
+ 	/* wait for transmission */
+ 	while (!((reg_read(TX_FIFO_INF) & TX_FIFO_INF_TSUSED) >> 16));
+@@ -689,7 +684,7 @@ int eth_rx(void)
+ 
+ 		tmplen = (pktlen + 2+ 3) / 4;
+ 		while (tmplen--)
+-			*data++ = pkt_data_pull(RX_DATA_FIFO);
++			*data++ = reg_read(RX_DATA_FIFO);
+ 
+ 		if (status & RX_STS_ES)
+ 			printf(DRIVERNAME
+diff --git a/include/configs/omap3_evm.h b/include/configs/omap3_evm.h
+index 97339e8..244226c 100644
+--- a/include/configs/omap3_evm.h
++++ b/include/configs/omap3_evm.h
+@@ -214,6 +214,7 @@
+ #define CONFIG_SYS_PVT			V_PVT	/* 2^(pvt+1) */
+ #define CONFIG_SYS_HZ			((V_SCLK) / (2 << CONFIG_SYS_PVT))
+ 
++#define CFG_HZ	CONFIG_SYS_HZ
+ /*-----------------------------------------------------------------------
+  * Stack sizes
+  *
+diff --git a/net/bootp.c b/net/bootp.c
+index 83465e4..74c45e5 100644
+--- a/net/bootp.c
++++ b/net/bootp.c
+@@ -33,7 +33,7 @@
+ 
+ #if defined(CONFIG_CMD_NET)
+ 
+-#define TIMEOUT		5000UL	/* Milliseconds before trying BOOTP again */
++#define TIMEOUT		5UL	/* Milliseconds before trying BOOTP again */
+ #ifndef CONFIG_NET_RETRY_COUNT
+ # define TIMEOUT_COUNT	5		/* # of timeouts before giving up  */
+ #else
+@@ -371,7 +371,7 @@ BootpTimeout(void)
+ 		puts ("\nRetry count exceeded; starting again\n");
+ 		NetStartAgain ();
+ 	} else {
+-		NetSetTimeout (TIMEOUT, BootpTimeout);
++		NetSetTimeout(TIMEOUT * CONFIG_SYS_HZ, BootpTimeout);
+ 		BootpRequest ();
+ 	}
+ }
+@@ -671,7 +671,7 @@ BootpRequest (void)
+ 	bp->bp_htype = HWT_ETHER;
+ 	bp->bp_hlen = HWL_ETHER;
+ 	bp->bp_hops = 0;
+-	bp->bp_secs = htons(get_timer(0) / 1000);
++	bp->bp_secs = htons(get_timer(0) / CONFIG_SYS_HZ);
+ 	NetWriteIP(&bp->bp_ciaddr, 0);
+ 	NetWriteIP(&bp->bp_yiaddr, 0);
+ 	NetWriteIP(&bp->bp_siaddr, 0);
+@@ -705,7 +705,7 @@ BootpRequest (void)
+ 	pktlen = BOOTP_SIZE - sizeof(bp->bp_vend) + ext_len;
+ 	iplen = BOOTP_HDR_SIZE - sizeof(bp->bp_vend) + ext_len;
+ 	NetSetIP(iphdr, 0xFFFFFFFFL, PORT_BOOTPS, PORT_BOOTPC, iplen);
+-	NetSetTimeout(SELECT_TIMEOUT, BootpTimeout);
++	NetSetTimeout(SELECT_TIMEOUT * CONFIG_SYS_HZ, BootpTimeout);
+ 
+ #if defined(CONFIG_CMD_DHCP)
+ 	dhcp_state = SELECTING;
+@@ -924,7 +924,7 @@ DhcpHandler(uchar * pkt, unsigned dest, unsigned src, unsigned len)
+ 			if (NetReadLong((ulong*)&bp->bp_vend[0]) == htonl(BOOTP_VENDOR_MAGIC))
+ 				DhcpOptionsProcess((u8 *)&bp->bp_vend[4], bp);
+ 
+-			NetSetTimeout(TIMEOUT, BootpTimeout);
++			NetSetTimeout(TIMEOUT * CONFIG_SYS_HZ, BootpTimeout);
+ 			DhcpSendRequestPkt(bp);
+ #ifdef CONFIG_SYS_BOOTFILE_PREFIX
+ 		}
+diff --git a/net/net.c b/net/net.c
+index 96ef626..716d228 100644
+--- a/net/net.c
++++ b/net/net.c
+@@ -259,7 +259,7 @@ void ArpTimeoutCheck(void)
+ 	t = get_timer(0);
+ 
+ 	/* check for arp timeout */
+-	if ((t - NetArpWaitTimerStart) > ARP_TIMEOUT) {
++	if ((t - NetArpWaitTimerStart) > ARP_TIMEOUT * CONFIG_SYS_HZ/10) {
+ 		NetArpWaitTry++;
+ 
+ 		if (NetArpWaitTry >= ARP_TIMEOUT_COUNT) {
+@@ -597,8 +597,8 @@ void NetStartAgain (void)
+ 		return;
+ 	}
+ #ifndef CONFIG_NET_MULTI
+-	NetSetTimeout (10000UL, startAgainTimeout);
+-	NetSetHandler (startAgainHandler);
++	NetSetTimeout(10UL * CONFIG_SYS_HZ, startAgainTimeout);
++	NetSetHandler(startAgainHandler);
+ #else	/* !CONFIG_NET_MULTI*/
+ 	eth_halt ();
+ #if !defined(CONFIG_NET_DO_NOT_TRY_ANOTHER)
+@@ -608,8 +608,8 @@ void NetStartAgain (void)
+ 	if (NetRestartWrap) {
+ 		NetRestartWrap = 0;
+ 		if (NetDevExists && !once) {
+-			NetSetTimeout (10000UL, startAgainTimeout);
+-			NetSetHandler (startAgainHandler);
++			NetSetTimeout(10UL * CONFIG_SYS_HZ, startAgainTimeout);
++			NetSetHandler(startAgainHandler);
+ 		} else {
+ 			NetState = NETLOOP_FAIL;
+ 		}
+@@ -784,8 +784,8 @@ static void PingStart(void)
+ #if defined(CONFIG_NET_MULTI)
+ 	printf ("Using %s device\n", eth_get_name());
+ #endif	/* CONFIG_NET_MULTI */
+-	NetSetTimeout (10000UL, PingTimeout);
+-	NetSetHandler (PingHandler);
++	NetSetTimeout(10UL * CONFIG_SYS_HZ, PingTimeout);
++	NetSetHandler(PingHandler);
+ 
+ 	PingSend();
+ }
+@@ -807,7 +807,7 @@ static void PingStart(void)
+ #define CDP_SYSOBJECT_TLV		0x0015
+ #define CDP_MANAGEMENT_ADDRESS_TLV	0x0016
+ 
+-#define CDP_TIMEOUT			250UL	/* one packet every 250ms */
++#define CDP_TIMEOUT			(CONFIG_SYS_HZ/4)
+ 
+ static int CDPSeq;
+ static int CDPOK;
+diff --git a/net/nfs.c b/net/nfs.c
+index f290014..365e0dc 100644
+--- a/net/nfs.c
++++ b/net/nfs.c
+@@ -35,7 +35,7 @@
+ 
+ #define HASHES_PER_LINE 65	/* Number of "loading" hashes per line	*/
+ #define NFS_RETRY_COUNT 30
+-#define NFS_TIMEOUT 2000UL
++#define NFS_TIMEOUT 2UL
+ 
+ static int fs_mounted = 0;
+ static unsigned long rpc_id = 0;
+@@ -674,7 +674,7 @@ NfsHandler (uchar *pkt, unsigned dest, unsigned src, unsigned len)
+ 
+ 	case STATE_READ_REQ:
+ 		rlen = nfs_read_reply (pkt, len);
+-		NetSetTimeout (NFS_TIMEOUT, NfsTimeout);
++		NetSetTimeout(NFS_TIMEOUT * CONFIG_SYS_HZ, NfsTimeout);
+ 		if (rlen > 0) {
+ 			nfs_offset += rlen;
+ 			NfsSend ();
+@@ -763,7 +763,7 @@ NfsStart (void)
+ 	printf ("\nLoad address: 0x%lx\n"
+ 		"Loading: *\b", load_addr);
+ 
+-	NetSetTimeout (NFS_TIMEOUT, NfsTimeout);
++	NetSetTimeout(NFS_TIMEOUT * CONFIG_SYS_HZ, NfsTimeout);
+ 	NetSetHandler (NfsHandler);
+ 
+ 	NfsTimeoutCount = 0;
+diff --git a/net/rarp.c b/net/rarp.c
+index 7105696..6f1c432 100644
+--- a/net/rarp.c
++++ b/net/rarp.c
+@@ -31,7 +31,7 @@
+ 
+ #if defined(CONFIG_CMD_NET)
+ 
+-#define TIMEOUT		5000UL	/* Milliseconds before trying BOOTP again */
++#define TIMEOUT		5UL	/* Milliseconds before trying BOOTP again */
+ #ifndef	CONFIG_NET_RETRY_COUNT
+ # define TIMEOUT_COUNT	5		/* # of timeouts before giving up  */
+ #else
+@@ -80,7 +80,7 @@ RarpTimeout(void)
+ 		puts ("\nRetry count exceeded; starting again\n");
+ 		NetStartAgain ();
+ 	} else {
+-		NetSetTimeout (TIMEOUT, RarpTimeout);
++		NetSetTimeout(TIMEOUT * CONFIG_SYS_HZ, RarpTimeout);
+ 		RarpRequest ();
+ 	}
+ }
+@@ -115,7 +115,7 @@ RarpRequest (void)
+ 
+ 	NetSendPacket(NetTxPacket, (pkt - NetTxPacket) + ARP_HDR_SIZE);
+ 
+-	NetSetTimeout(TIMEOUT, RarpTimeout);
++	NetSetTimeout(TIMEOUT * CONFIG_SYS_HZ, RarpTimeout);
+ 	NetSetHandler(RarpHandler);
+ }
+ 
+diff --git a/net/sntp.c b/net/sntp.c
+index 425d35e..c321fef 100644
+--- a/net/sntp.c
++++ b/net/sntp.c
+@@ -14,7 +14,7 @@
+ 
+ #if defined(CONFIG_CMD_NET) && defined(CONFIG_CMD_SNTP)
+ 
+-#define SNTP_TIMEOUT 10000UL
++#define SNTP_TIMEOUT 10UL
+ 
+ static int SntpOurPort;
+ 
+@@ -82,7 +82,7 @@ SntpStart (void)
+ {
+ 	debug ("%s\n", __FUNCTION__);
+ 
+-	NetSetTimeout (SNTP_TIMEOUT, SntpTimeout);
++	NetSetTimeout(SNTP_TIMEOUT * CONFIG_SYS_HZ, SntpTimeout);
+ 	NetSetHandler(SntpHandler);
+ 	memset (NetServerEther, 0, 6);
+ 
+diff --git a/net/tftp.c b/net/tftp.c
+index e387889..3ac5a5e 100644
+--- a/net/tftp.c
++++ b/net/tftp.c
+@@ -15,7 +15,7 @@
+ #if defined(CONFIG_CMD_NET)
+ 
+ #define WELL_KNOWN_PORT	69		/* Well known TFTP port #		*/
+-#define TIMEOUT		5000UL		/* Millisecs to timeout for lost pkt */
++#define TIMEOUT		5UL	/* Millisecs to timeout for lost pkt */
+ #ifndef	CONFIG_NET_RETRY_COUNT
+ # define TIMEOUT_COUNT	10		/* # of timeouts before giving up  */
+ #else
+@@ -387,7 +387,7 @@ TftpHandler (uchar * pkt, unsigned dest, unsigned src, unsigned len)
+ 		TftpLastBlock = TftpBlock;
+ 		TftpTimeoutMSecs = TIMEOUT;
+ 		TftpTimeoutCountMax = TIMEOUT_COUNT;
+-		NetSetTimeout (TftpTimeoutMSecs, TftpTimeout);
++		NetSetTimeout(TIMEOUT * CONFIG_SYS_HZ, TftpTimeout);
+ 
+ 		store_block (TftpBlock - 1, pkt + 2, len);
+ 
+@@ -466,7 +466,7 @@ TftpTimeout (void)
+ 		NetStartAgain ();
+ 	} else {
+ 		puts ("T ");
+-		NetSetTimeout (TftpTimeoutMSecs, TftpTimeout);
++		NetSetTimeout(TIMEOUT * CONFIG_SYS_HZ, TftpTimeout);
+ 		TftpSend ();
+ 	}
+ }
+@@ -540,7 +540,7 @@ TftpStart (void)
+ 	TftpTimeoutMSecs = TftpRRQTimeoutMSecs;
+ 	TftpTimeoutCountMax = TftpRRQTimeoutCountMax;
+ 
+-	NetSetTimeout (TftpTimeoutMSecs, TftpTimeout);
++	NetSetTimeout(TIMEOUT * CONFIG_SYS_HZ, TftpTimeout);
+ 	NetSetHandler (TftpHandler);
+ 
+ 	TftpServerPort = WELL_KNOWN_PORT;
+-- 
+1.5.6
+

@@ -1,0 +1,39 @@
+From 571c6b5161079540d66ba7ca2e1fbbba40cb7435 Mon Sep 17 00:00:00 2001
+From: Manikandan Pillai <mani.pillai@ti.com>
+Date: Fri, 16 Jan 2009 12:06:31 +0530
+Subject: [PATCH 05/12] Fix for nandswecc writes.
+
+NAND writes used to fail once nandswecc/nandhwecc was invoked.
+---
+ drivers/mtd/nand/omap_gpmc.c |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/mtd/nand/omap_gpmc.c b/drivers/mtd/nand/omap_gpmc.c
+index bc4c39d..844b9c4 100644
+--- a/drivers/mtd/nand/omap_gpmc.c
++++ b/drivers/mtd/nand/omap_gpmc.c
+@@ -249,11 +249,7 @@ void omap_nand_switch_ecc(int32_t hardware)
+ 	mtd = &nand_info[nand_curr_device];
+ 	nand = mtd->priv;
+ 
+-	/* clean up allocated buffers */
+-	nand_release(mtd);
+-	/* Switch back to the original value, mark me unscanned */
+-	nand->options = NAND_NO_PADDING | NAND_CACHEPRG | NAND_NO_AUTOINCR |
+-			NAND_NO_AUTOINCR;
++	nand->options |= NAND_OWN_BUFFERS;
+ 
+ 	/* Reset ecc interface */
+ 	nand->ecc.read_page = NULL;
+@@ -284,6 +280,8 @@ void omap_nand_switch_ecc(int32_t hardware)
+ 
+ 	/* Update NAND handling after ECC mode switch */
+ 	nand_scan_tail(mtd);
++
++	nand->options &= ~NAND_OWN_BUFFERS;
+ }
+ 
+ /*
+-- 
+1.5.6
+

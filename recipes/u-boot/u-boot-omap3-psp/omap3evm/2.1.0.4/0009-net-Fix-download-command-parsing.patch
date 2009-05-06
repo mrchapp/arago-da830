@@ -1,0 +1,68 @@
+From f34e5d0ef9e4fe8231ed8cfcc55ac13e1fc4b4c5 Mon Sep 17 00:00:00 2001
+From: Peter Tyser <ptyser@xes-inc.com>
+Date: Tue, 2 Dec 2008 18:59:51 -0600
+Subject: [PATCH 09/12] net: Fix download command parsing
+
+net: Fix download command parsing
+
+When CONFIG_SYS_HUSH_PARSER is defined network download
+commands with 1 argument in the format 'tftp "/path/file"'
+do not work as expected. The hush command parser strips
+the quotes from "/path/file" which causes the network
+commands to interpret "/path/file" as an address
+instead of the intended filename.
+
+The previous check for a leading quote in netboot_common()
+was replaced with a check which ensures only valid
+numbers are treated as addresses.
+
+Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+Signed-off-by: Ben Warren <biggerbadderben@gmail.com>
+---
+ common/cmd_net.c |   20 ++++++++++++--------
+ 1 files changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/common/cmd_net.c b/common/cmd_net.c
+index af691a4..c053d7b 100644
+--- a/common/cmd_net.c
++++ b/common/cmd_net.c
+@@ -154,8 +154,10 @@ static int
+ netboot_common (proto_t proto, cmd_tbl_t *cmdtp, int argc, char *argv[])
+ {
+ 	char *s;
++	char *end;
+ 	int   rcode = 0;
+ 	int   size;
++	ulong addr;
+ 
+ 	/* pre-set load_addr */
+ 	if ((s = getenv("loadaddr")) != NULL) {
+@@ -166,15 +168,17 @@ netboot_common (proto_t proto, cmd_tbl_t *cmdtp, int argc, char *argv[])
+ 	case 1:
+ 		break;
+ 
+-	case 2:	/* only one arg - accept two forms:
+-		 * just load address, or just boot file name.
+-		 * The latter form must be written "filename" here.
++	case 2:	/*
++		 * Only one arg - accept two forms:
++		 * Just load address, or just boot file name. The latter
++		 * form must be written in a format which can not be
++		 * mis-interpreted as a valid number.
+ 		 */
+-		if (argv[1][0] == '"') {	/* just boot filename */
+-			copy_filename (BootFile, argv[1], sizeof(BootFile));
+-		} else {			/* load address	*/
+-			load_addr = simple_strtoul(argv[1], NULL, 16);
+-		}
++		addr = simple_strtoul(argv[1], &end, 16);
++		if (end == (argv[1] + strlen(argv[1])))
++			load_addr = addr;
++		else
++			copy_filename(BootFile, argv[1], sizeof(BootFile));
+ 		break;
+ 
+ 	case 3:	load_addr = simple_strtoul(argv[1], NULL, 16);
+-- 
+1.5.6
+
