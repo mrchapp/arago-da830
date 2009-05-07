@@ -5,7 +5,7 @@ inherit module
 DEPENDS 	+= " virtual/kernel perl-native ti-dspbios ti-cgt6x update-modules"
 
 # tconf from xdctools dislikes '.' in pwd :/
-PR = "r7"
+PR = "r9"
 PV = "1613"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.
@@ -132,7 +132,7 @@ do_install () {
     cp ${DSPLINK}/gpp/export/BIN/Linux/${DSPLINKPLATFORM}/RELEASE/*gpp ${D}/opt/ti/dsplink/apps
     
     for i in $(find ${DSPLINK}/dsp/BUILD/ -name "*.out") ; do
-        cp ${i} ${D}/opt//ti/dsplink/apps
+        cp ${i} ${D}/opt/ti/dsplink/apps
     done
 
     # DSPLINK test app module un/load scripts

@@ -10,7 +10,7 @@ S = "${WORKDIR}/cg6x_6_0_16"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "6016"
-PR = "r7"
+PR = "r9"
 
 do_compile() {
 	echo "Nothing to compile"
@@ -18,8 +18,8 @@ do_compile() {
 
 do_install () {
 	# add this in dev pkg
-    install -d ${D}/${datadir}/ti/cgt6x_6_0_16
-    cp -pPrf ${S}/* ${D}/${datadir}/ti/cgt6x_6_0_16
+    install -d ${D}/opt/ti/sdk/cgt6x_6_0_16
+    cp -pPrf ${S}/* ${D}/opt/ti/sdk/cgt6x_6_0_16
 }
 
 do_stage() {
@@ -28,7 +28,7 @@ do_stage() {
     cp -pPrf ${S}/* ${STAGING_DIR}/${BUILD_SYS}/${PN}/ 
 }
 
-FILES_${PN}-dev += "${datadir}/ti/cgt6x_6_0_16/*"
+FILES_${PN}-dev += "/opt/ti/sdk/cgt6x_6_0_16/*"
 INSANE_SKIP_${PN}-dev = True
 INHIBIT_PACKAGE_STRIP = "1"
 

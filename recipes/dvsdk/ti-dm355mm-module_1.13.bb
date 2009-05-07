@@ -16,7 +16,7 @@ S = "${WORKDIR}/dm355_codecs_1_13_000"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "113"
-PR = "r6"
+PR = "r7"
 
 do_configure() {
 	find ${S} -name "*.ko" -exec rm {} \; || true

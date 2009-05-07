@@ -23,7 +23,7 @@ SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto
 S = "${WORKDIR}/BRIJESH_GIT_031809/davinci_multimedia_application_interface/dmai"
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "svnr${SRCREV}"
-PR = "r15"
+PR = "r18"
 
 # Define DMAI build time variables
 TARGET 				?= "all"
@@ -78,8 +78,8 @@ do_install () {
 	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${TARGET}.sh ${D}/opt/ti/dmai-apps/loadmodule.sh 
 
 	# install DMAI for dev pkg
-	install -d ${D}/${datadir}/ti/dmai_svnr${SRCREV}
-	cp -pPrf ${S}/* ${D}/${datadir}/ti/dmai_svnr${SRCREV}
+	install -d ${D}/opt/ti/sdk/dmai_svnr${SRCREV}
+	cp -pPrf ${S}/* ${D}/opt/ti/sdk/dmai_svnr${SRCREV}
 }
 
 pkg_postinst_ti-dmai-apps () {
@@ -100,7 +100,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 INHIBIT_PACKAGE_STRIP = "1"
 PACKAGES += "ti-dmai-apps"
 FILES_ti-dmai-apps = "/opt/ti/dmai-apps/*"
-FILES_${PN}-dev += "${datadir}/ti/dmai_svnr${SRCREV}"
+FILES_${PN}-dev += "/opt/ti/sdk/dmai_svnr${SRCREV}"
 
 # run time dependencies 
 RDEPENDS_ti-dmai-apps_dm355-evm += "ti-dm355mm-module ti-cmem-module ti-codec-combo-dm355"

@@ -14,7 +14,7 @@ SRC_URI = "ftp://156.117.95.201/codec_engine_2_23.tar.gz"
 # Set the source directory
 S = "${WORKDIR}/codec_engine_2_23"
 
-PR = "r8"
+PR = "r10"
 PV = "223"
 
 do_compile() {
