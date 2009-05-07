@@ -1,6 +1,6 @@
-# Task for dsp accelerated gstreamer plugins
+DESCRIPTION = "DSP based gstreamer  plugins"
 
-PR = "r3"
+PR = "r6"
 
 RDEPENDS_${PN} = " \
        gstreamer \

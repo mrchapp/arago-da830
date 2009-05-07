@@ -1,5 +1,5 @@
 DESCRIPTION = "Extended task to add dvsdk components"
-PR = "r4"
+PR = "r7"
 
 inherit task
 
