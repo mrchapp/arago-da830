@@ -11,7 +11,7 @@ PREFERRED_VERSION_ti-xdctools	= "310"
 PREFERRED_VERSION_ti-codec-combo-dm6446	= "205"
 
 # tconf from xdctools dislikes '.' in pwd :/
-PR = "r4"
+PR = "r7"
 PV = "2231"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.
@@ -28,9 +28,9 @@ do_compile () {
 }
 
 do_install () {
-	# install codec engine source
-	install -d ${D}/codec_engine_2_23_01/
-    cp -pPrf ${S}/* ${D}/codec_engine_2_23_01/ 
+	# install codec engine source for dev pkg
+	install -d ${D}/${datadir}/ti/codec_engine_2_23_01/
+    cp -pPrf ${S}/* ${D}/${datadir}/ti/codec_engine_2_23_01/ 
 }
 
 # stage tree - other packages may need this
@@ -40,7 +40,7 @@ do_stage() {
 }
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
-FILES_${PN}-dev += "/codec_engine_2_23_01/*"
+FILES_${PN}-dev += "${datadir}/ti/codec_engine_2_23_01/*"
 INHIBIT_PACKAGE_STRIP = "1"
 INSANE_SKIP_${PN}-dev = True
 

@@ -14,7 +14,7 @@ SRC_URI = "svn://gforge.ti.com/svn/gstreamer_ti/trunk;module=gstreamer_ti;proto=
 	"
 
 # Again, no '.' in PWD allowed :(
-PR = "r10"
+PR = "r12"
 PV = "svnr${SRCREV}"
 
 S = "${WORKDIR}/gstreamer_ti/ti_build/ticodecplugin"

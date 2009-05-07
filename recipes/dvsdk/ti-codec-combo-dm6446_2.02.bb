@@ -10,34 +10,10 @@ S = "${WORKDIR}/dm6446_dvsdk_combos_2_02"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "202"
-PR = "r2"
-
-CE_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine"
-CODEC_dm355-evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm355"
-CODEC_omap3evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-omap3530"
-CODEC_dm6446-evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm6446"
-FC_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
-DSPBIOS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-dspbios"
-CGT6x_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-cgt6x"
-XDCTOOLS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-xdctools"
-USER_XDC_PATH="${CE_INSTALL_DIR}/examples"
-
-XDCARGS="eval"
-export XDCARGS
-
-
-
-XDCPATH="${CE_INSTALL_DIR}/packages;${FC_INSTALL_DIR}/packages;${DSPBIOS_DIR}/packages;"
-
-do_configure () {
-	sed -i -e s:/db/toolsrc/library/vendors2005/ti/c6x/6.0.21/Linux:${CGT6x_DIR}:g ${S}/config.bld 
-}
+PR = "r4"
 
 do_compile() {
 	echo "do nothing"
-#	cd ${S}
-#	${XDCTOOLS_DIR}/xdc clean -PR . 
-#	${XDCTOOLS_DIR}/xdc XDCBUILDCFG=${S}/config.bld  --xdcpath=".;${S}/packages/;${XDCPATH}" -PR . 
 }
 
 do_install () {
@@ -46,14 +22,20 @@ do_install () {
 	for file in `find . -name *.x64P`; do
 		cp ${file} ${D}/opt/ti/codec-combo
 	done
-}
 
-PACKAGE_ARCH = "${MACHINE_ARCH}"
+	# install dev pkgs
+	install -d ${D}/${datadir}/ti/codec-combo-dm6446_2_02
+	cp -pPrf ${S}/* ${D}/${datadir}/ti/codec-combo-dm6446_2_02
+}
 
 do_stage() {
     install -d ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}
     cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}/ 
 }
 
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 FILES_${PN} = "/opt/ti/codec-combo/*"
+FILES_${PN}-dev = "${datadir}/ti/codec-combo-dm6446_2_02/*
+INSANE_SKIP_${PN}-dev = True
+INHIBIT_PACKAGE_STRIP = "1"
 

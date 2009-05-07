@@ -22,8 +22,8 @@ SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto
 
 S = "${WORKDIR}/BRIJESH_GIT_031809/davinci_multimedia_application_interface/dmai"
 # Yes, the xdc stuff still breaks with a '.' in PWD
-PV = "120+svnr${SRCREV}"
-PR = "r13"
+PV = "svnr${SRCREV}"
+PR = "r15"
 
 # Define DMAI build time variables
 TARGET 				?= "all"
@@ -61,7 +61,7 @@ do_compile () {
 		BIOS_INSTALL_DIR="${DSPBIOS_DIR}"\
 		LINUXLIBS_INSTALL_DIR="${STAGING_DIR}/armv5te-none-linux-gnueabi/usr" \
 		USER_XDC_PATH="${USER_XDC_PATH}" \
-		CROSS_COMPILE="${META_SDK_PATH}/bin/${TARGET_PREFIX}" \
+		CROSS_COMPILE="${SDK_PATH}/bin/${TARGET_PREFIX}" \
 		VERBOSE="true" \
 		XDAIS_INSTALL_DIR="${CE_INSTALL_DIR}/cetools" \
 		LINK_INSTALL_DIR="${CE_INSTALL_DIR}/cetools/packages/dsplink" \
@@ -78,8 +78,8 @@ do_install () {
 	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${TARGET}.sh ${D}/opt/ti/dmai-apps/loadmodule.sh 
 
 	# install DMAI for dev pkg
-	install -d ${D}/dmai
-	cp -pPrf ${S}/* ${D}/dmai
+	install -d ${D}/${datadir}/ti/dmai_svnr${SRCREV}
+	cp -pPrf ${S}/* ${D}/${datadir}/ti/dmai_svnr${SRCREV}
 }
 
 pkg_postinst_ti-dmai-apps () {
@@ -91,17 +91,16 @@ do_stage () {
 	cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-dmai
 }
 
-PACKAGE_ARCH = "${MACHINE_ARCH}"
-INHIBIT_PACKAGE_STRIP = "1"
-
 # Disable QA check untils we figure out how to pass LDFLAGS in build
 INSANE_SKIP_${PN} = True
 INSANE_SKIP_${PN}-dev = True
 INSANE_SKIP_ti-dmai-apps = True
 
+PACKAGE_ARCH = "${MACHINE_ARCH}"
+INHIBIT_PACKAGE_STRIP = "1"
 PACKAGES += "ti-dmai-apps"
 FILES_ti-dmai-apps = "/opt/ti/dmai-apps/*"
-FILES_${PN}-dev += "/dmai/*"
+FILES_${PN}-dev += "${datadir}/ti/dmai_svnr${SRCREV}"
 
 # run time dependencies 
 RDEPENDS_ti-dmai-apps_dm355-evm += "ti-dm355mm-module ti-cmem-module ti-codec-combo-dm355"

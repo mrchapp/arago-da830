@@ -5,7 +5,7 @@ inherit module
 DEPENDS 	+= " virtual/kernel perl-native ti-dspbios ti-cgt6x update-modules"
 
 # tconf from xdctools dislikes '.' in pwd :/
-PR = "r6"
+PR = "r7"
 PV = "161"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.

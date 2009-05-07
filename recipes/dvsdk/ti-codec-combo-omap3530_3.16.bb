@@ -10,7 +10,7 @@ S = "${WORKDIR}/omap3530_dvsdk_combos_3_16"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "316"
-PR = "r1"
+PR = "r4"
 
 do_compile() {
   	echo "Do not rebuild for now"
@@ -24,18 +24,17 @@ do_install () {
 	done
 
 	# install codec combo on dev pkg
-	install -d ${D}/omap3530_codec_combo_3_16/
-	cp -pRrf ${S}/* ${D}/omap3530_codec_combo_3_16/
+	install -d ${D}/${datadir}/ti/omap3530_codec_combo_3_16/
+	cp -pRrf ${S}/* ${D}/${datadir}/ti/omap3530_codec_combo_3_16/
 }
-
-PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 do_stage() {
     install -d ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}
     cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}/ 
 }
 
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 FILES_${PN} = "/opt/ti/codec-combo/*"
 INSANE_SKIP_${PN}-dev = True
-FILES_${PN}-dev = "/omap3530_codec_combo_3_16/*"
+FILES_${PN}-dev = "${datadir}//omap3530_codec_combo_3_16/*"
 

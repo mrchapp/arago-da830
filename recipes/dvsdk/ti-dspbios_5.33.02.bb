@@ -10,7 +10,7 @@ S = "${WORKDIR}/bios_5_33_02"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "533"
-PR = "r02"
+PR = "r6"
 
 do_compile() {
 	echo "Nothing to compile"
@@ -18,8 +18,8 @@ do_compile() {
 
 do_install () {
 	# install for dev pkg
-    install -d ${D}/bios_5_33_02
-    cp -pPrf ${S}/* ${D}/bios_5_33_02 
+    install -d ${D}/${datadir}/ti/bios_5_33_02
+    cp -pPrf ${S}/* ${D}/{datadir}/ti/bios_5_33_02 
 }
 
 do_stage() {
@@ -27,6 +27,6 @@ do_stage() {
     cp -pPrf ${S}/* ${STAGING_DIR}/${BUILD_SYS}/${PN}/ 
 }
 
-FILES_${PN}-dev ="/bios_5_33_02/*"
+FILES_${PN}-dev ="${datadir}/ti/bios_5_33_02/*"
 INSANE_SKIP_${PN}-dev = True
 

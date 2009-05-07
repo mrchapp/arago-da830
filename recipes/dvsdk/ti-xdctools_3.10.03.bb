@@ -10,15 +10,15 @@ S = "${WORKDIR}/xdctools_3_10_03"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "310"
-PR = "r4"
+PR = "r10"
 
 do_compile() {
 	echo "Nothing to compile"
 }
 
 do_install () {
-    install -d ${D}/xdctools_3_10_03
-    cp -pPrf ${S}/* ${D}/xdctools_3_10_03
+    install -d ${D}/${datadir}/ti/xdctools_3_10_03
+    cp -pPrf ${S}/* ${D}/${datadir}/ti/xdctools_3_10_03
 }
 
 do_stage() {
@@ -28,5 +28,5 @@ do_stage() {
 
 INSANE_SKIP_${PN}-dev = True
 INHIBIT_PACKAGE_STRIP = "1"
-FILES_${PN}-dev = "/xdctools_3_10_03/*"
+FILES_${PN}-dev = "${datadir}/ti/xdctools_3_10_03/*"
 

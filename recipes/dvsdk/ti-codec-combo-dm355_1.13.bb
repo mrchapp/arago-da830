@@ -12,7 +12,7 @@ S = "${WORKDIR}/dm355_codecs_1_13_000"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "113"
-PR = "r2"
+PR = "r7"
 
 do_compile() {
 	echo "Do nothing"
@@ -24,20 +24,19 @@ do_install () {
 	install -m 0755 ${WORKDIR}/mapdmaq 	${D}/opt/ti/codec-combo
 
 	# install codec combo on dev pkg
-	install -d ${D}/dm355_codec_combo_1_13/
-	cp -pRrf ${S}/* ${D}/dm355_codec_combo_1_13/
+	install -d ${D}/${datadir}/ti/dm355_codec_combo_1_13/
+	cp -pRrf ${S}/* ${D}/${datadir}/ti/dm355_codec_combo_1_13/
 }
-
-PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 do_stage() {
     install -d ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}
     cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}/ 
 }
 
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 INHIBIT_PACKAGE_STRIP = "1"
 INSANE_SKIP_${PN} = True
 INSANE_SKIP_${PN}-dev = True
 FILES_${PN} = "/opt/ti/codec-combo/mapdmaq"
-FILES_${PN}-dev = "/dm355_codec_combo_1_13/*"
+FILES_${PN}-dev = "${datadir}/ti/dm355_codec_combo_1_13/*"
 
