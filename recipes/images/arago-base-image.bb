@@ -1,8 +1,8 @@
 # Arago base image
 # gives you a small images with basic media libraries
 
-# The size of the uncompressed ramdisk is 16MB
-IMAGE_ROOTFS_SIZE_ext2.gz = "16384"
+# The size of the uncompressed ramdisk is 8MB
+IMAGE_ROOTFS_SIZE_ext2.gz = "8192"
 
 # Disable this due to distribution restrictions
 # DISTRO_SSH_DAEMON ?= "dropbear"
