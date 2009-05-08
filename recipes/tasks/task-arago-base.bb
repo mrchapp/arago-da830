@@ -1,5 +1,5 @@
 DESCRIPTION = "Basic task to get a device booting"
-PR = "r4"
+PR = "r5"
 
 inherit task
 
@@ -38,6 +38,7 @@ RDEPENDS_task-arago-base = "\
     modutils-initscripts \
     netbase \
     update-alternatives \
+    module-init-tools \
     ${ARAGO_BASE} \
     ${DISTRO_DEV_MANAGER} \
     ${DISTRO_INIT_MANAGER} \
