@@ -1,8 +1,8 @@
 require gst-plugins.inc
 
-PR = "r1"
+PR = "r2"
 
-DEPENDS += "gst-plugins-base mpeg2dec libsidplay"
+DEPENDS += "gst-plugins-base libsidplay"
 
 SRC_URI += "\
   file://gstmad_16bit.patch;patch=1 \
@@ -15,4 +15,3 @@ python() {
 	if enterprise == "1":
 		raise bb.parse.SkipPackage("gst-plugins-ugly will only build if ENTERPRISE_DISTRO != 1")
 }
-
