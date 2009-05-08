@@ -1,6 +1,6 @@
 DESCRIPTION = "Target packages for a standalone Arago SDK or external toolchain"
 ALLOW_EMPTY = "1"
-PR = "r7"
+PR = "r9"
 
 PACKAGES = "${PN}"
 
@@ -10,7 +10,6 @@ PACKAGES = "${PN}"
 # Also feel free to remove stuff that's silly.
 
 RDEPENDS_${PN} = "\
-	task-arago-base \
     alsa-dev \
     alsa-lib-dev \
     alsa-utils-dev \
@@ -33,5 +32,6 @@ RDEPENDS_${PN} = "\
     ncurses-dev \
     opkg-nogpg-dev \
     sysvinit-dev \
+	kernel-source \
     "
 

@@ -11,7 +11,6 @@ PACKAGES = "${PN}"
 
 RDEPENDS_${PN} = "\
 	task-arago-base-target \
-	task-arago-dvsdk \
 	ti-codec-engine-dev \
 	ti-dmai-dev \
    "
