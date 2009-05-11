@@ -1,6 +1,6 @@
 DESCRIPTION = "DSP based gstreamer  plugins"
 
-PR = "r6"
+PR = "r7"
 
 RDEPENDS_${PN} = " \
        gstreamer \
@@ -33,6 +33,7 @@ RDEPENDS_${PN} = " \
        gst-plugin-avi \
        gst-plugin-qtdemux \
        gst-plugin-mad \
+	   gst-plugin-mpegdemux \
        gstreamer-ti \
        gstreamer-ti-demo-script \
 "
