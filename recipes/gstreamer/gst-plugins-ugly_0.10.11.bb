@@ -2,12 +2,13 @@ require gst-plugins.inc
 
 PR = "${INC_PR}.1"
 
-DEPENDS += "gst-plugins-base libsidplay"
+DEPENDS += "gst-plugins-base libmad "
 
 SRC_URI += "\
   file://gstmad_16bit.patch;patch=1 \
   file://gstsid_autofoo_HACK.patch;patch=1 \
 "
+EXTRA_OECONF += "ac_cv_openssldir=no" 
 
 python() {
 	# Don't build, if we are building an ENTERPRISE distro
