@@ -1,5 +1,5 @@
 DESCRIPTION = "Basic task to get a device booting"
-PR = "r5"
+PR = "r6"
 
 inherit task
 
@@ -24,6 +24,7 @@ ARAGO_ALSA_BASE = "\
 ARAGO_BASE = "\
     ${ARAGO_ALSA_BASE} \
     mtd-utils \
+    curl \
     opkg-nogpg \
     arago-feed-configs \
     initscript-telnetd \
