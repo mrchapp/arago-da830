@@ -9,7 +9,7 @@ PR = "r3"
 # we need to add all their respective feeds manually, hence next line is out
 #PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-COMPATIBLE_MACHINE = "arago|omap3evm|beagleboard|davinci-dvevm"
+COMPATIBLE_MACHINE = "arago|omap3evm|beagleboard|dm6446-evm|dm6467-evm|dm355-evm|dm365-evm|dm357-evm"
 
 # This gets set in the distro/local configuration
 ARAGO_FEED_BASEPATH ?= "feeds"
