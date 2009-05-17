@@ -77,7 +77,7 @@ do_install () {
     make PLATFORM="${TARGET}" EXEC_DIR=${D}/opt/ti/dmai-apps install 
 	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${TARGET}.sh ${D}/opt/ti/dmai-apps/loadmodule.sh 
 
-	# install DMAI for dev pkg
+	# install DMAI source in dev pkg
 	install -d ${D}/opt/ti/sdk/dmai_svnr${SRCREV}
 	cp -pPrf ${S}/* ${D}/opt/ti/sdk/dmai_svnr${SRCREV}
 }
