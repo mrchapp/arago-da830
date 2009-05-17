@@ -1,4 +1,4 @@
-DESCRIPTION = "DSP based gstreamer  plugins"
+DESCRIPTION = "Task to add base gstreamer and TI plugins"
 
 PR = "r7"
 

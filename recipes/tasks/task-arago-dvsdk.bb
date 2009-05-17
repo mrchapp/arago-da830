@@ -1,5 +1,5 @@
 DESCRIPTION = "Extended task to add dvsdk components"
-PR = "r9"
+PR = "r10"
 
 inherit task
 
@@ -56,16 +56,9 @@ ARAGO_DVSDK_PREREQ = "\
     cppstub \
     "
 
-# file transfer packages
-FILE_XFER = "\
-	wget \
-	samba \
-"
-
 # add dvsdk components
 RDEPENDS_${PN} = "\
     task-arago-base \
-	${FILE_XFER} \
     ${ARAGO_ALSA_EXTRA} \
     ${ARAGO_TSLIB} \
     ${ARAGO_NCURSES} \

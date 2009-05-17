@@ -1,7 +1,7 @@
 # dvsdk gstreamer demo image 
 
-# The size of the uncompressed ramdisk is 100MB
-IMAGE_ROOTFS_SIZE_ext2.gz = "102400"
+# The size of the uncompressed ramdisk is 150MB
+IMAGE_ROOTFS_SIZE_ext2.gz = "153600"
 
 # Disable this due to distribution restrictions
 # DISTRO_SSH_DAEMON ?= "dropbear"
