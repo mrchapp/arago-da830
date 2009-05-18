@@ -35,7 +35,7 @@ XDAIS_INSTALL_DIR=$(CE_INSTALL_DIR)/cetools
 LINK_INSTALL_DIR=$(CE_INSTALL_DIR)/cetools/packages/dsplink
 
 # Where the CMEM (contiguous memory allocator) package is installed.
-CMEM_INSTALL_DIR=${CE_INSTALL_DIR)/cetools
+CMEM_INSTALL_DIR=$(CE_INSTALL_DIR)/cetools
 
 # Where the codec servers are installed.
 CODEC_INSTALL_DIR=$(DVSDK_INSTALL_DIR)/__CODEC_INSTALL_DIR__
@@ -83,5 +83,5 @@ endif
 # install') in a proper file structure. This EXEC_DIR should either be visible
 # from the target, or you will have to copy this (whole) directory onto the
 # target filesystem.
-EXEC_DIR=${DVSDK_INSTALL_DIR}/install/${PLATFORM}
+EXEC_DIR=$(DVSDK_INSTALL_DIR)/install/${PLATFORM}
 
