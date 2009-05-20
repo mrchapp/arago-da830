@@ -32,7 +32,7 @@ CE_INSTALL_DIR=$(DVSDK_INSTALL_DIR)/__CE_INSTALL_DIR__
 XDAIS_INSTALL_DIR=$(CE_INSTALL_DIR)/cetools
 
 # Where the DSP Link package is installed.
-LINK_INSTALL_DIR=$(CE_INSTALL_DIR)/cetools/packages/dsplink
+LINK_INSTALL_DIR=$(CE_INSTALL_DIR)/cetools
 
 # Where the CMEM (contiguous memory allocator) package is installed.
 CMEM_INSTALL_DIR=$(CE_INSTALL_DIR)/cetools
@@ -68,16 +68,15 @@ LINUXKERNEL_INSTALL_DIR=$(DVSDK_INSTALL_DIR)/__LINUXKERNEL_INSTALL_DIR__
 LPM_INSTALL_DIR=$(CE_INSTALL_DIR)/cetools
 
 # Where temporary Linux headers and libs are installed.
-LINUXLIBS_INSTALL_DIR=__LINUXLIBS_INSTALL_DIR__/usr/lib
+LINUXLIBS_INSTALL_DIR=__LINUXLIBS_INSTALL_DIR__/usr
 
 # The prefix to be added before the GNU compiler tools (optionally including
 # path), i.e. "arm_v5t_le-" or "/opt/bin/arm_v5t_le-".
 CSTOOL_DIR=__CSTOOL_DIR__
 CSTOOL_PREFIX=$(CSTOOL_DIR)/bin/arm-none-linux-gnueabi-
 
-ifeq ($(PLATFORM), omap3530)
-    MVTOOL_PREFIX=$(CSTOOL_PREFIX)
-endif
+MVTOOL_DIR=$(CSTOOL_DIR)
+MVTOOL_PREFIX=$(CSTOOL_PREFIX)
 
 # Where to copy the resulting executables and data to (when executing 'make
 # install') in a proper file structure. This EXEC_DIR should either be visible
