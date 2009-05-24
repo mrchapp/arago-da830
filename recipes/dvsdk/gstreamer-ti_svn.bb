@@ -14,10 +14,12 @@ SRC_URI = "svn://gforge.ti.com/svn/gstreamer_ti/trunk;module=gstreamer_ti;proto=
 	"
 
 # Again, no '.' in PWD allowed :(
-PR = "r14"
+PR = "r15"
 PV = "svnr${SRCREV}"
 
 S = "${WORKDIR}/gstreamer_ti/ti_build/ticodecplugin"
+
+installdir = "${prefix}/ti"
 
 DMAI_INSTALL_DIR = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-dmai"
 CE_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine"
@@ -26,8 +28,8 @@ CODEC_INSTALL_DIR_dm355-evm="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-com
 CODEC_INSTALL_DIR_dm6446-evm="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm6446"
 CODEC_INSTALL_DIR_omap3evm="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-omap3530"
 CODEC_INSTALL_DIR_beagleboard="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-omap3530"
-XDC_INSTALL_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-xdctools"
-CODEGEN_INSTALL_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-cgt6x"
+XDC_INSTALL_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-xdctools-native"
+CODEGEN_INSTALL_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-cgt6x-native"
 
 export DMAI_INSTALL_DIR
 export CE_INSTALL_DIR
@@ -67,22 +69,22 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 do_install_prepend () {
 	# install gstreamer demo scripts
-	install -d ${D}/opt/ti/gst
-	cp -r ${WORKDIR}/gstreamer_ti/gstreamer_demo/shared ${D}/opt/ti/gst
-	cp -r ${WORKDIR}/gstreamer_ti/gstreamer_demo/${PLATFORM} ${D}/opt/ti/gst
+	install -d ${D}/${installdir}/gst
+	cp -r ${WORKDIR}/gstreamer_ti/gstreamer_demo/shared ${D}/${installdir}/gst
+	cp -r ${WORKDIR}/gstreamer_ti/gstreamer_demo/${PLATFORM} ${D}/${installdir}/gst
 
 	# default loadmodule script is hard-coded for insmod, change to modprobe
-	sed -i 's/insmod/modprobe/g' ${D}/opt/ti/gst/${PLATFORM}/loadmodules.sh
-	sed -i 's/.ko//g' ${D}/opt/ti/gst/${PLATFORM}/loadmodules.sh
-	chmod 0755 ${D}/opt/ti/gst -R
+	sed -i 's/insmod/modprobe/g' ${D}/${installdir}/gst/${PLATFORM}/loadmodules.sh
+	sed -i 's/.ko//g' ${D}/${installdir}/gst/${PLATFORM}/loadmodules.sh
+	chmod 0755 ${D}/${installdir}/gst -R
 }
 
 pkg_postinst_gstreamer-ti-demo-script () {
-	ln -sf /opt/ti/codec-combo/* /opt/ti/gst/${PLATFORM}/
+	ln -sf ${installdir}/codec-combo/* ${installdir}/gst/${PLATFORM}/
 }
 
 PACKAGES += "gstreamer-ti-demo-script"
-FILES_gstreamer-ti-demo-script = "/opt/ti/gst/*"
+FILES_gstreamer-ti-demo-script = "${installdir}/gst/*"
 RDEPENDS_gstreamer-ti-demo-script = "gstreamer-ti"
 
 RDEPENDS_${PN} = "ti-dmai-apps"

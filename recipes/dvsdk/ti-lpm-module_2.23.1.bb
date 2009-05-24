@@ -4,7 +4,7 @@ inherit module
 # compile and run time dependencies
 DEPENDS 	= " virtual/kernel perl-native ti-dsplink-module"
 PREFERRED_VERSION_ti-dsplink = "1613"
-PR = "r8"
+PR = "r9"
 PV = "2231"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.

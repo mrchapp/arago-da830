@@ -10,17 +10,23 @@ S = "${WORKDIR}/omap3530_dvsdk_combos_3_16"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "316"
-PR = "r6"
+PR = "r7"
 
 do_compile () {
 	echo "No nothing"
 }
 
 do_install() {
-    install -d ${D}/dvsdk/omap3530_dvsdk_combos_3_16
-    cp -pPrf ${S}/* ${D}/dvsdk/omap3530_dvsdk_combos_3_16
+    install -d ${D}/${prefix}/dvsdk/omap3530_dvsdk_combos_3_16
+    cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/omap3530_dvsdk_combos_3_16
+
+    # Creates rules.make file
+	  mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
+	  echo "# Where the codec servers are installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/codec.Rules.make
+    echo "CODEC_INSTALL_DIR=${prefix}/dvsdk/omap3530_dvsdk_combos_3_16" >> ${STAGING_DIR_HOST}/ti-sdk-rules/codec.Rules.make
 }
 
-FILES_${PN} = "/dvsdk/omap3530_dvsdk_combos_3_16/*"
+INHIBIT_PACKAGE_STRIP = "1"
+FILES_${PN} = "${prefix}/dvsdk/omap3530_dvsdk_combos_3_16/*"
 INSANE_SKIP_${PN} = True
 

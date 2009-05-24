@@ -1,19 +1,18 @@
-DESCRIPTION = "DMAI for TI ARM/DSP processors"
 inherit sdk
+require ti-dmai.inc
 
-# NOTE: Use Brijesh' DMAI development branch. The URL *must* be updated once
-# we have stable DMAI 2.x on gforge.
-SRCREV = "86"
-SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto=https;user=anonymous;pswd=''"
-
-S = "${WORKDIR}/BRIJESH_GIT_031809/davinci_multimedia_application_interface/dmai"
-# Yes, the xdc stuff still breaks with a '.' in PWD
-PV = "svnr${SRCREV}"
-PR = "r18"
+do_compile () {
+	echo "do nothing"
+}
 
 do_install() {
     install -d ${D}/${prefix}/dvsdk/dmai_${PV}
     cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/dmai_${PV}
+
+    # Creates rules.make file
+	  mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
+	  echo "# Where DMAI package is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/dmai.Rules.make
+    echo "DMAI_INSTALL_DIR=${prefix}/dvsdk/dmai_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/dmai.Rules.make
 }
 
 INHIBIT_PACKAGE_STRIP = "1"

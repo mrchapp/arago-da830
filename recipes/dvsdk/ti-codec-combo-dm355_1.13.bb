@@ -9,23 +9,20 @@ SRC_URI	= "ftp://156.117.95.201/dm355_codecs_1_13_000.tar.gz \
 		 "
 
 S = "${WORKDIR}/dm355_codecs_1_13_000"
+installdir = "${prefix}/ti"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "113"
-PR = "r9"
+PR = "r10"
 
 do_compile() {
 	echo "Do nothing"
 }
 
 do_install () {
-	# install mapdmaq on target
-	install -d ${D}/opt/ti/codec-combo
-	install -m 0755 ${WORKDIR}/mapdmaq 	${D}/opt/ti/codec-combo
-
-	# install codec combo on dev pkg
-	install -d ${D}/opt/ti/sdk/dm355_codec_combo_1_13/
-	cp -pRrf ${S}/* ${D}/opt/ti/sdk/dm355_codec_combo_1_13/
+     # install mapdmaq on target
+     install -d ${D}/${installdir}/codec-combo
+     install -m 0755 ${WORKDIR}/mapdmaq ${D}/${installdir}/codec-combo
 }
 
 do_stage() {
@@ -36,7 +33,5 @@ do_stage() {
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 INHIBIT_PACKAGE_STRIP = "1"
 INSANE_SKIP_${PN} = True
-INSANE_SKIP_${PN}-dev = True
-FILES_${PN} = "/opt/ti/codec-combo/mapdmaq"
-FILES_${PN}-dev = "/opt/ti/sdk/dm355_codec_combo_1_13/*"
+FILES_${PN} = "/${installdir}/codec-combo/mapdmaq"
 

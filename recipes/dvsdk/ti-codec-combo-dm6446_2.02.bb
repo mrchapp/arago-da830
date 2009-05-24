@@ -10,22 +10,20 @@ S = "${WORKDIR}/dm6446_dvsdk_combos_2_02"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "202"
-PR = "r6"
+PR = "r7"
+
+installdir = "${prefix}/ti"
 
 do_compile() {
 	echo "do nothing"
 }
 
 do_install () {
-    install -d ${D}/opt/ti/codec-combo
+    install -d ${D}/${installdir}/codec-combo
 	cd ${S}
 	for file in `find . -name *.x64P`; do
-		cp ${file} ${D}/opt/ti/codec-combo
+		cp ${file} ${D}/${installdir}/codec-combo
 	done
-
-	# install dev pkgs
-	install -d ${D}/opt/ti/sdk/codec-combo-dm6446_2_02
-	cp -pPrf ${S}/* ${D}/opt/ti/sdk/codec-combo-dm6446_2_02
 }
 
 do_stage() {
@@ -34,8 +32,6 @@ do_stage() {
 }
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
-FILES_${PN} = "/opt/ti/codec-combo/*"
-FILES_${PN}-dev = "/opt/ti/sdk/codec-combo-dm6446_2_02/*
-INSANE_SKIP_${PN}-dev = True
+FILES_${PN} = "/${installdir}/codec-combo/*"
 INHIBIT_PACKAGE_STRIP = "1"
 

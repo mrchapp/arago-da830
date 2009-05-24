@@ -4,7 +4,7 @@ inherit module
 # compile and run time dependencies
 DEPENDS 	= "virtual/kernel perl-native"
 
-PR = "r7"
+PR = "r8"
 PV = "223"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.

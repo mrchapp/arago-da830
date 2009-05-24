@@ -11,7 +11,7 @@ S = "${WORKDIR}/dm6446_dvsdk_combos_2_05"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "205"
-PR = "r7"
+PR = "r8"
 
 # DM6446 combo has Makefile. We don't want to rebuild anything here.
 do_compile() {
@@ -19,11 +19,16 @@ do_compile() {
 }
 
 do_install() {
-    install -d ${D}/dvsdk/dm6446_dvsdk_combos_2_05
-    cp -pPrf ${S}/* ${D}/dvsdk/dm6446_dvsdk_combos_2_05
+    install -d ${D}/${prefix}/dvsdk/dm6446_dvsdk_combos_2_05
+    cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/dm6446_dvsdk_combos_2_05
+
+    # Creates rules.make file
+	  mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
+	  echo "# Where the codec servers are installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/codec.Rules.make
+    echo "CODEC_INSTALL_DIR=${prefix}/dvsdk/dm6446_dvsdk_combos_2_05" >> ${STAGING_DIR_HOST}/ti-sdk-rules/codec.Rules.make
 }
 
 INHIBIT_PACKAGE_STRIP = "1"
 INSANE_SKIP_${PN} = True
-FILES_${PN} = "/dvsdk/dm6446_dvsdk_combos_2_05/*"
+FILES_${PN} = "${prefix}/dvsdk/dm6446_dvsdk_combos_2_05/*"
 

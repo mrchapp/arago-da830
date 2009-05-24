@@ -1,6 +1,6 @@
 DESCRIPTION = "Task to add base gstreamer and TI plugins"
 
-PR = "r7"
+PR = "r8"
 
 RDEPENDS_${PN} = " \
        gstreamer \

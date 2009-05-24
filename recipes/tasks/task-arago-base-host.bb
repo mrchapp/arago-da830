@@ -1,5 +1,5 @@
 DESCRIPTION = "Host packages for a standalone Arago SDK or external toolchain"
-PR = "r6"
+PR = "r7"
 ALLOW_EMPTY = "1"
 
 inherit sdk
@@ -11,4 +11,3 @@ RDEPENDS_${PN} = "\
     opkg-sdk \
     libtool-sdk \
     "
-

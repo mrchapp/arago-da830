@@ -1,4 +1,4 @@
-PR = "r3"
+PR = "r4"
 
 SDK_DISTRO = "arago"
 TOOLCHAIN_OUTPUTNAME = "${SDK_DISTRO}-${PN}-${MACHINE}-${SDK_SUFFIX}"

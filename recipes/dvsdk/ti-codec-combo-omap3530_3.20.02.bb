@@ -10,32 +10,28 @@ S = "${WORKDIR}/omap3530_dvsdk_combos_3_20_02"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "3202"
-PR = "r5"
+PR = "r6"
+
+installdir = "${prefix}/ti"
 
 do_compile() {
   	echo "Do not rebuild for now"
 }
 
 do_install () {
-    install -d ${D}/opt/ti/codec-combo
+    install -d ${D}/${installdir}/codec-combo
 	cd ${S}
 	for file in `find . -name *.x64P`; do
-		cp ${file} ${D}/opt/ti/codec-combo
+		cp ${file} ${D}/${installdir}/codec-combo
 	done
-
-	# install codec combo on dev pkg
-	install -d ${D}/opt/ti/sdk/omap3530_codec_combo_3_20_02/
-	cp -pRrf ${S}/* ${D}/opt/ti/sdk/omap3530_codec_combo_3_20_02/
 }
 
-PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 do_stage() {
     install -d ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}
     cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}/ 
 }
 
-FILES_${PN} = "/opt/ti/codec-combo/*"
-INSANE_SKIP_${PN}-dev = True
-FILES_${PN}-dev = "/opt/ti/sdk/omap3530_codec_combo_3_20_02/*"
+PACKAGE_ARCH = "${MACHINE_ARCH}"
+FILES_${PN} = "/${installdir}/codec-combo/*"
 

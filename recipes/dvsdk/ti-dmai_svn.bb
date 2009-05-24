@@ -1,32 +1,19 @@
-DESCRIPTION = "DMAI for TI ARM/DSP processors"
+require ti-dmai.inc
 
 # compile time dependencies
-DEPENDS_omap3evm 	+= " alsa-lib ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-omap3530 virtual/kernel "
-DEPENDS_beagleboard	+= "alsa-lib  ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-omap3530 virtual/kernel "
-DEPENDS_dm6446-evm 	+= "alsa-lib  ti-codec-engine ti-xdctools ti-dspbios ti-cgt6x ti-codec-combo-dm6446 virtual/kernel "
-DEPENDS_dm355-evm  	+= "alsa-lib ti-codec-engine ti-xdctools ti-codec-combo-dm355 virtual/kernel"
+DEPENDS_omap3evm  += "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omap3530 virtual/kernel"
+DEPENDS_beagleboard	+= "alsa-lib  ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omap3530 virtual/kernel "
+DEPENDS_dm6446-evm 	+= "alsa-lib  ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-dm6446 virtual/kernel "
+DEPENDS_dm355-evm  	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-codec-combo-dm355 virtual/kernel"
 
+installdir = "${prefix}/ti"
 PREFERRED_VERSION_ti-codec-engine 	= "2231"
-PREFERRED_VERSION_ti_dspbios 		= "533"
-PREFERRED_VERSION_ti_cgt6x   		= "60"
-PREFERRED_VERSION_ti_xdctools 		= "310"
-
-# NOTE: Use Brijesh' DMAI development branch. The URL *must* be updated once
-# we have stable DMAI 2.x on gforge.
-SRCREV = "86"
-SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto=https;user=anonymous;pswd='' \
-		file://loadmodules-ti-dmai-dm355_al.sh \
-		file://loadmodules-ti-dmai-dm6446_al.sh \
-		file://loadmodules-ti-dmai-o3530_al.sh \
-	"
-
-S = "${WORKDIR}/BRIJESH_GIT_031809/davinci_multimedia_application_interface/dmai"
-# Yes, the xdc stuff still breaks with a '.' in PWD
-PV = "svnr${SRCREV}"
-PR = "r18"
+PREFERRED_VERSION_ti_dspbios-native	= "533"
+PREFERRED_VERSION_ti_cgt6x-native	= "60"
+PREFERRED_VERSION_ti_xdctools-native	= "310"
 
 # Define DMAI build time variables
-TARGET 				?= "all"
+TARGET 			?= "all"
 TARGET_omap3evm 	?= "o3530_al"
 TARGET_beagleboard 	?= "o3530_al"
 TARGET_dm355-evm 	?= "dm355_al"
@@ -38,15 +25,14 @@ CODEC_omap3evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-omap3530"
 CODEC_beagleboard ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-omap3530"
 CODEC_dm6446-evm ="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-dm6446"
 FC_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
-DSPBIOS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-dspbios"
-CGT6x_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-cgt6x"
-XDCTOOLS_DIR="${STAGING_DIR}/${BUILD_SYS}/ti-xdctools"
+DSPBIOS_DIR="${STAGING_DIR_NATIVE}/ti-dspbios-native"
+CGT6x_DIR="${STAGING_DIR_NATIVE}/ti-cgt6x-native"
+XDCTOOLS_DIR="${STAGING_DIR_NATIVE}/ti-xdctools-native"
 USER_XDC_PATH="${CE_INSTALL_DIR}/examples"
 
 PARALLEL_MAKE = ""
 	
 do_compile () {
-
 	cd ${S}
 	make XDC_INSTALL_DIR="${XDCTOOLS_DIR}" clean
 
@@ -72,18 +58,14 @@ do_compile () {
 
 do_install () {
 	# install dmai apps on target
-    install -d ${D}/opt/ti/dmai-apps
-	cd ${S}
-    make PLATFORM="${TARGET}" EXEC_DIR=${D}/opt/ti/dmai-apps install 
-	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${TARGET}.sh ${D}/opt/ti/dmai-apps/loadmodule.sh 
-
-	# install DMAI source in dev pkg
-	install -d ${D}/opt/ti/sdk/dmai_svnr${SRCREV}
-	cp -pPrf ${S}/* ${D}/opt/ti/sdk/dmai_svnr${SRCREV}
+    install -d ${D}/dmai-apps
+    cd ${S}
+    make PLATFORM="${TARGET}" EXEC_DIR=${D}/${installdir}/dmai-apps install 
+	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${TARGET}.sh ${D}/${installdir}/dmai-apps/loadmodule.sh 
 }
 
 pkg_postinst_ti-dmai-apps () {
-	ln -sf /opt/ti/codec-combo/* /opt/ti/dmai-apps/
+	ln -sf ${installdir}/codec-combo/* ${installdir}/dmai-apps/
 }
 
 do_stage () {
@@ -93,14 +75,12 @@ do_stage () {
 
 # Disable QA check untils we figure out how to pass LDFLAGS in build
 INSANE_SKIP_${PN} = True
-INSANE_SKIP_${PN}-dev = True
 INSANE_SKIP_ti-dmai-apps = True
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 INHIBIT_PACKAGE_STRIP = "1"
 PACKAGES += "ti-dmai-apps"
-FILES_ti-dmai-apps = "/opt/ti/dmai-apps/*"
-FILES_${PN}-dev += "/opt/ti/sdk/dmai_svnr${SRCREV}"
+FILES_ti-dmai-apps = "${installdir}/dmai-apps/*"
 
 # run time dependencies 
 RDEPENDS_ti-dmai-apps_dm355-evm += "ti-dm355mm-module ti-cmem-module ti-codec-combo-dm355"

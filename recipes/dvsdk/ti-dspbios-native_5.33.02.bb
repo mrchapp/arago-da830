@@ -11,13 +11,12 @@ S = "${WORKDIR}/bios_5_33_02"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "533"
-PR = "r9"
+PR = "r10"
 
 do_stage() {
-    install -d ${STAGING_DIR}/${BUILD_SYS}/${PN}
-    cp -pPrf ${S}/* ${STAGING_DIR}/${BUILD_SYS}/${PN}/ 
+    install -d ${STAGING_DIR_NATIVE}/${PN}
+    cp -pPrf ${S}/* ${STAGING_DIR_NATIVE}/${PN}/ 
 }
 
-FILES_${PN} ="/dvsdk/bios_5_33_02/*"
-INSANE_SKIP_${PN} = True
+AUTOTOOLS_NATIVE_STAGE_INSTALL="1"
 
