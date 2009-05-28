@@ -15,7 +15,6 @@ IMAGE_PREPROCESS_COMMAND = "create_etc_timestamp"
 IMAGE_INSTALL = "\
     task-arago-demo \
     ${DISTRO_SSH_DAEMON} \
-    angstrom-version \
     "
 
 export IMAGE_BASENAME = "arago-demo-image"
