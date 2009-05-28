@@ -1,16 +1,7 @@
 DESCRIPTION = "Basic task to get a device booting"
-PR = "r6"
+PR = "r7"
 
 inherit task
-
-# udev, devfsd, mdev (from busybox) or none
-DISTRO_DEV_MANAGER ?= "udev"
-
-# sysvinit, upstart
-DISTRO_INIT_MANAGER ?= "sysvinit sysvinit-pidof"
-
-# tinylogin, getty
-DISTRO_LOGIN_MANAGER ?= "tinylogin"
 
 # those ones can be set in machine config to supply packages needed to get machine booting
 MACHINE_ESSENTIAL_EXTRA_RDEPENDS ?= ""
@@ -31,7 +22,7 @@ ARAGO_BASE = "\
     "
 
 # minimal set of packages - needed to boot
-RDEPENDS_task-arago-base = "\
+RDEPENDS_${PN} = "\
     base-files \
     base-passwd \
     busybox \
@@ -41,12 +32,9 @@ RDEPENDS_task-arago-base = "\
     update-alternatives \
     module-init-tools \
     ${ARAGO_BASE} \
-    ${DISTRO_DEV_MANAGER} \
-    ${DISTRO_INIT_MANAGER} \
-    ${DISTRO_LOGIN_MANAGER} \
     ${MACHINE_ESSENTIAL_EXTRA_RDEPENDS} \
     "
 
-RRECOMMENDS_task-arago-base = "\
+RRECOMMENDS_${PN} = "\
     ${MACHINE_ESSENTIAL_EXTRA_RRECOMMENDS} \
     "

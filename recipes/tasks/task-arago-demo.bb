@@ -1,5 +1,5 @@
 DESCRIPTION = "Extended task to get more basic and demo apps"
-PR = "r3"
+PR = "r4"
 
 inherit task
 
@@ -67,7 +67,7 @@ ARAGO_DEMO = "\
     ${ARAGO_DVSDK_PREREQ} \
     "
 
-RDEPENDS_task-arago-demo = "\
+RDEPENDS_${PN} = "\
     task-arago-base \
     ${ARAGO_DEMO} \
     "
