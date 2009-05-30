@@ -31,8 +31,9 @@ XDCTOOLS_DIR="${STAGING_DIR_NATIVE}/ti-xdctools-native"
 USER_XDC_PATH="${CE_INSTALL_DIR}/examples"
 
 PARALLEL_MAKE = ""
-	
+
 do_compile () {
+
 	cd ${S}
 	make XDC_INSTALL_DIR="${XDCTOOLS_DIR}" clean
 
@@ -45,7 +46,7 @@ do_compile () {
 		XDC_INSTALL_DIR="${XDCTOOLS_DIR}" \
 		CODEGEN_INSTALL_DIR="${CGT6x_DIR}" \
 		BIOS_INSTALL_DIR="${DSPBIOS_DIR}"\
-		LINUXLIBS_INSTALL_DIR="${STAGING_DIR}/armv5te-none-linux-gnueabi/usr" \
+		LINUXLIBS_INSTALL_DIR="${STAGING_DIR_HOST}/usr" \
 		USER_XDC_PATH="${USER_XDC_PATH}" \
 		CROSS_COMPILE="${SDK_PATH}/bin/${TARGET_PREFIX}" \
 		VERBOSE="true" \
