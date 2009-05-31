@@ -14,7 +14,7 @@ SRC_URI = "ftp://156.117.95.201/codec_engine_2_23_01.tar.gz"
 # Set the source directory
 S = "${WORKDIR}/codec_engine_2_23_01"
 
-PR = "r13"
+PR = "r14"
 PV = "2231"
 
 do_compile() {
@@ -36,6 +36,14 @@ do_compile() {
 do_install () {
     install -d ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp
     install -m 0755 ${S}/cetools/packages/ti/sdo/linuxutils/cmem/src/module/cmemk.ko ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp
+
+    cd ${S}/cetools/packages/ti/sdo/linuxutils/cmem/apps
+    make \
+      LINUXKERNEL_INSTALL_DIR="${STAGING_KERNEL_DIR}" \
+      MVTOOL_PREFIX="${TARGET_PREFIX}" \
+      UCTOOL_PREFIX="${TARGET_PREFIX}" \
+	  EXEC_DIR="${D}${prefix}/ti/ti-cmem-apps" \
+      install
 }
 
 pkg_postinst () {
@@ -52,4 +60,8 @@ pkg_postrm () {
 
 INHIBIT_PACKAGE_STRIP = "1"
 FILES_${PN} = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/cmemk.ko"
+PACKAGES += " ti-cmem-apps" 
+FILES_ti-cmem-apps = "${prefix}/ti/ti-cmem-apps/*"
+INSANE_SKIP_ti-cmem-apps = True
+
 
