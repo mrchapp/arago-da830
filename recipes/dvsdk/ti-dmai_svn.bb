@@ -1,5 +1,7 @@
 require ti-dmai.inc
 
+inherit module-base
+
 # compile time dependencies
 DEPENDS_omap3evm  += "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omap3530 virtual/kernel"
 DEPENDS_beagleboard	+= "alsa-lib  ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omap3530 virtual/kernel "
@@ -31,6 +33,16 @@ XDCTOOLS_DIR="${STAGING_DIR_NATIVE}/ti-xdctools-native"
 USER_XDC_PATH="${CE_INSTALL_DIR}/examples"
 
 PARALLEL_MAKE = ""
+
+do_configure () {
+    # If kernel version is greater than 2.6.28 replace mach/omapfb.h with
+    # linux/omapfb.h
+
+    if [ $(echo ${KERNEL_VERSION} | cut -c5,6) -gt 28 ] ; then
+        sed -i -e s:mach/omapfb:linux/omapfb:g ${S}/packages/ti/sdo/dmai/linux/Display_fbdev.c
+    fi
+}
+
 
 do_compile () {
 
