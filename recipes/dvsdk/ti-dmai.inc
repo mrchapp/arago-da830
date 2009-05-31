@@ -4,7 +4,7 @@ inherit module-base
 
 # NOTE: Use Brijesh' DMAI development branch. The URL *must* be updated once
 # we have stable DMAI 2.x on gforge.
-SRCREV = "86"
+SRCREV = "152"
 SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto=https;user=anonymous;pswd='' \
 		file://loadmodules-ti-dmai-dm355_al.sh \
 		file://loadmodules-ti-dmai-dm6446_al.sh \
@@ -14,7 +14,7 @@ SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=BRIJESH_GIT_031809;proto
 S = "${WORKDIR}/BRIJESH_GIT_031809/davinci_multimedia_application_interface/dmai"
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "svnr${SRCREV}"
-PR = "r20"
+PR = "r21"
 
 do_configure () {
     # If kernel version is greater than 2.6.28 replace mach/omapfb.h with
