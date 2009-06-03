@@ -1,8 +1,7 @@
 require gst-plugins.inc
 
-PR = "r0"
+PR = "${INC_PR}.1"
 
-OE_ALLOW_INSECURE_DOWNLOADS = "1"
 inherit gconf 
 
 EXTRA_OECONF += " --enable-experimental  --enable-gst_v4l2 --enable-gconftool  --enable-external --with-check=no"
