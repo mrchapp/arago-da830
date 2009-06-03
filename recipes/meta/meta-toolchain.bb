@@ -125,9 +125,9 @@ do_populate_sdk() {
 
 	# With sysroot support, gcc expects the default C++ headers to be
 	# in a specific place.
-	install -d ${SDK_OUTPUT}/${prefix}/${TARGET_SYS}/include
-	mv ${SDK_OUTPUT}/${prefix}/${TARGET_SYS}/usr/include/c++ \
-		${SDK_OUTPUT}/${prefix}/${TARGET_SYS}/include/
+	#install -d ${SDK_OUTPUT}/${prefix}/${TARGET_SYS}/include
+	#mv ${SDK_OUTPUT}/${prefix}/${TARGET_SYS}/usr/include/c++ \
+	#	${SDK_OUTPUT}/${prefix}/${TARGET_SYS}/include/
 
 	# Fix or remove broken .la files
 	for i in `find ${SDK_OUTPUT}/${prefix}/${TARGET_SYS} -name \*.la`; do
