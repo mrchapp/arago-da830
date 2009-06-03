@@ -9,7 +9,7 @@ DEFAULT_PREFERENCE = "1"
 
 SRCREV = "ed400fa274a55d88a320ba752a94837b02defc41"
 
-PV = "2.6.30-rc2+gitr${SRCREV}"
+PV = "2.6.29+2.6.30-rc2+gitr${SRCREV}"
 
 SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git;protocol=git \
            file://0001-ARM-Add-writethrough-dcache-support-for-ARM926EJS-processor.patch;patch=1 \
