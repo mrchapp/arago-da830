@@ -1,19 +1,7 @@
 # glibc:
-PREFERRED_PROVIDER_virtual/libiconv ?= "external-toolchain"
-PREFERRED_PROVIDER_virtual/libintl ?= "external-toolchain"
-PREFERRED_PROVIDER_virtual/libc ?= "external-toolchain"
-PREFERRED_PROVIDER_virtual/${TARGET_PREFIX}libc-initial ?= "external-toolchain"
+require conf/distro/include/glibc-external.inc
+
 PREFERRED_PROVIDER_linux-libc-headers ?= "external-toolchain"
-
-#Set preferred provider for the C library that is used to build the crosscompiler (NPTL voodoo)
-PREFERRED_PROVIDER_virtual/${TARGET_PREFIX}libc-for-gcc               = "external-toolchain"
-PREFERRED_PROVIDER_virtual/arm-angstrom-linux-gnueabi-libc-for-gcc    = "external-toolchain"
-PREFERRED_PROVIDER_virtual/armeb-angstrom-linux-gnueabi-libc-for-gcc  = "external-toolchain"
-PREFERRED_PROVIDER_virtual/arm-angstrom-linux-libc-for-gcc            = "external-toolchain"
-PREFERRED_PROVIDER_virtual/powerpc-angstrom-linux-libc-for-gcc        = "external-toolchain"
-PREFERRED_PROVIDER_virtual/mipsel-angstrom-linux-libc-for-gcc         = "external-toolchain"
-PREFERRED_PROVIDER_virtual/sparc-angstrom-linux-libc-for-gcc          = "external-toolchain"
-
 
 TARGET_OS = "linux${@['','-gnueabi'][bb.data.getVar('TARGET_ARCH',d,1) in ['arm', 'armeb'] and bb.data.getVar('MACHINE',d) not in ['collie','h3600', 'h3800', 'simpad', 'htcwallaby']]}"
 
