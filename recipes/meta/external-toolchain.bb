@@ -1,6 +1,6 @@
 DESCRIPTION = "This package allows OE to work with an external toolchain generated \
                by meta-toolchain instead of building its own. It expects that toolchain \
-               to be located in SDK_PREFIX/prefix."
+               to be located in SDK_PATH/prefix."
 
 PROVIDES = "\
     linux-libc-headers \
@@ -9,13 +9,12 @@ PROVIDES = "\
     virtual/${TARGET_PREFIX}gcc-intermediate \
     virtual/${TARGET_PREFIX}binutils \
     virtual/${TARGET_PREFIX}libc-for-gcc \
-    virtual/${TARGET_PREFIX}libc-initial \
     virtual/libc \
     virtual/libintl \
     virtual/libiconv \
     "
 
-RPROVIDES = "glibc-utils glibc libsegfault glibc-thread-db libgcc-dev libgcc libstdc++-dev libstdc++"
+RPROVIDES = "glibc-utils libsegfault glibc-thread-db libgcc-dev libgcc libstdc++-dev libstdc++"
 PACKAGES_DYNAMIC = "glibc-gconv-*"
 PR = "r2"
 
