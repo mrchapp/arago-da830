@@ -1,8 +1,8 @@
 require gst-plugins.inc
 
-PROVIDES += "gst-plugins"
+PR = "${INC_PR}.1"
 
-PR = "r2"
+PROVIDES += "gst-plugins"
 
 # gst-plugins-base only builds the alsa plugin
 # if alsa has been built and is present.  You will
