@@ -9,12 +9,13 @@ PROVIDES = "\
     virtual/${TARGET_PREFIX}gcc-intermediate \
     virtual/${TARGET_PREFIX}binutils \
     virtual/${TARGET_PREFIX}libc-for-gcc \
+    virtual/${TARGET_PREFIX}libc-initial \
     virtual/libc \
     virtual/libintl \
     virtual/libiconv \
     "
 
-RPROVIDES = "glibc-utils libsegfault glibc-thread-db libgcc-dev libgcc libstdc++-dev libstdc++"
+RPROVIDES = "glibc glibc-utils libsegfault glibc-thread-db libgcc-dev libgcc libstdc++-dev libstdc++"
 PACKAGES_DYNAMIC = "glibc-gconv-*"
 PR = "r2"
 
