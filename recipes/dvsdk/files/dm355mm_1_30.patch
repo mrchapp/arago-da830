@@ -1,6 +1,5 @@
-diff -uNr orig/dm355_codecs_1_13_000/dm355mm/module/dm350mmap.c dm355_codecs_1_13_000/dm355mm/module/dm350mmap.c
---- orig/dm355_codecs_1_13_000/dm355mm/module/dm350mmap.c	2009-04-17 13:47:08.000000000 -0500
-+++ dm355_codecs_1_13_000/dm355mm/module/dm350mmap.c	2009-04-17 13:47:35.000000000 -0500
+--- /home/a0270506/dvsdk_2_00_00_18/dm355_codecs_1_13_000/dm355mm/module/dm350mmap.c	2009-04-24 14:09:14.000000000 -0500
++++ dm355_codecs_1_13_000/dm355mm/module/dm350mmap.c	2009-06-04 12:24:51.000000000 -0500
 @@ -7,7 +7,7 @@
   * Use of this software is controlled by the terms and conditions found in the
   * license agreement under which this software has been supplied or provided.
@@ -10,7 +9,7 @@ diff -uNr orig/dm355_codecs_1_13_000/dm355mm/module/dm350mmap.c dm355_codecs_1_1
  #include <linux/module.h>
  #include <linux/init.h>
  #include <linux/moduleparam.h>
-@@ -20,274 +20,260 @@
+@@ -20,274 +20,265 @@
  #include <linux/proc_fs.h>
  #include <linux/kernel.h>
  #include <linux/device.h>
@@ -274,6 +273,7 @@ diff -uNr orig/dm355_codecs_1_13_000/dm355mm/module/dm350mmap.c dm355_codecs_1_1
 +    edma_params edmaparams;
 +    int     edma_channel;
 +    int     retval = 0;
++    struct edmacc_param p_ram;
 +
 +    switch (cmd) {
 +
@@ -334,6 +334,10 @@ diff -uNr orig/dm355_codecs_1_13_000/dm355mm/module/dm350mmap.c dm355_codecs_1_1
 +                                     edmaparams.bcnt,
 +                                     edmaparams.ccnt,
 +                                     edmaparams.bcntrld, edmaparams.syncmode);
++
++            edma_read_slot(edma_channel, &p_ram);
++            p_ram.opt |= TCINTEN | EDMA_TCC(edma_channel);
++            edma_write_slot(edma_channel, &p_ram);
 +
 +            edma_start(edma_channel);
 +            wait_for_completion(&edmacompletion);
