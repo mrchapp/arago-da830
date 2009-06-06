@@ -7,7 +7,7 @@ do_compile () {
 
 do_install() {
     install -d ${D}/${prefix}/dvsdk/dmai_${PV}
-    cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/dmai_${PV}
+    cp -pPrf ${S}/dmai/* ${D}/${prefix}/dvsdk/dmai_${PV}
 
     # Creates rules.make file
 	  mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules

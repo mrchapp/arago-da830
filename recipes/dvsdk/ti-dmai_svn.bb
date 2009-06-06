@@ -39,7 +39,7 @@ do_configure () {
     # linux/omapfb.h
 
     if [ $(echo ${KERNEL_VERSION} | cut -c5,6) -gt 28 ] ; then
-        sed -i -e s:mach/omapfb:linux/omapfb:g ${S}/packages/ti/sdo/dmai/linux/Display_fbdev.c
+        sed -i -e s:mach/omapfb:linux/omapfb:g ${S}/dmai/packages/ti/sdo/dmai/linux/Display_fbdev.c
     fi
 }
 
@@ -72,9 +72,14 @@ do_compile () {
 do_install () {
 	# install dmai apps on target
     install -d ${D}/dmai-apps
-    cd ${S}
+    cd ${S}/dmai
     make PLATFORM="${TARGET}" EXEC_DIR=${D}/${installdir}/dmai-apps install 
 	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${TARGET}.sh ${D}/${installdir}/dmai-apps/loadmodule.sh 
+
+    cd ${S}/tests
+    install -d ${D}/dmai-tests
+    make PLATFORM="${TARGET}" EXEC_DIR=${D}/${installdir}/dmai-tests install 
+	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${TARGET}.sh ${D}/${installdir}/dmai-tests/loadmodule.sh 
 }
 
 pkg_postinst_ti-dmai-apps () {
@@ -89,15 +94,16 @@ do_stage () {
 # Disable QA check untils we figure out how to pass LDFLAGS in build
 INSANE_SKIP_${PN} = True
 INSANE_SKIP_ti-dmai-apps = True
+INSANE_SKIP_ti-dmai-tests = True
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 INHIBIT_PACKAGE_STRIP = "1"
-PACKAGES += "ti-dmai-apps"
+PACKAGES += "ti-dmai-apps ti-dmai-tests"
 FILES_ti-dmai-apps = "${installdir}/dmai-apps/*"
+FILES_ti-dmai-tests = "${installdir}/dmai-tests/*"
 
 # run time dependencies 
 RDEPENDS_ti-dmai-apps_dm355-evm += "ti-dm355mm-module ti-cmem-module ti-codec-combo-dm355"
 RDEPENDS_ti-dmai-apps_dm6446-evm += "ti-cmem-module ti-dsplink-module ti-codec-combo-dm6446"
 RDEPENDS_ti-dmai-apps_omap3evm += "ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module ti-sdma-module"
 RDEPENDS_ti-dmai-apps_beagleboard += "ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module ti-sdma-module"
-
