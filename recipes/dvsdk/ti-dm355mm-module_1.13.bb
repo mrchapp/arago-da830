@@ -1,22 +1,20 @@
 DESCRIPTION = "User space DMA module for DM355"
 
+require ti-codec-combo-dm355.inc
 inherit module
 # compile and run time dependencies
 DEPENDS 	= "virtual/kernel perl-native"
 RDEPENDS 	= "update-modules"
 
-# NOTE: This in internal ftp running on Brijesh's linux host.
-# This will not work outside TI network and the link should be remove once
-# we get external http:// URL
-OE_ALLOW_INSECURE_DOWNLOADS = "1"
-SRC_URI	= "ftp://156.117.95.201/dm355_codecs_1_13_000.tar.gz \
+SRC_URI	= "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/dvsdk/codecs/dm355_codecs_setuplinux_1_13_000.bin \
 		   file://dm355mm_1_30.patch;patch=1 \
 	      "
 S = "${WORKDIR}/dm355_codecs_1_13_000"
+BINFILE="dm355_codecs_setuplinux_1_13_000.bin"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "113"
-PR = "r13"
+PR = "r14"
 
 do_configure() {
 	find ${S} -name "*.ko" -exec rm {} \; || true

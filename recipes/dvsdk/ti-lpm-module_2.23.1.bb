@@ -7,11 +7,7 @@ PREFERRED_VERSION_ti-dsplink = "1613"
 PR = "r9"
 PV = "2231"
 
-# NOTE: This in internal ftp running on Brijesh's linux host.
-# This will not work outside TI network and the link should be remove once
-# we get external http:// URL
-OE_ALLOW_INSECURE_DOWNLOADS = "1"
-SRC_URI = "ftp://156.117.95.201/codec_engine_2_23_01.tar.gz"
+SRC_URI = "http://install.source.dir.com/codec_engine_2_23_01.tar.gz "
 
 # Set the source directory
 S = "${WORKDIR}/codec_engine_2_23_01"

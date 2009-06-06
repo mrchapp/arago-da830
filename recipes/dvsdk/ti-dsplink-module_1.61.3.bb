@@ -5,15 +5,11 @@ inherit module
 DEPENDS 	+= " virtual/kernel perl-native ti-dspbios-native ti-cgt6x-native update-modules"
 
 # tconf from xdctools dislikes '.' in pwd :/
-PR = "r10"
+PR = "r11"
 PV = "1613"
 
 installdir = "${prefix}/ti"
-# NOTE: This in internal ftp running on Brijesh's linux host.
-# This will not work outside TI network and the link should be remove once
-# we get external http:// URL
-OE_ALLOW_INSECURE_DOWNLOADS = "1"
-SRC_URI = "ftp://156.117.95.201/codec_engine_2_23_01.tar.gz \
+SRC_URI = "http://install.source.dir.com/codec_engine_2_23_01.tar.gz  \
 		   file://loadmodules-ti-dsplink-apps.sh \
 		   file://unloadmodules-ti-dsplink-apps.sh"
 
