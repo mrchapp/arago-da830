@@ -11,8 +11,8 @@ TARFILE = "omap3530_dvsdk_combos_tspa/omap3530_dvsdk_combos_tspa_3_16_01.tar.gz"
 S = "${WORKDIR}/omap3530_dvsdk_combos_tspa_3_16_01"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
-PV = "316"
-PR = "r8"
+PV = "3161"
+PR = "r9"
 installdir = "${prefix}/ti"
 
 do_compile() {

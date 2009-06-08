@@ -3,7 +3,7 @@ DESCRIPTION = "LPM module for TI OMAP3 processors"
 inherit module
 # compile and run time dependencies
 DEPENDS 	= " virtual/kernel perl-native ti-dsplink-module"
-PREFERRED_VERSION_ti-dsplink = "161"
+
 PR = "r9"
 PV = "223"
 

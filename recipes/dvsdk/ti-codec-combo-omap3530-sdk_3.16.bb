@@ -9,7 +9,7 @@ SRC_URI	= "ftp://156.117.95.201/omap3530_dvsdk_combos_3_16.tar.gz"
 S = "${WORKDIR}/omap3530_dvsdk_combos_3_16"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
-PV = "316"
+PV = "3161"
 PR = "r7"
 
 do_compile () {

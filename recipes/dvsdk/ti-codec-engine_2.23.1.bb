@@ -6,13 +6,8 @@ DEPENDS_omap3evm   	+= "ti-cgt6x-native ti-dspbios-native ti-codec-combo-omap353
 DEPENDS_beagleboard	+= "ti-cgt6x-native ti-dspbios-native ti-codec-combo-omap3530 ti-xdctools-native"
 DEPENDS_dm355-evm 	+= "ti-codec-combo-dm355 ti-xdctools-native"
 
-PREFERRED_VERSION_ti-dspbios-native	= "533"
-PREFERRED_VERSION_ti-cgt6x-native  	= "60"
-PREFERRED_VERSION_ti-xdctools-native 	= "310"
-PREFERRED_VERSION_ti-codec-combo-dm6446	= "205"
-
 # tconf from xdctools dislikes '.' in pwd :/
-PR = "r12"
+PR = "r13"
 PV = "2231"
 
 SRC_URI = "http://install.source.dir.com/codec_engine_2_23_01.tar.gz "

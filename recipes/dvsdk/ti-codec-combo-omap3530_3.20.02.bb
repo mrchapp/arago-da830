@@ -1,4 +1,5 @@
 DESCRIPTION = "OMAP3530 Codec Combo 3.20.02"
+DEFAULT_PREFERENCE="-1"
 
 # NOTE: This in internal ftp running on Brijesh's linux host.
 # This will not work outside TI network and the link should be remove once

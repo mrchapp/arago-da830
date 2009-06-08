@@ -5,10 +5,6 @@ DEPENDS_dm6446-evm 	+= "ti-xdctools-native ti-cgt6x-native ti-dspbios-native ti-
 DEPENDS_omap3evm   	+= "ti-cgt6x-native ti-dspbios-native ti-codec-combo-omap3530 ti-xdctools-native"
 DEPENDS_beagleboard	+= "ti-cgt6x-native ti-dspbios-native ti-codec-combo-omap3530 ti-xdctools-native"
 DEPENDS_dm355-evm 	+= "ti-codec-combo-dm355 ti-xdctools-native"
-PREFERRED_VERSION_ti-dspbios-native	= "533"
-PREFERRED_VERSION_ti-cgt6x-native  	= "60"
-PREFERRED_VERSION_ti-xdctools-native	= "310"
-PREFERRED_VERSION_ti-codec-combo-dm6446	= "205"
 
 # tconf from xdctools dislikes '.' in pwd :/
 PR = "r11"

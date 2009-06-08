@@ -3,10 +3,6 @@ DESCRIPTION = "Gstreamer plugin for TI Davinci and OMAP processors"
 inherit autotools
 
 DEPENDS = "ti-dmai gstreamer gst-plugins-base gst-plugins-good gst-plugins-ugly"
-PREFERRED_VERSION_gstreamer 		= "0.10.22"
-PREFERRED_VERSION_gst-plugins-base 	= "0.10.22"
-PREFERRED_VERSION_gst-plugins-good 	= "0.10.14"
-PREFERRED_VERSION_gst-plugins-ugly 	= "0.10.10"
 
 # Fetch source from svn repo
 SRCREV = "225"
