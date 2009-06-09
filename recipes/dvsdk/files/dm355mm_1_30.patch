@@ -1,5 +1,6 @@
---- /home/a0270506/dvsdk_2_00_00_18/dm355_codecs_1_13_000/dm355mm/module/dm350mmap.c	2009-04-24 14:09:14.000000000 -0500
-+++ dm355_codecs_1_13_000/dm355mm/module/dm350mmap.c	2009-06-04 12:24:51.000000000 -0500
+diff -uNr dm355_codecs_1_13_000/dm355mm/module/dm350mmap.c dm355_codecs_1_13_000.new/dm355mm/module/dm350mmap.c
+--- dm355_codecs_1_13_000/dm355mm/module/dm350mmap.c	2009-05-20 11:22:57.000000000 -0500
++++ dm355_codecs_1_13_000.new/dm355mm/module/dm350mmap.c	2009-06-09 10:43:25.000000000 -0500
 @@ -7,7 +7,7 @@
   * Use of this software is controlled by the terms and conditions found in the
   * license agreement under which this software has been supplied or provided.
@@ -9,18 +10,20 @@
  #include <linux/module.h>
  #include <linux/init.h>
  #include <linux/moduleparam.h>
-@@ -20,274 +20,265 @@
+@@ -20,274 +20,283 @@
  #include <linux/proc_fs.h>
  #include <linux/kernel.h>
  #include <linux/device.h>
 -  
++#include <linux/clk.h>
 +
  #include <asm/page.h>
  #include <asm/uaccess.h>
  #include <asm/pgtable.h>
  #include <asm/io.h>
- #include<asm/system.h>
+-#include<asm/system.h>
 -#include<asm-arm/memory.h>
++#include <asm/system.h>
 +#include <asm/memory.h>
 +
  #include <asm/irq.h>
@@ -120,6 +123,9 @@
  };
  
 -static irqreturn_t irq_handler (int irq, void *dev_id, struct pt_regs *regs) 
++/* Structure to hold mjcp clock info */
++static struct clk *mjcp = NULL;
++
 +//static irqreturn_t irq_handler (int irq, void *dev_id, struct pt_regs *regs) 
 +static irqreturn_t irq_handler(int irq, void *dev_id)
  {
@@ -127,7 +133,6 @@
 -    /* Release the mutex, suggesting sequencer processing complete */ 
 -    up (&dm350mmap_reply_mutex);
 -  return IRQ_HANDLED;
-+
 +    /* Release the mutex, suggesting sequencer processing complete */
 +    up(&dm350mmap_reply_mutex);
 +    return IRQ_HANDLED;
@@ -385,6 +390,15 @@
 -    {
 -      __E ("Failed to allocate major number.\n");
 -      return -ENODEV;
++    /* In the GIT kernel unused clocks are disabled. To run codec we need to 
++     * enable mjcp clock.
++     */
++    mjcp = clk_get(NULL, "mjcp");
++    if (IS_ERR(mjcp))
++        printk(KERN_WARNING "unable to get MJCP clock\n");
++    else
++        clk_enable(mjcp);
++     
 +    __D("** DM350MMAP kernel module built: " __DATE__ " " __TIME__ "\n");
 +    major = register_chrdev(0, "dm350mmap", &dm350mmap_fxns);
 +    if (major < 0) {
@@ -437,6 +451,12 @@
  {
 -  __D ("In dm350mmap_exit()\n");
 -  
++    /* if mjcp clock is enabled then free it */
++    if (mjcp) {
++        clk_disable(mjcp);
++        clk_put(mjcp);
++    }
++
 +    __D("In dm350mmap_exit()\n");
 +
  #if (USE_UDEV==1)
