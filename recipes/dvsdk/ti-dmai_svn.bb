@@ -84,7 +84,7 @@ pkg_postinst_ti-dmai-apps () {
 
 do_stage () {
 	install -d ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-dmai
-	cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-dmai
+	cp -pPrf ${S}/dmai/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-dmai
 }
 
 # Disable QA check untils we figure out how to pass LDFLAGS in build
