@@ -1,5 +1,5 @@
 DESCRIPTION = "OMAP35x LCD/touchscreen/audio demo"
-PR = "r3"
+PR = "r4"
 
 SRC_URI = "\
 http://arago-project.org/files/short-term/demo/demo-app-src.tar.gz \
@@ -27,11 +27,11 @@ do_install() {
 	install -c -m 755 ${WORKDIR}/init ${D}${sysconfdir}/init.d/omap-demo
 }
 
-PACKAGES += "omap-demo-images"
+PACKAGES += "${PN}-images"
 
 FILES_${PN} += "/usr/tests"
 FILES_${PN}-dbg += "/usr/tests/.debug"
 
-FILES_omap-demo-images += "/usr/images"
+FILES_${PN}-images += "/usr/images"
 
-RDEPENDS_omap-demo += "omap-demo-images"
+RDEPENDS_${PN} += "${PN}-images"
