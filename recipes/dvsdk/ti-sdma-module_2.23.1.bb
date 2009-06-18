@@ -4,7 +4,7 @@ inherit module
 # compile and run time dependencies
 DEPENDS 	= "virtual/kernel perl-native"
 
-PR = "r9"
+PR = "r10"
 PV = "2231"
 
 SRC_URI = "http://install.source.dir.com/codec_engine_2_23_01.tar.gz "

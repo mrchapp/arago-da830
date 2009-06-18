@@ -5,12 +5,15 @@ inherit module
 DEPENDS 	= "virtual/kernel perl-native"
 RDEPENDS 	= "update-modules"
 
+# Download codec_engine_2_23_01.tar.gz from 
+# https://www-a.ti.com/downloads/sds_support/targetcontent/CE/ce_2_23/index.html
+
 SRC_URI = "http://install.source.dir.com/codec_engine_2_23_01.tar.gz"
 
 # Set the source directory
 S = "${WORKDIR}/codec_engine_2_23_01"
 
-PR = "r18"
+PR = "r20"
 PV = "2231"
 
 do_compile() {

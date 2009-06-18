@@ -1,16 +1,13 @@
 DESCRIPTION = "DM6446 Codec Combo 2.05"
 
-# NOTE: This in internal ftp running on Brijesh's linux host.
-# This will not work outside TI network and the link should be remove once
-# we get external http:// URL
-OE_ALLOW_INSECURE_DOWNLOADS = "1"
-SRC_URI	= "ftp://156.117.95.201/dm6446_dvsdk_combos_2_05.tar.gz"
+# Should be replaced with real http URL, but for now create codec combo tar from DVSDK installation.
+SRC_URI	= "http://install.source.dir.com/dm6446_dvsdk_combos_2_05.tar.gz"
 
 S = "${WORKDIR}/dm6446_dvsdk_combos_2_05"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "205"
-PR = "r9"
+PR = "r10"
 
 installdir = "${prefix}/ti"
 do_compile() {
