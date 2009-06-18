@@ -11,6 +11,8 @@ SULOGIN=no
 DELAYLOGIN=no
 # Set UTC=yes if your system clock is set to UTC (GMT), and UTC=no if not.
 # UTC=yes
+# Set to no to not run hwclock for rtc
+HWCLOCKACCESS=no
 # Set VERBOSE to "no" if you would like a more quiet bootup.
 VERBOSE=no
 # Set EDITMOTD to "no" if you don't want /etc/motd to be editted automatically
