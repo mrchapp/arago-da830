@@ -7,7 +7,7 @@ COMPATIBLE_MACHINE = "(dm6446-evm|dm6467-evm|dm355-evm)"
 
 DEFAULT_PREFERENCE = "1"
 
-SRCREV = "08fc29c39fc85dfef30ceee13feb347095b70ce8"
+SRCREV = "0a2184bde44151ec8908e6b6307b6cf7e246fce3"
 
 PV = "2.6.30-${PR}+gitr${SRCREV}"
 

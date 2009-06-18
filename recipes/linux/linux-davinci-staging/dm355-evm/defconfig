@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
-# Linux kernel version: 2.6.30-rc2-davinci1
-# Thu Jun  4 15:09:53 2009
+# Linux kernel version: 2.6.30-davinci1
+# Tue Jun 16 12:51:34 2009
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -180,6 +180,7 @@ CONFIG_ARCH_DAVINCI=y
 # CONFIG_ARCH_MSM is not set
 # CONFIG_ARCH_W90X900 is not set
 CONFIG_AINTC=y
+CONFIG_ARCH_DAVINCI_DMx=y
 
 #
 # TI DaVinci Implementations
@@ -189,8 +190,10 @@ CONFIG_AINTC=y
 # DaVinci Core Type
 #
 # CONFIG_ARCH_DAVINCI_DM644x is not set
-# CONFIG_ARCH_DAVINCI_DM646x is not set
 CONFIG_ARCH_DAVINCI_DM355=y
+# CONFIG_ARCH_DAVINCI_DM646x is not set
+# CONFIG_ARCH_DAVINCI_DA830 is not set
+# CONFIG_ARCH_DAVINCI_DM365 is not set
 
 #
 # DaVinci Board Type
@@ -249,7 +252,7 @@ CONFIG_PREEMPT=y
 CONFIG_HZ=100
 CONFIG_AEABI=y
 # CONFIG_OABI_COMPAT is not set
-CONFIG_ARCH_FLATMEM_HAS_HOLES=y
+# CONFIG_ARCH_HAS_HOLES_MEMORYMODEL is not set
 # CONFIG_ARCH_SPARSEMEM_DEFAULT is not set
 # CONFIG_ARCH_SELECT_MEMORY_MODEL is not set
 # CONFIG_HIGHMEM is not set
@@ -563,7 +566,7 @@ CONFIG_HAVE_IDE=y
 # SCSI device support
 #
 # CONFIG_RAID_ATTRS is not set
-CONFIG_SCSI=m
+CONFIG_SCSI=y
 CONFIG_SCSI_DMA=y
 # CONFIG_SCSI_TGT is not set
 # CONFIG_SCSI_NETLINK is not set
@@ -572,7 +575,7 @@ CONFIG_SCSI_PROC_FS=y
 #
 # SCSI support type (disk, tape, CD-ROM)
 #
-CONFIG_BLK_DEV_SD=m
+CONFIG_BLK_DEV_SD=y
 # CONFIG_CHR_DEV_ST is not set
 # CONFIG_CHR_DEV_OSST is not set
 # CONFIG_BLK_DEV_SR is not set
@@ -813,7 +816,6 @@ CONFIG_SPI_MASTER=y
 # SPI Master Controller Drivers
 #
 CONFIG_SPI_DAVINCI=y
-# CONFIG_SPI_INTERRUPT is not set
 CONFIG_SPI_BITBANG=y
 # CONFIG_SPI_GPIO is not set
 
@@ -921,7 +923,7 @@ CONFIG_WATCHDOG=y
 # Watchdog Device Drivers
 #
 # CONFIG_SOFT_WATCHDOG is not set
-CONFIG_DAVINCI_WATCHDOG=m
+CONFIG_DAVINCI_WATCHDOG=y
 
 #
 # USB-based Watchdog Cards
@@ -1058,6 +1060,8 @@ CONFIG_VIDEO_TVP514X=y
 # CONFIG_VIDEO_UPD64031A is not set
 # CONFIG_VIDEO_UPD64083 is not set
 # CONFIG_VIDEO_VIVI is not set
+# CONFIG_VIDEO_TVP5146 is not set
+CONFIG_VIDEO_VPSS_SYSTEM=y
 CONFIG_VIDEO_VPFE_CAPTURE=y
 CONFIG_VIDEO_DM355_CCDC=y
 # CONFIG_VIDEO_SAA5246A is not set
@@ -1260,7 +1264,7 @@ CONFIG_MUSB_PIO_ONLY=y
 #
 # also be needed; see USB_STORAGE Help for more info
 #
-CONFIG_USB_STORAGE=m
+CONFIG_USB_STORAGE=y
 # CONFIG_USB_STORAGE_DEBUG is not set
 # CONFIG_USB_STORAGE_DATAFAB is not set
 # CONFIG_USB_STORAGE_FREECOM is not set
