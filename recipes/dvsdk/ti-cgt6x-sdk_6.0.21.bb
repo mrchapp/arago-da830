@@ -1,13 +1,13 @@
 require ti-cgt6x.inc
 inherit sdk
 
-SRC_URI	= "http://install.source.dir.com/TI-C6x-CGT-v6.0.21-eval.tar.gz"
+SRC_URI	= "http://install.source.dir.com/ti_cgt_c6000_6.0.21_setup_linux_x86.bin"
 
-S = "${WORKDIR}/cg6x_6_0_21"
+S = "${WORKDIR}/cgt"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "6021"
-PR = "r1"
+PR = "r2"
 
 do_install() {
 	install -d ${D}/${prefix}/dvsdk/cg6x_6_0_21
