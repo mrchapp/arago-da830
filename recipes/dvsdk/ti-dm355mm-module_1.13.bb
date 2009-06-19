@@ -14,7 +14,7 @@ BINFILE="dm355_codecs_setuplinux_1_13_000.bin"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "113"
-PR = "r16"
+PR = "r17"
 
 do_configure() {
 	find ${S} -name "*.ko" -exec rm {} \; || true

@@ -7,7 +7,7 @@ S = "${WORKDIR}/dm6446_dvsdk_combos_2_05"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "205"
-PR = "r10"
+PR = "r11"
 
 installdir = "${prefix}/ti"
 do_compile() {

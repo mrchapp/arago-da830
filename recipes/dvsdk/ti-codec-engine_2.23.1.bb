@@ -7,7 +7,7 @@ DEPENDS_beagleboard	+= "ti-cgt6x-native ti-dspbios-native ti-xdctools-native"
 DEPENDS_dm355-evm 	+= "ti-xdctools-native"
 
 # tconf from xdctools dislikes '.' in pwd :/
-PR = "r15"
+PR = "r16"
 PV = "2231"
 
 SRC_URI = "http://install.source.dir.com/codec_engine_2_23_01.tar.gz "

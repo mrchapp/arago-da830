@@ -8,7 +8,7 @@ S = "${WORKDIR}/dm6446_dvsdk_combos_2_05"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "205"
-PR = "r9"
+PR = "r10"
 
 # DM6446 combo has Makefile. We don't want to rebuild anything here.
 do_compile() {

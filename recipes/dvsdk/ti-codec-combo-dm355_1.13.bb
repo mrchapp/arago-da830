@@ -11,7 +11,7 @@ installdir = "${prefix}/ti"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "113"
-PR = "r14"
+PR = "r15"
 
 do_compile() {
 	echo "Do nothing"

@@ -25,7 +25,7 @@ export ${CODEGEN_INSTALL_DIR}
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "3161"
-PR = "r11"
+PR = "r12"
 installdir = "${prefix}/ti"
 
 do_compile() {

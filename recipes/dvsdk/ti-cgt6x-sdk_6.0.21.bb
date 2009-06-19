@@ -7,7 +7,7 @@ S = "${WORKDIR}/cgt"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "6021"
-PR = "r2"
+PR = "r3"
 
 do_install() {
 	install -d ${D}/${prefix}/dvsdk/cg6x_6_0_21

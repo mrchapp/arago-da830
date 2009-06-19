@@ -13,7 +13,7 @@ SRC_URI = "http://install.source.dir.com/codec_engine_2_23_01.tar.gz"
 # Set the source directory
 S = "${WORKDIR}/codec_engine_2_23_01"
 
-PR = "r20"
+PR = "r21"
 PV = "2231"
 
 do_compile() {

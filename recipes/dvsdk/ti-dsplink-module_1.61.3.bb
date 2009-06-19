@@ -5,7 +5,7 @@ inherit module
 DEPENDS 	+= " virtual/kernel perl-native ti-dspbios-native ti-cgt6x-native update-modules"
 
 # tconf from xdctools dislikes '.' in pwd :/
-PR = "r12"
+PR = "r13"
 PV = "1613"
 
 installdir = "${prefix}/ti"
