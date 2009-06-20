@@ -10,7 +10,7 @@ SRC_URI = "svn://gforge.ti.com/svn/gstreamer_ti/trunk;module=gstreamer_ti;proto=
 	"
 
 # Again, no '.' in PWD allowed :(
-PR = "r22"
+PR = "r23"
 PV = "svnr${SRCREV}"
 
 S = "${WORKDIR}/gstreamer_ti/ti_build/ticodecplugin"
@@ -72,6 +72,9 @@ do_install_prepend () {
 	# default loadmodule script is hard-coded for insmod, change to modprobe
 	sed -i 's/insmod/modprobe/g' ${D}/${installdir}/gst/${PLATFORM}/loadmodules.sh
 	sed -i 's/.ko//g' ${D}/${installdir}/gst/${PLATFORM}/loadmodules.sh
+	if [ "${PLATFORM}" = "omap3530" ]; then
+		echo "modprobe sdmak" >> ${D}/${installdir}/gst/${PLATFORM}/loadmodules.sh
+	fi
 	chmod 0755 ${D}/${installdir}/gst -R
 }
 
