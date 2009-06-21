@@ -1,6 +1,8 @@
 require ti-dspbios.inc
 inherit native
 
+# download bios_setuplinux_5_33_02.bin from https://www-a.ti.com/downloads/sds_support/targetcontent/bios/bios_5_33/bios_5_33_02/index_external.html and copy in Arago/OE installation directory
+
 SRC_URI	= "http://install.source.dir.com/bios_setuplinux_5_33_02.bin"
 BINFILE="bios_setuplinux_5_33_02.bin"
 
