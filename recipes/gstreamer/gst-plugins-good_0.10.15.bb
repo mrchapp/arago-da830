@@ -1,6 +1,8 @@
 require gst-plugins.inc
 
-PR = "r2"
+PR = "r3"
+
+SRC_URI += "file://fix-unit-scale-asseration.patch;patch=1"
 
 OE_ALLOW_INSECURE_DOWNLOADS = "1"
 inherit gconf 
