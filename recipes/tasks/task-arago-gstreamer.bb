@@ -1,6 +1,6 @@
 DESCRIPTION = "Task to add base gstreamer and TI plugins"
 
-PR = "r8"
+PR = "r11"
 
 RDEPENDS_${PN} = " \
        gstreamer \
@@ -29,6 +29,8 @@ RDEPENDS_${PN} = " \
        gst-plugin-rtp \
        gst-plugin-udp \
        gst-plugin-rtpmanager \
+       gst-plugin-rtsp \
+       gst-plugin-app \
        gst-plugin-tcp \
        gst-plugin-avi \
        gst-plugin-qtdemux \
