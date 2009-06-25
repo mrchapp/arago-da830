@@ -12,7 +12,9 @@ SRC_URI = "http://install.source.dir.com/codec_engine_2_23_01.tar.gz"
 # Set the source directory
 S = "${WORKDIR}/codec_engine_2_23_01"
 
-PR = "r21"
+#This is a kernel module, don't set PR directly
+MACHINE_KERNEL_PR_append = "a"
+
 PV = "2231"
 
 do_compile() {
