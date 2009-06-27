@@ -31,11 +31,13 @@ USER_XDC_PATH="${CE_INSTALL_DIR}/examples"
 PARALLEL_MAKE = ""
 
 do_configure () {
-    # If kernel version is greater than 2.6.28 replace mach/omapfb.h with
-    # linux/omapfb.h
 
-    if [ $(echo ${KERNEL_VERSION} | cut -c5,6) -gt 28 ] ; then
-        sed -i -e s:mach/omapfb:linux/omapfb:g ${S}/dmai/packages/ti/sdo/dmai/linux/Display_fbdev.c
+	# PSP kernel is based on older DSS. we need to replace linux/omapfb.h with
+	# mach/omapfb.h 
+
+    if [ ${MACHINE} == "omap3evm" ] ; then
+        sed -i -e s:linux/omapfb:mach/omapfb:g ${S}/dmai/packages/ti/sdo/dmai/linux/Display_fbdev.c
+        sed -i -e s:linux/omapfb:mach/omapfb:g ${S}/dmai/packages/ti/sdo/dmai/linux/priv/_Display.h
     fi
 }
 
