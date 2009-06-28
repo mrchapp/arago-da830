@@ -49,7 +49,7 @@ export PLATFORM_XDC
 
 PLATFORM_dm355-evm 			= "dm355"
 PLATFORM_dm6446-evm 		= "dm6446"
-PLATFORM_da830-omapl137-evm = "omapl137"
+PLATFORM_da830-omapl137-evm = "ol137"
 PLATFORM_omap3evm 			= "omap3530"
 PLATFORM_beagleboard		= "omap3530"
 
