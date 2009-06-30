@@ -5,7 +5,8 @@ inherit module
 DEPENDS 	+= " virtual/kernel perl-native ti-dspbios-native ti-cgt6x-native update-modules"
 
 # tconf from xdctools dislikes '.' in pwd :/
-PR = "r13"
+#This is a kernel module, don't set PR directly
+MACHINE_KERNEL_PR_append = "a"                                                  
 PV = "1613"
 
 # Download codec_engine_2_23_01.tar.gz from https://www-a.ti.com/downloads/sds_support/targetcontent/CE/ce_2_23/index.html and copy in Arago/OE download directory.
@@ -158,7 +159,7 @@ INHIBIT_PACKAGE_STRIP = "1"
 
 PACKAGES += " ti-dsplink-apps" 
 FILES_${PN} = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/*"
-FILES_ti-dsplink-apps = "/${installdir}/dsplink/*"
+FILES_ti-dsplink-apps = "${installdir}/dsplink/*"
 
 # Disable QA check untils we figure out how to pass LDFLAGS in build
 INSANE_SKIP_${PN} = True
