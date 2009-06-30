@@ -1,6 +1,6 @@
 DESCRIPTION = "Task to add base gstreamer and TI plugins"
 
-PR = "r11"
+PR = "r12"
 
 RDEPENDS_${PN} = " \
        gstreamer \
@@ -17,6 +17,7 @@ RDEPENDS_${PN} = " \
        gst-plugin-volume \
        gst-plugin-audiotestsrc \
        gst-plugin-videotestsrc \
+	   gst-plugin-video4linux \
        gst-plugin-video4linux2 \
        gst-plugin-videoscale \
        gst-plugin-videorate \
