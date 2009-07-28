@@ -38,19 +38,19 @@ SRCREV_overo = "2dea1db2a3b7c12ed70bbf8ee50755089c5e5170"
 PV_overo = "2009.03+${PR}+gitr${SRCREV}"
 
 SRC_URI_dm6446-evm = "git://arago-project.org/git/people/sandeep/u-boot-davinci.git;protocol=git"
-SRCREV_dm6446-evm = "6dc7c97635b46ed00117e326d16d092a963fb6d4"
+SRCREV_dm6446-evm = "81271f091d74540afbef246e900266a95fef62ef"
 PV_dm6446-evm = "2009.05+2009.06-rc0+gitr${SRCREV}"
 
 SRC_URI_dm6467-evm = "git://arago-project.org/git/people/sandeep/u-boot-davinci.git;protocol=git"
-SRCREV_dm6467-evm = "6dc7c97635b46ed00117e326d16d092a963fb6d4"
+SRCREV_dm6467-evm = "81271f091d74540afbef246e900266a95fef62ef"
 PV_dm6467-evm = "2009.05+2009.06-rc0+gitr${SRCREV}"
 
 SRC_URI_dm355-evm = "git://arago-project.org/git/people/sandeep/u-boot-davinci.git;protocol=git"
-SRCREV_dm355-evm = "6dc7c97635b46ed00117e326d16d092a963fb6d4"
+SRCREV_dm355-evm = "81271f091d74540afbef246e900266a95fef62ef"
 PV_dm355-evm = "2009.05+2009.06-rc0+gitr${SRCREV}"
 
 SRC_URI_dm365-evm = "git://arago-project.org/git/people/sandeep/u-boot-davinci.git;protocol=git"
-SRCREV_dm365-evm = "6dc7c97635b46ed00117e326d16d092a963fb6d4"
+SRCREV_dm365-evm = "81271f091d74540afbef246e900266a95fef62ef"
 PV_dm365-evm = "2009.05+2009.06-rc0+gitr${SRCREV}"
 
 SRC_URI_dm355-leopard = "git://www.denx.de/git/u-boot-arm.git;protocol=git;branch=next \
