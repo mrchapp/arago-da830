@@ -9,6 +9,8 @@ DEFAULT_PREFERENCE = "1"
 
 SRCREV = "98d4d89866a3fa7375e697ab8434b331ca6a6705"
 
+KERNEL_IMAGE_BASE_NAME = "${KERNEL_IMAGETYPE}-${PV}-${MACHINE}"
+MODULES_IMAGE_BASE_NAME = "modules-${PV}-${MACHINE}"
 PV = "2.6.30+2.6.31-rc2-${PR}+gitr${SRCREV}"
 
 FILESPATHPKG := "${@bb.data.getVar('FILESPATHPKG', d, 1).replace(':files:', ':linux-davinci:files:', 1)}"
