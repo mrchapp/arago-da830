@@ -3,8 +3,8 @@
 
 COMPATIBLE_MACHINE = "omap3evm|beagleboard|dm6446-evm|dm6467-evm|dm355-evm|dm365-evm|dm357-evm|da830_omapl137-evm"
 
-# The size of the uncompressed ramdisk is 32MB
-ROOTFS_SIZE = "32768"
+# The size of the uncompressed ramdisk is 40MB
+ROOTFS_SIZE = "40960"
 
 # Disable this due to distribution restrictions
 # DISTRO_SSH_DAEMON ?= "dropbear"
