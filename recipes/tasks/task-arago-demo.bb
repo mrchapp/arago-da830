@@ -1,5 +1,5 @@
 DESCRIPTION = "Extended task to get more basic and demo apps"
-PR = "r5"
+PR = "r6"
 
 inherit task
 
@@ -36,7 +36,7 @@ ARAGO_FSTOOLS = "\
     e2fsprogs-e2fsck \
     e2fsprogs-mke2fs \
     dosfstools \
-    util-linux-fdisk \
+    util-linux-ng-fdisk \
     "
 
 ARAGO_UTILS = "\
