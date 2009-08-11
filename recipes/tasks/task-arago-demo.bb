@@ -1,5 +1,5 @@
 DESCRIPTION = "Extended task to get more basic and demo apps"
-PR = "r6"
+PR = "r7"
 
 inherit task
 
@@ -48,7 +48,7 @@ ARAGO_UTILS = "\
 
 ARAGO_DVSDK_PREREQ = "\
     zlib \
-    libpng \
+    libpng12 \
     jpeg \
     jpeg-tools \
     freetype \
