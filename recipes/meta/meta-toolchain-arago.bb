@@ -1,4 +1,4 @@
-PR = "r1"
+PR = "r2"
 
 SDK_DISTRO = "arago"
 TOOLCHAIN_OUTPUTNAME = "${SDK_DISTRO}-${DISTRO_VERSION}-${FEED_ARCH}-${TARGET_OS}-${SDK_SUFFIX}"
@@ -24,6 +24,15 @@ sysvinit \
 sysvinit-inittab \
 i2c-tools \
 mtd-utils \
+util-linux-ng-fdisk \
+util-linux-ng-cfdisk \
+util-linux-ng-mount \
+util-linux-ng-mountall \
+util-linux-ng-umount \
+util-linux-ng-losetup \
+util-linux-ng-swaponoff \
+util-linux-ng \
+udev-utils \
 "
 
 require meta-toolchain.bb
