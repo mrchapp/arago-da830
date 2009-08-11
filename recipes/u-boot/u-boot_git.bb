@@ -1,5 +1,5 @@
 require u-boot.inc
-PR ="r26"
+PR ="r27"
 
 FILESPATHPKG =. "u-boot-git:"
 
@@ -13,14 +13,13 @@ SRCREV_afeb9260-180 = "6b8edfde22acc574b5532e9f086e6a7287a9bc78"
 SRC_URI_append_afeb9260 = " file://AFEB9260-network-fix.patch;patch=1"
 SRC_URI_append_afeb9260-180 = " file://AFEB9260-network-fix.patch;patch=1"
 
-SRC_URI_beagleboard = "git://gitorious.org/u-boot-omap3/mainline.git;branch=omap3-dev-usb;protocol=git \
+SRC_URI_beagleboard = "git://gitorious.org/u-boot-omap3/mainline.git;branch=omap3-dev;protocol=git \
                  file://fw-env.patch;patch=1 \
                  file://dss2.patch;patch=1 \
-                 file://omap-usb-dev-dfu.patch;patch=1 \
-                 file://dfu-second-patch.patch;patch=1 \ 
+                 file://new-pinmux.patch;patch=1 \
 "
-SRCREV_beagleboard = "715c646c0bd3e99d4f964f2b5539d2155ce8f87a"
-PV_beagleboard = "2009.03+${PR}+gitr${SRCREV}"
+SRCREV_beagleboard = "d363f9cb0918a1b6b92e2e20d01543d0c4f53274"
+PV_beagleboard = "2009.05+${PR}+gitr${SRCREV}"
 
 SRC_URI_omap3evm = "git://gitorious.org/u-boot-omap3/mainline.git;branch=omap3-dev;protocol=git"
 SRCREV_omap3evm = "2dea1db2a3b7c12ed70bbf8ee50755089c5e5170"
@@ -29,6 +28,9 @@ PV_omap3evm = "2009.03+${PR}+gitr${SRCREV}"
 SRC_URI_omapzoom = "git://www.sakoman.net/git/u-boot-omap3.git;branch=omap3-dev;protocol=git"
 SRCREV_omapzoom = "d691b424f1f5bf7eea3a4131dfc578d272e8f335"
 PV_omapzoom = "2009.01+${PR}+gitr${SRCREV}"
+
+SRCREV_omapzoom2 = "3672cd5c3b53d219d33345eebad4e25ad5bf6d52"
+PV_omapzoom2 = "2009.05+${PR}+gitr${SRCREV}"
 
 SRC_URI_overo = "git://gitorious.org/u-boot-omap3/mainline.git;branch=omap3-dev;protocol=git \
                  file://fw-env.patch;patch=1 \
@@ -68,6 +70,12 @@ SRCREV_sequoa = "cf3b41e0c1111dbb865b6e34e9f3c3d3145a6093"
 SRC_URI = "git://www.denx.de/git/u-boot.git;protocol=git "
 SRC_URI_sequoia = "git://www.denx.de/git/u-boot.git;protocol=git;tag=cf3b41e0c1111dbb865b6e34e9f3c3d3145a6093 "
 
+SRC_URI_mini2440 = "git://repo.or.cz/u-boot-openmoko/mini2440.git;protocol=git;branch=dev-mini2440-stable"
+SRCREV_mini2440 = "3516c35fb777ca959e5cadf2156a792ca10e1cff"
+
+SRC_URI_micro2440 = "git://repo.or.cz/u-boot-openmoko/mini2440.git;protocol=git;branch=dev-mini2440-stable"
+SRCREV_micro2440 = "3516c35fb777ca959e5cadf2156a792ca10e1cff"
+
 SRC_URI_neuros-osd2 += "file://Makefile-fix.patch;patch=1"
 SRC_URI_append_akita = "file://pdaXrom-u-boot.patch;patch=1 \
                         file://uboot-eabi-fix-HACK2.patch;patch=1 \
@@ -83,7 +91,6 @@ SRC_URI_append_c7x0 = "file://pdaXrom-u-boot.patch;patch=1 \
                        "
 S = "${WORKDIR}/git"
 
-PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 do_configure_prepend_akita() {
         sed -i s:ROOT_FLASH_SIZE:${ROOT_FLASH_SIZE}:g ${S}/include/configs/akita.h
@@ -95,4 +102,12 @@ do_configure_prepend_spitz() {
 
 do_configure_prepend_c7x0() {
         sed -i s:ROOT_FLASH_SIZE:${ROOT_FLASH_SIZE}:g ${S}/include/configs/corgi.h
+}
+
+do_deploy_prepend_mini2440() {
+	cp ${S}/u-boot-nand16k.bin ${S}/u-boot.bin
+}
+
+do_deploy_prepend_micro2440() {
+	cp ${S}/u-boot-nand16k.bin ${S}/u-boot.bin
 }
