@@ -3,7 +3,7 @@ require linux.inc
 DESCRIPTION = "Linux kernel for Davinci processors"
 KERNEL_IMAGETYPE = "uImage"
 
-COMPATIBLE_MACHINE = "(dm6446-evm|dm6467-evm|dm355-evm)"
+COMPATIBLE_MACHINE = "(dm6446-evm|dm6467-evm|dm355-evm|dm365-evm)"
 
 DEFAULT_PREFERENCE = "1"
 
