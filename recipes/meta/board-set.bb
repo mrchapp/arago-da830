@@ -3,7 +3,7 @@ PR = "r4"
 
 # Generic "arago" machine is not part of this list on purpose
 # so it would require setting MACHINE explicitly
-COMPATIBLE_MACHINE = "omap3evm|beagleboard|dm6446-evm|dm6467-evm|dm355-evm|dm365-evm|da830_omapl137-evm"
+COMPATIBLE_MACHINE = "omap3evm|beagleboard|dm6446-evm|dm6467-evm|dm355-evm|dm365-evm|da830-omapl137-evm"
 
 DEPENDS = "virtual/kernel virtual/bootloader"
 

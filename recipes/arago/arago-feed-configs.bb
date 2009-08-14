@@ -9,7 +9,7 @@ PR = "r4"
 # we need to add all their respective feeds manually, hence next line is out
 #PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-COMPATIBLE_MACHINE = "arago|omap3evm|beagleboard|dm6446-evm|dm6467-evm|dm355-evm|dm365-evm|dm357-evm|da830_omapl137-evm"
+COMPATIBLE_MACHINE = "arago|omap3evm|beagleboard|dm6446-evm|dm6467-evm|dm355-evm|dm365-evm|dm357-evm|da830-omapl137-evm"
 
 # This gets set in the distro/local configuration
 ARAGO_FEED_BASEPATH ?= "feeds"
@@ -41,7 +41,7 @@ do_compile() {
 	echo "src/gz armv6 ${DISTRO_FEED_URI}/armv6" >  ${S}/${sysconfdir}/opkg/arago-armv6-feed.conf.sample
 	echo "src/gz armv7a ${DISTRO_FEED_URI}/armv7a" >  ${S}/${sysconfdir}/opkg/arago-armv7a-feed.conf.sample
 
-	for mach in omap3evm beagleboard dm6446-evm dm6467-evm dm355-evm dm365-evm dm357-evm da830_omapl137-evm; do
+	for mach in omap3evm beagleboard dm6446-evm dm6467-evm dm355-evm dm365-evm dm357-evm da830-omapl137-evm; do
 		echo "src/gz $mach ${DISTRO_FEED_URI}/$mach" >  ${S}/${sysconfdir}/opkg/arago-$mach-feed.conf.sample
 	done
 
@@ -58,7 +58,7 @@ do_compile() {
 	done
 
 	# armv5te
-	for mach in dm6446-evm dm6467-evm dm355-evm dm365-evm dm357-evm da830_omapl137-evm; do
+	for mach in dm6446-evm dm6467-evm dm355-evm dm365-evm dm357-evm da830-omapl137-evm; do
 		echo "src/gz $mach ${ANGSTROM_URI}/${FEED_BASEPATH}armv5te/machine/$mach" >  ${S}/${sysconfdir}/opkg/angstrom/angstrom-$mach-feed.conf.sample
 	done
 

@@ -3,7 +3,7 @@ require linux.inc
 DESCRIPTION = "Linux kernel for Davinci processors"
 KERNEL_IMAGETYPE = "uImage"
 
-COMPATIBLE_MACHINE = "(da830_omapl137-evm)"
+COMPATIBLE_MACHINE = "(da830-omapl137-evm)"
 
 DEFAULT_PREFERENCE = "1"
 
