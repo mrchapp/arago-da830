@@ -1,8 +1,9 @@
 DESCRIPTION = "OMAP35x LCD/touchscreen/audio demo"
+PV = "1.0"
 PR = "r4"
 
 SRC_URI = "\
-http://arago-project.org/files/short-term/demo/demo-app-src.tar.gz \
+http://arago-project.org/files/short-term/demo/demo-app-src-${PV}.tar.gz \
 http://arago-project.org/files/short-term/demo/images.tar.bz2 \
 file://init \
 "
