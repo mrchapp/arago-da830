@@ -3,13 +3,15 @@ DESCRIPTION = "Configuration files for online package repositories aka feeds"
 RRECOMMENDS_${PN} += "opkg-nogpg"
 
 #PV = "${DISTRO_VERSION}"
-PR = "r4"
+PR = "r5"
 
 # Here is the deal - since we build a common filesystem for several platforms,
 # we need to add all their respective feeds manually, hence next line is out
 #PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-COMPATIBLE_MACHINE = "arago|omap3evm|beagleboard|dm6446-evm|dm6467-evm|dm355-evm|dm365-evm|dm357-evm|da830-omapl137-evm"
+COMPATIBLE_MACHINE = "arago|omap3evm|beagleboard|dm6446-evm|dm6467-evm|dm6467t-evm|dm355-evm|dm365-evm|dm357-evm|da830-omapl137-evm"
+MACHS_ARMV5 = "dm6446-evm dm6467-evm dm6467t-evm dm355-evm dm365-evm dm357-evm da830-omapl137-evm"
+MACHS_ARMV7 = "omap3evm beagleboard"
 
 # This gets set in the distro/local configuration
 ARAGO_FEED_BASEPATH ?= "feeds"
@@ -20,7 +22,7 @@ do_compile() {
 # Populate the list of supported architectures
 	rm ${S}/${sysconfdir}/opkg/arch.conf || true
 #	ipkgarchs="${PACKAGE_ARCHS}"
-	ipkgarchs="all any noarch arm armv4 armv4t armv5te #armv6 #armv7 #armv7a arago #omap3evm #beagleboard #dm6446-evm #dm6467-evm #dm355-evm #dm365-evm #dm357-evm"
+	ipkgarchs="all any noarch arm armv4 armv4t armv5te #armv6 #armv7 #armv7a arago #omap3evm #beagleboard #dm6446-evm #dm6467-evm #dm6467t-evm #dm355-evm #dm365-evm #dm357-evm #da830-omapl137-evm"
 	priority=1
 	for arch in $ipkgarchs; do
 		disable=`echo $arch|cut -c1`
@@ -41,7 +43,7 @@ do_compile() {
 	echo "src/gz armv6 ${DISTRO_FEED_URI}/armv6" >  ${S}/${sysconfdir}/opkg/arago-armv6-feed.conf.sample
 	echo "src/gz armv7a ${DISTRO_FEED_URI}/armv7a" >  ${S}/${sysconfdir}/opkg/arago-armv7a-feed.conf.sample
 
-	for mach in omap3evm beagleboard dm6446-evm dm6467-evm dm355-evm dm365-evm dm357-evm da830-omapl137-evm; do
+	for mach in ${MACHS_ARMV7} ${MACHS_ARMV5}; do
 		echo "src/gz $mach ${DISTRO_FEED_URI}/$mach" >  ${S}/${sysconfdir}/opkg/arago-$mach-feed.conf.sample
 	done
 
@@ -53,12 +55,12 @@ do_compile() {
 	done
 
 	# armv7a
-	for mach in omap3evm beagleboard; do
+	for mach in ${MACHS_ARMV7}; do
 		echo "src/gz $mach ${ANGSTROM_URI}/${FEED_BASEPATH}armv7a/machine/$mach" >  ${S}/${sysconfdir}/opkg/angstrom/angstrom-$mach-feed.conf.sample
 	done
 
 	# armv5te
-	for mach in dm6446-evm dm6467-evm dm355-evm dm365-evm dm357-evm da830-omapl137-evm; do
+	for mach in ${MACHS_ARMV5}; do
 		echo "src/gz $mach ${ANGSTROM_URI}/${FEED_BASEPATH}armv5te/machine/$mach" >  ${S}/${sysconfdir}/opkg/angstrom/angstrom-$mach-feed.conf.sample
 	done
 
