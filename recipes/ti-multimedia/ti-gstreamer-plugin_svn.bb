@@ -14,7 +14,7 @@ PV = "svnr${SRCREV}"
 
 S = "${WORKDIR}/gstreamer_ti/ti_build/ticodecplugin"
 
-include ti-dvsdk-common.inc
+include ti-multimedia-common.inc
 
 CPPFLAGS_append 			= " -DPlatform_${PLATFORM}"
 

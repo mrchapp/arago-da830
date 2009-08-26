@@ -11,7 +11,7 @@ DEPENDS 	+= "alsa-lib libpng freetype jpeg"
 TARGET 			?= "all"
 TARGET_dm355-evm 	?= "dm355"
 
-include ti-dvsdk-common.inc
+include ti-multimedia-common.inc
 
 do_install () {
     cd ${S}

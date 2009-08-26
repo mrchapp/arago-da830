@@ -9,7 +9,7 @@ DEPENDS_dm6446-evm 	+= "alsa-lib  ti-codec-engine ti-xdctools-native ti-dspbios-
 DEPENDS_dm355-evm  	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-codecs-dm355 virtual/kernel"
 DEPENDS_da830-omapl137-evm 	+= "alsa-lib  ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omapl137 virtual/kernel "
 
-include ti-dvsdk-common.inc
+include ti-multimedia-common.inc
 
 TARGET 			?= "all"
 TARGET_omap3evm 	?= "o3530_al"
