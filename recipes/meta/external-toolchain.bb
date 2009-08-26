@@ -15,7 +15,7 @@ PROVIDES = "\
     virtual/libiconv \
     "
 
-RPROVIDES = "glibc glibc-utils libsegfault glibc-thread-db libgcc-dev libgcc libstdc++-dev libstdc++"
+RPROVIDES = "glibc glibc-utils libsegfault glibc-thread-db libgcc-dev libgcc libstdc++-dev libstdc++ ldd"
 PACKAGES_DYNAMIC = "glibc-gconv-*"
 PR = "r2"
 

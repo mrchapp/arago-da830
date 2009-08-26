@@ -14,6 +14,7 @@ ARAGO_ALSA_BASE = "\
 
 ARAGO_BASE = "\
     ${ARAGO_ALSA_BASE} \
+    ldd \
     mtd-utils \
     curl \
     opkg-nogpg \
