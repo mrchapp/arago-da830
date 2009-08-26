@@ -1,4 +1,4 @@
-require ti-dspbios.inc
+require ../../ti-dsp/ti-dspbios.inc
 inherit sdk
 
 # download bios_setuplinux_5_33_02.bin from https://www-a.ti.com/downloads/sds_support/targetcontent/bios/bios_5_33/bios_5_33_02/index_external.html and copy in Arago/OE installation directory

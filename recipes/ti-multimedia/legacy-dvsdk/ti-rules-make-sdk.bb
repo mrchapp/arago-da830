@@ -2,11 +2,11 @@ DESCRIPTION = "This package creates Rules.make file and copies top label Makefil
 
 inherit sdk
 
-PR="r7"
+PR="r8"
 
 FILES=${@os.path.dirname(bb.data.getVar('FILE',d,1))}/files/dvsdk-rules
 
-DEPENDS_dm355-evm = "ti-xdctools-sdk ti-codec-engine-sdk ti-codec-combo-dm355-sdk ti-dmai-sdk"
+DEPENDS_dm355-evm = "ti-xdctools-sdk ti-codec-engine-sdk ti-codecs-dm355-sdk ti-dmai-sdk ti-dvsdk-demos-sdk"
 DEPENDS_dm6446-evm = "ti-xdctools-sdk ti-codec-engine-sdk ti-codec-combo-dm6446-sdk ti-dmai-sdk ti-cgt6x-sdk ti-dspbios-sdk"
 DEPENDS_omap3evm  = "ti-xdctools-sdk ti-codec-engine-sdk ti-codec-combo-omap3530-sdk ti-dmai-sdk ti-cgt6x-sdk ti-dspbios-sdk"
 DEPENDS_beagleboard = "ti-xdctools-sdk ti-codec-engine-sdk ti-codec-combo-omap3530-sdk ti-dmai-sdk ti-cgt6x-sdk ti-dspbios-sdk"

@@ -1,5 +1,5 @@
 DESCRIPTION = "Extended task to add dvsdk components"
-PR = "r11"
+PR = "r12"
 
 inherit task
 
@@ -65,6 +65,6 @@ RDEPENDS_${PN} = "\
     ${ARAGO_FSTOOLS} \
     ${ARAGO_UTILS} \
     ${ARAGO_DVSDK_PREREQ} \
-	ti-dmai-apps \
+	ti-dvsdk-demos \
     "
 

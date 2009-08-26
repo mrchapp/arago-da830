@@ -1,21 +1,15 @@
 DESCRIPTION = "CMEM module for TI ARM/DSP processors"
+
 inherit module
 
 # compile and run time dependencies
 DEPENDS 	= "virtual/kernel perl-native"
 RDEPENDS 	= "update-modules"
 
-# Download codec_engine_2_23_01.tar.gz from https://www-a.ti.com/downloads/sds_support/targetcontent/CE/ce_2_23/index.html and copy in Arago/OE download directory.
-
-SRC_URI = "http://install.source.dir.com/codec_engine_2_23_01.tar.gz"
-
-# Set the source directory
-S = "${WORKDIR}/codec_engine_2_23_01"
+require ti-codec-engine.inc
 
 #This is a kernel module, don't set PR directly
 MACHINE_KERNEL_PR_append = "a"
-
-PV = "2231"
 
 do_compile() {
     # TODO :: KERNEL_CC, etc need replacing with user CC
@@ -58,7 +52,6 @@ pkg_postrm () {
         update-modules || true
 }
 
-INHIBIT_PACKAGE_STRIP = "1"
 FILES_${PN} = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/cmemk.ko"
 PACKAGES += " ti-cmem-apps" 
 FILES_ti-cmem-apps = "${prefix}/ti/ti-cmem-apps/*"

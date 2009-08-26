@@ -1,4 +1,4 @@
-PR = "r8"
+PR = "r9"
 
 SDK_DISTRO = "arago"
 TOOLCHAIN_OUTPUTNAME = "${SDK_DISTRO}-${PN}-${MACHINE}-${SDK_SUFFIX}"
@@ -9,7 +9,7 @@ TOOLCHAIN_TARGET_TASK = "task-arago-dvsdk-target"
 DVSDK_TARGET_EXCLUDE_dm355-evm = "\
        ti-cmem-module \
        ti-dm355mm-module \
-       ti-codec-combo-dm355 \
+       ti-codecs-dm355 \
        ti-dmai-apps \
 "
 DVSDK_TARGET_EXCLUDE_dm6446-evm = "\

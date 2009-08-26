@@ -12,16 +12,7 @@ S = "${WORKDIR}/omap3530_dvsdk_combos_tspa_3_16_01"
 
 DEPENDS="ti-codec-engine"
 
-CE_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine"
-FC_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
-LINK_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
-CMEM_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
-LPM_INSTALL_DIR="${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
-BIOS_INSTALL_DIR="${STAGING_DIR_NATIVE}/ti-dspbios-native"
-CODEGEN_INSTALL_DIR="${STAGING_DIR_NATIVE}/ti-cgt6x-native"
-XDC_INSTALL_DIR="${STAGING_DIR_NATIVE}/ti-xdctools-native"
-
-export ${CODEGEN_INSTALL_DIR}
+include ../ti-multimedia/ti-dvsdk-common.inc
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "3161"

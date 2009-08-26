@@ -1,19 +1,9 @@
-DESCRIPTION = "Codec Engine 2.23.01 for TI ARM/DSP processors"
 inherit sdk
 
-# tconf from xdctools dislikes '.' in pwd :/
-PR = "r17"
-PV = "2231"
-
-# Download codec_engine_2_23_01.tar.gz from https://www-a.ti.com/downloads/sds_support/targetcontent/CE/ce_2_23/index.html and copy in Arago/OE download directory.
-
-SRC_URI = "http://install.source.dir.com/codec_engine_2_23_01.tar.gz "
-
-# Set the source directory
-S = "${WORKDIR}/codec_engine_2_23_01"
+require ../ti-codec-engine.inc
 
 do_compile () {
-    echo "nothing to build"
+        echo "! Do not rebuild for now !"
 }
 
 do_install() {
@@ -24,14 +14,14 @@ do_install() {
     sed -i -e s:Rules.make:../Rules.make:g \
 	${S}/cetools/packages/ti/sdo/linuxutils/sdma/Rules.make
 
-    install -d ${D}/${prefix}/dvsdk/codec_engine_2_23_01
-    cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/codec_engine_2_23_01
+    install -d ${D}/${prefix}/dvsdk/codec_engine_${PV}
+    cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/codec_engine_${PV}
 
     # Creates rules.make file
     
 	  mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
 	  echo "# Where the Codec Engine package is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
-    echo "CE_INSTALL_DIR=${prefix}/dvsdk/codec_engine_2_23_01" >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
+    echo "CE_INSTALL_DIR=${prefix}/dvsdk/codec_engine_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
     echo "" >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
     echo "# Where the XDAIS package is installed." >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
     echo "XDAIS_INSTALL_DIR=\$(CE_INSTALL_DIR)/cetools" >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
@@ -46,7 +36,5 @@ do_install() {
     echo "FC_INSTALL_DIR=\$(CE_INSTALL_DIR)/cetools"  >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
 }
 
-FILES_${PN} = "${prefix}/dvsdk/codec_engine_2_23_01"
-INHIBIT_PACKAGE_STRIP = "1"
+FILES_${PN} = "${prefix}/dvsdk/codec_engine_${PV}"
 INSANE_SKIP_${PN} = True
-

@@ -38,12 +38,14 @@ endif
 #==============================================================================
 # The default build target.
 #==============================================================================
-all:	check cmem dm355mm dmai demos examples dvtb
+all:	check cmem dm355mm dmai demos 
+#       examples dvtb
 
 #==============================================================================
 # Clean up the targets built by 'make all'.
 #==============================================================================
-clean:	cmem_clean dm355mm_clean dmai_clean demos_clean examples_clean dvtb_clean
+clean:	cmem_clean dm355mm_clean dmai_clean demos_clean 
+#	examples_clean dvtb_clean
 
 #==============================================================================
 # Build everything rebuildable.
@@ -126,7 +128,7 @@ check:
 # target is defined.
 #==============================================================================
 demos:
-	$(MAKE) -C $(DEMO_INSTALL_DIR)/$(PLATFORM)
+	$(MAKE) -C $(DEMO_INSTALL_DIR)/$(PLATFORM) DVSDK_INSTALL_DIR=$(DVSDK_INSTALL_DIR) XDC_INSTALL_DIR=$(XDC_INSTALL_DIR) CE_INSTALL_DIR=$(CE_INSTALL_DIR) FC_INSTALL_DIR=$(FC_INSTALL_DIR) CMEM_INSTALL_DIR=$(CMEM_INSTALL_DIR) CODEC_INSTALL_DIR=$(CODEC_INSTALL_DIR) XDAIS_INSTALL_DIR=$(XDAIS_INSTALL_DIR) LINK_INSTALL_DIR=$(LINK_INSTALL_DIR) DMAI_INSTALL_DIR=$(DMAI_INSTALL_DIR) MVTOOL_DIR=$(MVTOOL_DIR) CC=$(CSTOOL_PREFIX)gcc CROSS_COMPILE=$(MVTOOL_PREFIX) LINUXLIBS_INSTALL_DIR=$(LINUXLIBS_INSTALL_DIR)
 
 demos_clean:
 	$(MAKE) -C $(DEMO_INSTALL_DIR)/$(PLATFORM) clean
@@ -250,7 +252,8 @@ dmai:
 	@echo "To install them to $(EXEC_DIR) enter $(DMAI_INSTALL_DIR) and execute 'make install'"
 
 dmai_clean:
-	$(MAKE) -C $(DMAI_INSTALL_DIR) PLATFORM=${DMAI_PLATFORM} clean
+	$(MAKE) -C $(DMAI_INSTALL_DIR) PLATFORM=${DMAI_PLATFORM} \
+		XDC_INSTALL_DIR_${DMAI_PLATFORM}=$(XDC_INSTALL_DIR) clean
 
 #==============================================================================
 # Build DSP Link for the configured platform. Also, an explicit cleanup target

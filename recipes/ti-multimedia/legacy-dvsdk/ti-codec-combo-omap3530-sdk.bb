@@ -1,5 +1,5 @@
 DESCRIPTION = "OMAP3530 Codec Combo 3.16.01"
-require ti-codec-combo-omap3530.inc
+require ../../ti-dsp/ti-codec-combo-omap3530.inc
 
 inherit sdk
 
