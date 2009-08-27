@@ -3,11 +3,11 @@ require ti-dmai.inc
 inherit module-base
 
 # compile time dependencies
-DEPENDS_omap3evm  += "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omap3530 virtual/kernel"
-DEPENDS_beagleboard	+= "alsa-lib  ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omap3530 virtual/kernel "
-DEPENDS_dm6446-evm 	+= "alsa-lib  ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-dm6446 virtual/kernel "
+DEPENDS_omap3evm  +=   "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omap3530 virtual/kernel"
+DEPENDS_beagleboard	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omap3530 virtual/kernel "
+DEPENDS_dm6446-evm 	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-dm6446 virtual/kernel "
 DEPENDS_dm355-evm  	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-codecs-dm355 virtual/kernel"
-DEPENDS_da830-omapl137-evm 	+= "alsa-lib  ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omapl137 virtual/kernel "
+DEPENDS_da830-omapl137-evm 	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omapl137 virtual/kernel "
 
 include ti-multimedia-common.inc
 
