@@ -1,4 +1,8 @@
 inherit sdk
+
+BRANCH = "${BRANCH_pn-ti-dmai}"
+SRCREV = "${SRCREV_pn-ti-dmai}"
+
 require ../ti-dmai.inc
 
 do_compile () {

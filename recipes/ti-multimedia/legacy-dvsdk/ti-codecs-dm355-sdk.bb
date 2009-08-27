@@ -2,6 +2,8 @@ inherit sdk
 
 require ../ti-codecs-dm355.inc
 
+PV = "${PV_pn-ti-codecs-dm355}"
+
 do_install() {
     install -d ${D}/${prefix}/dvsdk/dm355_codecs_${PV}
     cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/dm355_codecs_${PV}

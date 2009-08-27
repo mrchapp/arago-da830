@@ -2,6 +2,8 @@ inherit sdk
 
 require ../ti-codec-engine.inc
 
+PV = "${PV_pn-ti-codec-engine}"
+
 do_compile () {
         echo "! Do not rebuild for now !"
 }

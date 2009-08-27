@@ -1,5 +1,7 @@
 inherit sdk
 
+PV = "${PV_pn-ti-dvsdk-demos}"
+
 require ../ti-dvsdk-demos.inc
 
 do_compile () {

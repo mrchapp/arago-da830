@@ -2,6 +2,8 @@ inherit sdk
 
 require ../../ti-tools/ti-xdctools.inc
 
+PV = "${PV_pn-ti-xdctools-native}"
+
 do_install() {
     install -d ${D}/${prefix}/dvsdk/xdctools_${PV}
     cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/xdctools_${PV}

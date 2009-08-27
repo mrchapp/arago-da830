@@ -6,17 +6,12 @@ PR="r8"
 
 FILES=${@os.path.dirname(bb.data.getVar('FILE',d,1))}/files/dvsdk-rules
 
-DEPENDS_dm355-evm = "ti-xdctools-sdk ti-codec-engine-sdk ti-codecs-dm355-sdk ti-dmai-sdk ti-dvsdk-demos-sdk"
-DEPENDS_dm6446-evm = "ti-xdctools-sdk ti-codec-engine-sdk ti-codec-combo-dm6446-sdk ti-dmai-sdk ti-cgt6x-sdk ti-dspbios-sdk"
-DEPENDS_omap3evm  = "ti-xdctools-sdk ti-codec-engine-sdk ti-codec-combo-omap3530-sdk ti-dmai-sdk ti-cgt6x-sdk ti-dspbios-sdk"
+DEPENDS_dm355-evm   = "ti-xdctools-sdk ti-codec-engine-sdk ti-codecs-dm355-sdk ti-dmai-sdk ti-dvsdk-demos-sdk"
+DEPENDS_dm6446-evm  = "ti-xdctools-sdk ti-codec-engine-sdk ti-codec-combo-dm6446-sdk ti-dmai-sdk ti-cgt6x-sdk ti-dspbios-sdk"
+DEPENDS_omap3evm    = "ti-xdctools-sdk ti-codec-engine-sdk ti-codec-combo-omap3530-sdk ti-dmai-sdk ti-cgt6x-sdk ti-dspbios-sdk"
 DEPENDS_beagleboard = "ti-xdctools-sdk ti-codec-engine-sdk ti-codec-combo-omap3530-sdk ti-dmai-sdk ti-cgt6x-sdk ti-dspbios-sdk"
 
-
-PLATFORM_dm355-evm = "dm355"
-PLATFORM_dm6446-evm = "dm6446"
-PLATFORM_omap3evm = "omap3530"
-PLATFORM_dm6467-evm = "dm6467"
-PLATFORM_beagleboard = "omap3530"
+include ../ti-multimedia-common.inc
 
 do_install () {
 	mkdir -p  ${D}/${prefix}/dvsdk/	
