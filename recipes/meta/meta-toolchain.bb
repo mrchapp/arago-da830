@@ -131,10 +131,11 @@ do_populate_sdk() {
 
 	# Fix or remove broken .la files
 	for i in `find ${SDK_OUTPUT}/${prefix}/${TARGET_SYS} -name \*.la`; do
-		sed -i 	-e "/^dependency_libs=/s,\([[:space:]']\)${layout_base_libdir},\1${prefix}/${TARGET_SYS}${layout_base_libdir},g" \
-			-e "/^dependency_libs=/s,\([[:space:]']\)${layout_libdir},\1${prefix}/${TARGET_SYS}${layout_libdir},g" \
-			-e "/^dependency_libs=/s,\-\([LR]\)${layout_base_libdir},-\1${prefix}/${TARGET_SYS}${layout_base_libdir},g" \
-			-e "/^dependency_libs=/s,\-\([LR]\)${layout_libdir},-\1${prefix}/${TARGET_SYS}${layout_libdir},g" \
+		sed -i 	-e "/^dependency_libs=/s,\([[:space:]']\)${layout_base_libdir},\1\$SDK_PATH/\$TARGET_SYS${layout_base_libdir},g" \
+			-e "/^dependency_libs=/s,\([[:space:]']\)${layout_libdir},\1\$SDK_PATH/\$TARGET_SYS${layout_libdir},g" \
+			-e "/^dependency_libs=/s,\-\([LR]\)${layout_base_libdir},-\1\$SDK_PATH/\$TARGET_SYS${layout_base_libdir},g" \
+			-e "/^dependency_libs=/s,\-\([LR]\)${layout_libdir},-\1\$SDK_PATH/\$TARGET_SYS${layout_libdir},g" \
+			-e "/^dependency_libs=/s,${TOOLCHAIN_SYSPATH},\$TOOLCHAIN_PATH/\$TARGET_SYS,g" \
 			-e 's/^installed=yes$/installed=no/' $i
 	done
 	rm -f ${SDK_OUTPUT}/${prefix}/lib/*.la
@@ -150,8 +151,10 @@ do_populate_sdk() {
 	script=${SDK_OUTPUT}/${prefix}/environment-setup
 	touch $script
 	echo 'export SDK_PATH=${prefix}' >> $script
+	echo 'export TOOLCHAIN_PATH=${TOOLCHAIN_PATH}' >> $script
 	echo 'export TARGET_SYS=${TARGET_SYS}' >> $script
-	echo 'export PATH=$SDK_PATH/bin:$PATH' >> $script
+	echo 'export PATH=$SDK_PATH/bin:$TOOLCHAIN_PATH/bin:$PATH' >> $script
+	echo 'export CPATH=$SDK_PATH/$TARGET_SYS/usr/include:$CPATH' >> $script
 	echo 'export LIBTOOL_SYSROOT_PATH=$SDK_PATH/$TARGET_SYS' >> $script
 	echo 'export PKG_CONFIG_SYSROOT_DIR=$SDK_PATH/$TARGET_SYS' >> $script
 	echo 'export PKG_CONFIG_PATH=$SDK_PATH/$TARGET_SYS${layout_libdir}/pkgconfig' >> $script
