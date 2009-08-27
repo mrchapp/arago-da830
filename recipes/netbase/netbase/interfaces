@@ -52,6 +52,8 @@ iface atml0 inet dhcp
 # Wired or wireless interfaces
 auto eth0
 iface eth0 inet dhcp
+        pre-up /bin/grep -v -e "ip=[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+" /proc/cmdline > /dev/null
+
 iface eth1 inet dhcp
 
 # Ethernet/RNDIS gadget (g_ether)
