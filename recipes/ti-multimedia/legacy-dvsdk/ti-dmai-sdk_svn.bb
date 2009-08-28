@@ -16,7 +16,7 @@ do_install() {
     # Creates rules.make file
 	mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
 	echo "# Where DMAI package is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/dmai.Rules.make
-    echo "DMAI_INSTALL_DIR=${prefix}/dvsdk/dmai_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/dmai.Rules.make
+    echo "DMAI_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/dmai_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/dmai.Rules.make
 }
 
 FILES_${PN} = "${prefix}/dvsdk/dmai_${PV}/*"

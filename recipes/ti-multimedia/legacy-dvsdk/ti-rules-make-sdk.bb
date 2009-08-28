@@ -39,7 +39,7 @@ do_install () {
 	echo "LINUXLIBS_INSTALL_DIR=${prefix}/${TARGET_SYS}/usr" >> ${D}/${prefix}/dvsdk/Rules.make
 	echo "" >> ${D}/${prefix}/dvsdk/Rules.make
 	echo "# The prefix to be added before the GNU compiler tools (optionally including # path), i.e. \"arm_v5t_le-\" or \"/opt/bin/arm_v5t_le-\"." >>  ${D}/${prefix}/dvsdk/Rules.make 
-	echo "CSTOOL_DIR=${SDK_PATH}" >>  ${D}/${prefix}/dvsdk/Rules.make
+	echo "CSTOOL_DIR=${TOOLCHAIN_PATH}" >>  ${D}/${prefix}/dvsdk/Rules.make
 	echo "CSTOOL_PREFIX=\$(CSTOOL_DIR)/bin/arm-none-linux-gnueabi-" >> ${D}/${prefix}/dvsdk/Rules.make
 	echo "" >> ${D}/${prefix}/dvsdk/Rules.make
 	echo "MVTOOL_DIR=\$(CSTOOL_DIR)" >>  ${D}/${prefix}/dvsdk/Rules.make

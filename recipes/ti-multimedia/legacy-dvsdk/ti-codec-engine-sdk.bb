@@ -21,9 +21,9 @@ do_install() {
 
     # Creates rules.make file
     
-	  mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
-	  echo "# Where the Codec Engine package is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
-    echo "CE_INSTALL_DIR=${prefix}/dvsdk/codec_engine_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
+	mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
+	echo "# Where the Codec Engine package is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
+    echo "CE_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/codec_engine_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
     echo "" >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
     echo "# Where the XDAIS package is installed." >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
     echo "XDAIS_INSTALL_DIR=\$(CE_INSTALL_DIR)/cetools" >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make

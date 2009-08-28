@@ -9,9 +9,9 @@ do_install() {
     cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/xdctools_${PV}
 
     # Creates rules.make file
-	  mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
-	  echo "# Where the RTSC tools package is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/xdc.Rules.make
-    echo "XDC_INSTALL_DIR=${prefix}/dvsdk/xdctools_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/xdc.Rules.make
+	mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
+	echo "# Where the RTSC tools package is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/xdc.Rules.make
+    echo "XDC_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/xdctools_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/xdc.Rules.make
 }
 
 FILES_${PN} = "${prefix}/dvsdk/xdctools_${PV}"
