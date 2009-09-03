@@ -2,11 +2,14 @@ inherit sdk
 
 require ../../ti-tools/ti-xdctools.inc
 
-PV = "${PV_pn-ti-xdctools-native}"
+BASE_PV = "${BASE_PV_pn-ti-xdctools-native}"
+PV      = "${PV_pn-ti-xdctools-native}"
 
 do_install() {
     install -d ${D}/${prefix}/dvsdk/xdctools_${PV}
     cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/xdctools_${PV}
+    chmod 755 -R ${D}/${prefix}/dvsdk/xdctools_${PV}
+    chmod 755 -R  ${S}
 
     # Creates rules.make file
 	mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
