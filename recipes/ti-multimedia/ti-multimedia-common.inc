@@ -7,20 +7,22 @@ CODEC_INSTALL_DIR_beagleboard = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec
 CODEC_INSTALL_DIR_da830-omapl137-evm = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-combo-omapl137"
 export CODEC_INSTALL_DIR
 
-export LINUXLIBS_INSTALL_DIR = "${STAGING_DIR_HOST}/usr"
-export CODEGEN_INSTALL_DIR   = "${STAGING_DIR_NATIVE}/ti-cgt6x-native"
-export XDC_INSTALL_DIR  = "${STAGING_DIR_NATIVE}/ti-xdctools-native"
-export BIOS_INSTALL_DIR = "${STAGING_DIR_NATIVE}/ti-dspbios-native"
-export DMAI_INSTALL_DIR = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-dmai"
-export CE_INSTALL_DIR   = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine"
-export FC_INSTALL_DIR   = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
-export LINK_INSTALL_DIR = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
-export CMEM_INSTALL_DIR = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
-export LPM_INSTALL_DIR  = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
-export USER_XDC_PATH    = "${CE_INSTALL_DIR}/examples"
+export LINUXLIBS_INSTALL_DIR  = "${STAGING_DIR_HOST}/usr"
+export CODEGEN_INSTALL_DIR    = "${STAGING_DIR_NATIVE}/ti-cgt6x-native"
+export XDC_INSTALL_DIR        = "${STAGING_DIR_NATIVE}/ti-xdctools-native"
+export XDAIS_INSTALL_DIR      = "${STAGING_DIR_NATIVE}/ti-xdais"
+export BIOS_INSTALL_DIR       = "${STAGING_DIR_NATIVE}/ti-dspbios-native"
 
-XDC_TARGET = gnu.targets.arm.GCArmv5T
-export XDC_TARGET
+export CE_INSTALL_DIR         = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine"
+export FC_INSTALL_DIR         = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-framework-components"
+export LINUXUTILS_INSTALL_DIR = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-linuxutils"
+export CMEM_INSTALL_DIR       = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-linuxutils"
+export LINK_INSTALL_DIR       = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
+export LPM_INSTALL_DIR        = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codec-engine/cetools"
+export DMAI_INSTALL_DIR       = "${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-dmai"
+
+export USER_XDC_PATH    = "${CE_INSTALL_DIR}/examples"
+export XDC_TARGET       = gnu.targets.arm.GCArmv5T
 
 XDC_PLATFORM_dm355-evm   = ti.platforms.evmDM355
 XDC_PLATFORM_dm6446-evm  = ti.platforms.evmDM6446

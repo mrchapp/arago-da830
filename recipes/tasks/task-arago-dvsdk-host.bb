@@ -1,5 +1,5 @@
 DESCRIPTION = "Host packages for a standalone Arago SDK or external toolchain"
-PR = "r17"
+PR = "r18"
 ALLOW_EMPTY = "1"
 
 inherit sdk
@@ -7,49 +7,50 @@ inherit sdk
 PACKAGES = "${PN}"
 
 DVSDK_HOST_PACKAGE_dm355-evm = "\
-	ti-codec-engine-sdk \
-	ti-codecs-dm355-sdk \
-	ti-xdctools-sdk \
-	ti-dmai-sdk \
-	ti-dvsdk-demos-sdk \
+    ti-xdctools-sdk \
+    ti-xdais-sdk \
+    ti-codecs-dm355-sdk \
+    ti-codec-engine-sdk \
+    ti-framework-components-sdk \
+    ti-linuxutils-sdk \
+    ti-dmai-sdk \
+    ti-dvsdk-demos-sdk \
 "
-
 DVSDK_HOST_PACKAGE_dm6446-evm = "\
-	ti-codec-engine-sdk \
-	ti-codec-combo-dm6446-sdk \
-	ti-xdctools-sdk \
-	ti-dmai-sdk \
-	ti-dspbios-sdk \
-	ti-cgt6x-sdk \
+    ti-codec-engine-sdk \
+    ti-codec-combo-dm6446-sdk \
+    ti-xdctools-sdk \
+    ti-dmai-sdk \
+    ti-dspbios-sdk \
+    ti-cgt6x-sdk \
 "
 DVSDK_HOST_PACKAGE_dm6467-evm = "\
-	ti-codec-engine-sdk \
-	ti-codec-combo-dm6467-sdk \
-	ti-xdctools-sdk \
-	ti-dmai-sdk \
-	ti-dspbios-sdk \
-	ti-cgt6x-sdk \
+    ti-codec-engine-sdk \
+    ti-codec-combo-dm6467-sdk \
+    ti-xdctools-sdk \
+    ti-dmai-sdk \
+    ti-dspbios-sdk \
+    ti-cgt6x-sdk \
 "
 DVSDK_HOST_PACKAGE_omap3evm = "\
-	ti-codec-engine-sdk \
-	ti-codec-combo-omap3530-sdk \
-	ti-xdctools-sdk \
-	ti-dmai-sdk \
-	ti-dspbios-sdk \
-	ti-cgt6x-sdk \
+    ti-codec-engine-sdk \
+    ti-codec-combo-omap3530-sdk \
+    ti-xdctools-sdk \
+    ti-dmai-sdk \
+    ti-dspbios-sdk \
+    ti-cgt6x-sdk \
 "
 DVSDK_HOST_PACKAGE_beagleboard = "\
-	ti-codec-engine-sdk \
-	ti-codec-combo-omap3530-sdk \
-	ti-xdctools-sdk \
-	ti-dmai-sdk \
-	ti-dspbios-sdk \
-	ti-cgt6x-sdk \
+    ti-codec-engine-sdk \
+    ti-codec-combo-omap3530-sdk \
+    ti-xdctools-sdk \
+    ti-dmai-sdk \
+    ti-dspbios-sdk \
+    ti-cgt6x-sdk \
 "
 
 RDEPENDS_${PN} = "\
-	task-arago-base-host \
-	${DVSDK_HOST_PACKAGE} \
-	ti-rules-make-sdk \
+    task-arago-base-host \
+    ${DVSDK_HOST_PACKAGE} \
+    ti-rules-make-sdk \
     "
-

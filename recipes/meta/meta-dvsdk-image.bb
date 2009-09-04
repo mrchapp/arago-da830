@@ -9,7 +9,6 @@ TOOLCHAIN_TARGET_TASK = "task-arago-dvsdk-target"
 DVSDK_TARGET_EXCLUDE_dm355-evm = "\
        ti-cmem-module \
        ti-dm355mm-module \
-       ti-codecs-dm355 \
        ti-dmai-apps \
 "
 DVSDK_TARGET_EXCLUDE_dm6446-evm = "\
@@ -32,7 +31,6 @@ DVSDK_TARGET_EXCLUDE_beagleboard = "\
        ti-codec-combo-omap3530 \
        ti-dmai-apps \
 "
-
 
 TOOLCHAIN_TARGET_EXCLUDE = "\
 libc6 \

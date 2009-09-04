@@ -13,8 +13,8 @@ do_install() {
     cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/dvsdk_demos_${PV}
 
     # Creates rules.make file
-	  mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
-	  echo "# Where the DVSDK demos are installed" > ${STAGING_DIR_HOST}/ti-sdk-rules/dvsdk-demos.Rules.make
+    mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
+    echo "# Where the DVSDK demos are installed" > ${STAGING_DIR_HOST}/ti-sdk-rules/dvsdk-demos.Rules.make
     echo "DEMO_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/dvsdk_demos_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/dvsdk-demos.Rules.make    
 }
 
