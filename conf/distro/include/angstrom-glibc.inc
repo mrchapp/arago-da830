@@ -1,7 +1,5 @@
 # glibc:
-require conf/distro/include/glibc-external.inc
-
-PREFERRED_PROVIDER_linux-libc-headers ?= "external-toolchain"
+require conf/distro/include/glibc-${TOOLCHAIN_TYPE}.inc
 
 TARGET_OS = "linux${@['','-gnueabi'][bb.data.getVar('TARGET_ARCH',d,1) in ['arm', 'armeb'] and bb.data.getVar('MACHINE',d) not in ['collie','h3600', 'h3800', 'simpad', 'htcwallaby']]}"
 
