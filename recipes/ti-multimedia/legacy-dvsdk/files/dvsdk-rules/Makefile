@@ -174,16 +174,16 @@ psp_clean:
 # is defined.
 #==============================================================================
 cmem:
-	$(MAKE) -C $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/interface ../../lib/cmem.a470MV
-	$(MAKE) -C $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/module
+	$(MAKE) -C $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/interface ../../lib/cmem.a470MV RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
+	$(MAKE) -C $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/module RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
 	@mkdir -p $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)
 	@cp $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/module/cmemk.ko $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)/
 	@echo
 	@echo "cmemk.ko kernel module can be found under $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)"
 
 cmem_clean:
-	$(MAKE) -C $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/module clean
-	$(MAKE) -C $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/interface clean
+	$(MAKE) -C $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/module clean RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
+	$(MAKE) -C $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/interface clean RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
 
 #==============================================================================
 # Build the *evaluation* codec servers for the configured platform. Also, an
