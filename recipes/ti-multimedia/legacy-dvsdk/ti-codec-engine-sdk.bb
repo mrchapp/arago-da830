@@ -13,6 +13,11 @@ do_install() {
     install -d ${D}/${prefix}/dvsdk/codec_engine_${PV}
     cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/codec_engine_${PV}
 
+    # Remove duplicate packages
+    rm -rf `find ${D}/${prefix}/dvsdk/codec_engine_${PV}/cetools -type d -name xdais`
+    rm -rf `find ${D}/${prefix}/dvsdk/codec_engine_${PV}/cetools -type d -name fc`
+    rm -rf `find ${D}/${prefix}/dvsdk/codec_engine_${PV}/cetools -type d -name linuxutils`
+
     # Creates rules.make file
     
     mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules

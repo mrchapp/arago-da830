@@ -93,9 +93,9 @@ FILES_ti-dmai-apps = "${installdir}/dmai-apps/*"
 FILES_ti-dmai-tests = "${installdir}/dmai-tests/*"
 
 # run time dependencies 
-RDEPENDS_ti-dmai-apps_dm355-evm += "ti-dm355mm-module ti-cmem-module ti-codecs-dm355"
-RDEPENDS_ti-dmai-apps_dm6446-evm += "ti-cmem-module ti-dsplink-module ti-codec-combo-dm6446"
-RDEPENDS_ti-dmai-apps_omap3evm += "ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module ti-sdma-module"
-RDEPENDS_ti-dmai-apps_beagleboard += "ti-cmem-module ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module ti-sdma-module"
-RDEPENDS_ti-dmai-apps_da830-omapl137-evm += "ti-cmem-module ti-dsplink-module ti-codec-combo-ol137"
+RDEPENDS_ti-dmai-apps_dm355-evm += "ti-dm355mm-module ti-linuxutils ti-codecs-dm355"
+RDEPENDS_ti-dmai-apps_dm6446-evm += "ti-linuxutils ti-dsplink-module ti-codec-combo-dm6446"
+RDEPENDS_ti-dmai-apps_omap3evm += "ti-linuxutils ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module ti-sdma-module"
+RDEPENDS_ti-dmai-apps_beagleboard += "ti-linuxutils ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module ti-sdma-module"
+RDEPENDS_ti-dmai-apps_da830-omapl137-evm += "ti-linuxutils ti-dsplink-module ti-codec-combo-ol137"
 

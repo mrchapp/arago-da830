@@ -7,26 +7,26 @@ TOOLCHAIN_HOST_TASK = "task-arago-dvsdk-gstreamer-host"
 TOOLCHAIN_TARGET_TASK = "task-arago-dvsdk-gstreamer-target"
 
 DVSDK_TARGET_EXCLUDE_dm355-evm = "\
-       ti-cmem-module \
+       ti-linuxutils \
        ti-dm355mm-module \
        ti-codec-combo-dm355 \
        ti-dmai-apps \
 "
 DVSDK_TARGET_EXCLUDE_dm6446-evm = "\
-       ti-cmem-module \
+       ti-linuxutils \
        ti-dsplink-module \
        ti-codec-combo-dm6446 \
        ti-dmai-apps \
 "
 DVSDK_TARGET_EXCLUDE_omap3evm = "\
-       ti-cmem-module \
+       ti-linuxutils \
        ti-dsplink-module \
        ti-lpm-module \
        ti-codec-combo-omap3530 \
        ti-dmai-apps \
 "
 DVSDK_TARGET_EXCLUDE_beagleboard = "\
-       ti-cmem-module \
+       ti-linuxutils \
        ti-dsplink-module \
        ti-lpm-module \
        ti-codec-combo-omap3530 \

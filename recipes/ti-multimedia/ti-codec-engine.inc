@@ -1,6 +1,6 @@
 DESCRIPTION ?= "Codec Engine for TI ARM/DSP processors"
 
-PR = "r18"
+PR = "r19"
 
 # Download codec_engine_${PV}.tar.gz from https://www-a.ti.com/downloads/sds_support/targetcontent/CE/ce_${PV}/index.html and copy in Arago/OE download directory.
 

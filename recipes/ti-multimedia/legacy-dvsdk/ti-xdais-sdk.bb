@@ -14,7 +14,7 @@ do_install() {
     # Creates rules.make file
 	mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
 	echo "# Where the XDAIS package is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/xdais.Rules.make
-    echo "XDC_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/xdais_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/xdais.Rules.make
+    echo "XDAIS_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/xdais_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/xdais.Rules.make
 }
 
 FILES_${PN} = "${prefix}/dvsdk/xdais_${PV}"
