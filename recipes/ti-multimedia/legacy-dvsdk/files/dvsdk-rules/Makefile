@@ -249,7 +249,8 @@ dmai:
 
 	@echo
 	@echo "DMAI applications can be found under $(DMAI_INSTALL_DIR)/packages/ti/sdo/dmai/apps"
-	@echo "To install them to $(EXEC_DIR) enter $(DMAI_INSTALL_DIR) and execute 'make install'"
+	@echo "To install them to $(EXEC_DIR); Go to $(DMAI_INSTALL_DIR) directory;"
+	@echo "Execute 'make install EXEC_DIR=$(EXEC_DIR) PLATFORM=$(DMAI_PLATFORM)'"
 
 dmai_clean:
 	$(MAKE) -C $(DMAI_INSTALL_DIR) PLATFORM=${DMAI_PLATFORM} \
@@ -300,14 +301,14 @@ install:
 	@install -m 666 $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)/* $(EXEC_DIR)/
 
 	@echo Installing DVSDK demos..
-	$(MAKE) -C $(DEMO_INSTALL_DIR)/$(PLATFORM) install
+	$(MAKE) -C $(DEMO_INSTALL_DIR)/$(PLATFORM) install EXEC_DIR=$(EXEC_DIR)
 
-	@echo Copying examples..
-	@cp -rp examples/$(PLATFORM)/web $(EXEC_DIR)/
-	@cp -p examples/$(PLATFORM)/dvevmdemo $(EXEC_DIR)/
+#	@echo Copying examples..
+#	@cp -rp examples/$(PLATFORM)/web $(EXEC_DIR)/
+#	@cp -p examples/$(PLATFORM)/dvevmdemo $(EXEC_DIR)/
 
-	@echo Installing clips..
-	$(MAKE) -C clips install
+#	@echo Installing clips..
+#	$(MAKE) -C clips install
 
 ifeq ($(PLATFORM),dm6446)
 	@echo Copying codec servers..
@@ -335,8 +336,8 @@ ifeq ($(PLATFORM),dm6467)
 	@install -m 777 $(DVSDK_INSTALL_DIR)/mapdmaq-hd/mapdmaq-hd $(EXEC_DIR)/
 endif
 
-ifeq ($(PLATFORM),dm355)
-	@echo Copying mapdmaq..
-	@install -m 777 $(DVSDK_INSTALL_DIR)/mapdmaq/mapdmaq $(EXEC_DIR)/
-endif
+#ifeq ($(PLATFORM),dm355)
+#	@echo Copying mapdmaq..
+#	@install -m 777 $(DVSDK_INSTALL_DIR)/mapdmaq/mapdmaq $(EXEC_DIR)/
+#endif
 
