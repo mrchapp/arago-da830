@@ -4,6 +4,8 @@
 # The size of the uncompressed ramdisk is 8MB
 ROOTFS_SIZE = "8192"
 
+EXTRA_IMAGECMD_ext2.gz += "-i 4096"
+
 # Disable this due to distribution restrictions
 # DISTRO_SSH_DAEMON ?= "dropbear"
 

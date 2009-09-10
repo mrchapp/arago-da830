@@ -8,6 +8,8 @@ ROOTFS_SIZE = "40960"
 # Double the beagleboard ramdisk size, due to gazillions of kernel modules
 ROOTFS_SIZE_beagleboard = "81920"
 
+EXTRA_IMAGECMD_ext2.gz += "-i 4096"
+
 # Disable this due to distribution restrictions
 # DISTRO_SSH_DAEMON ?= "dropbear"
 
