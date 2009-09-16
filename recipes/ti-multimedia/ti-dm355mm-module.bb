@@ -49,5 +49,3 @@ pkg_postrm () {
 
 INHIBIT_PACKAGE_STRIP = "1"
 FILES_${PN} = "/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp/dm350mmap.ko"
-
-

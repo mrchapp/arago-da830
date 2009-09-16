@@ -336,8 +336,8 @@ ifeq ($(PLATFORM),dm6467)
 	@install -m 777 $(DVSDK_INSTALL_DIR)/mapdmaq-hd/mapdmaq-hd $(EXEC_DIR)/
 endif
 
-#ifeq ($(PLATFORM),dm355)
-#	@echo Copying mapdmaq..
-#	@install -m 777 $(DVSDK_INSTALL_DIR)/mapdmaq/mapdmaq $(EXEC_DIR)/
-#endif
+ifeq ($(PLATFORM),dm355)
+	@echo Copying mapdmaq..
+	@install -m 777 $(DVSDK_INSTALL_DIR)/mapdmaq/mapdmaq $(EXEC_DIR)/
+endif
 

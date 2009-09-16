@@ -23,5 +23,5 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 INSANE_SKIP_${PN} = True
 FILES_${PN} = "${installdir}/dvsdk-demos/*"
 
-RDEPENDS_ti-dvsdk-demos_dm355-evm += "ti-dm355mm-module ti-linuxutils"
+RDEPENDS_ti-dvsdk-demos_dm355-evm += "ti-dm355mm-module ti-linuxutils alsa-lib libpng freetype jpeg"
 
