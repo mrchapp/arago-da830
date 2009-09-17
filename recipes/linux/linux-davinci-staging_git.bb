@@ -17,7 +17,7 @@ PV = "${KVER}-${PR}+gitr${SRCREV}"
 
 FILESPATHPKG := "${@bb.data.getVar('FILESPATHPKG', d, 1).replace(':files:', ':linux-davinci:files:', 1)}"
 
-SRC_URI = "git://arago-project.org/git/people/sneha/linux-davinci-staging.git;protocol=git;branch=${BRANCH} \
+SRC_URI = "git://arago-project.org/git/projects/linux-davinci.git;protocol=git;branch=${BRANCH} \
            file://defconfig"
 
 S = "${WORKDIR}/git"
