@@ -1,5 +1,5 @@
 DESCRIPTION = "Extended task to get more basic and demo apps"
-PR = "r7"
+PR = "r8"
 
 inherit task
 
@@ -44,6 +44,7 @@ ARAGO_UTILS = "\
     usbutils \
     i2c-tools \
     gdbserver \
+    iproute2 \
     "
 
 ARAGO_DVSDK_PREREQ = "\
