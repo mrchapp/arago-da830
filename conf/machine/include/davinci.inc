@@ -8,10 +8,8 @@ TARGET_ARCH = "arm"
 KERNEL_IMAGETYPE = "uImage"
 
 PREFERRED_PROVIDER_virtual/kernel = "linux-davinci"
-PREFERRED_PROVIDER_xserver = "xserver-kdrive"
 
 PREFERRED_PROVIDER_virtual/bootloader = "u-boot"
-#PREFERRED_VERSION_u-boot = "git"
 UBOOT_MACHINE = "davinci_dvevm_config"
 
 UBOOT_ENTRYPOINT = "0x80008000"
