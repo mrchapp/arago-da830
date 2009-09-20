@@ -5,6 +5,9 @@ COMPATIBLE_MACHINE = "omap3evm|omap3517-evm|beagleboard|dm6446-evm|dm6467-evm|dm
 
 # The size of the uncompressed ramdisk is 40MB
 ROOTFS_SIZE = "32768"
+# DM646x have many modules
+ROOTFS_SIZE_dm6467-evm = "40960"
+ROOTFS_SIZE_dm6467t-evm = "40960"
 # Double the beagleboard ramdisk size, due to gazillions of kernel modules
 ROOTFS_SIZE_beagleboard = "81920"
 
