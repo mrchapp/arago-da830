@@ -14,8 +14,10 @@ do_install() {
 
     # Creates rules.make file
     mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
-    echo "# Where the codec servers are installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/codec.Rules.make
-    echo "CODEC_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/dm355_codecs_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/codec.Rules.make
+    echo "ifeq (\$(PLATFORM),dm355)" > ${STAGING_DIR_HOST}/ti-sdk-rules/dm355-codecs.Rules.make
+    echo "# Where the DM355 codecs are installed." >> ${STAGING_DIR_HOST}/ti-sdk-rules/dm355-codecs.Rules.make
+    echo "    CODEC_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/dm355_codecs_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/dm355-codecs.Rules.make
+    echo "endif" >> ${STAGING_DIR_HOST}/ti-sdk-rules/dm355-codecs.Rules.make
 }
 
 FILES_${PN} = "${prefix}/dvsdk/dm355_codecs_${PV}/*"

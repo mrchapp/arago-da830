@@ -12,6 +12,12 @@ DVSDK_TARGET_EXCLUDE_dm355-evm = "\
        ti-codec-combo-dm355 \
        ti-dmai-apps \
 "
+DVSDK_TARGET_EXCLUDE_dm365-evm = "\
+       ti-linuxutils \
+       ti-dm365mm-module \
+       ti-codec-combo-dm365 \
+       ti-dmai-apps \
+"
 DVSDK_TARGET_EXCLUDE_dm6446-evm = "\
        ti-linuxutils \
        ti-dsplink-module \

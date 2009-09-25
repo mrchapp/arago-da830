@@ -3,19 +3,32 @@ inherit module-base
 
 include ti-dvsdk-demos.inc
 
+include ti-multimedia-common.inc
+
 installdir = "${prefix}/ti"
 
-DEPENDS 	+= "ti-dmai"
-DEPENDS 	+= "alsa-lib libpng freetype jpeg"
+DEPENDS += "ti-dmai"
+DEPENDS += "alsa-lib libpng freetype jpeg"
 
-TARGET 			?= "all"
-TARGET_dm355-evm 	?= "dm355"
+TARGET           ?= "all"
+TARGET_dm355-evm ?= "dm355"
+TARGET_dm365-evm ?= "dm365"
 
 include ti-multimedia-common.inc
 
+do_compile () {
+    if [ ${PLATFORM} == "dm355" ] ; then
+        cd ${S}
+        make clean
+        make ${PLATFORM}
+    fi
+}
+
 do_install () {
-    cd ${S}
-    make ${TARGET} EXEC_DIR=${D}/${installdir}/dvsdk-demos install 
+    if [ ${PLATFORM} == "dm355" ] ; then
+        cd ${S}
+        make ${TARGET} EXEC_DIR=${D}/${installdir}/dvsdk-demos install 
+    fi
 }
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
@@ -24,4 +37,5 @@ INSANE_SKIP_${PN} = True
 FILES_${PN} = "${installdir}/dvsdk-demos/*"
 
 RDEPENDS_ti-dvsdk-demos_dm355-evm += "ti-dm355mm-module ti-linuxutils alsa-lib libpng freetype jpeg"
+RDEPENDS_ti-dvsdk-demos_dm365-evm += "ti-dm365mm-module ti-linuxutils alsa-lib libpng freetype jpeg"
 

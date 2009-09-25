@@ -7,6 +7,7 @@ DEPENDS_omap3evm  +=   "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-n
 DEPENDS_beagleboard	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omap3530 virtual/kernel "
 DEPENDS_dm6446-evm 	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-dm6446 virtual/kernel "
 DEPENDS_dm355-evm  	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-codecs-dm355 virtual/kernel"
+DEPENDS_dm365-evm  	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-codecs-dm365 virtual/kernel"
 DEPENDS_da830-omapl137-evm 	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omapl137 virtual/kernel "
 
 include ti-multimedia-common.inc
@@ -15,6 +16,7 @@ TARGET 			?= "all"
 TARGET_omap3evm 	?= "o3530_al"
 TARGET_beagleboard 	?= "o3530_al"
 TARGET_dm355-evm 	?= "dm355_al"
+TARGET_dm365-evm 	?= "dm365_al"
 TARGET_dm6446-evm 	?= "dm6446_al"
 TARGET_da830-omapl137-evm 	?= "ol137_al"
 
@@ -61,13 +63,12 @@ do_compile () {
 
 do_install () {
 	# install dmai apps on target
-    install -d ${D}/dmai-apps
+    install -d ${D}/${installdir}/dmai-apps
     cd ${S}/dmai
     make PLATFORM="${TARGET}" EXEC_DIR=${D}/${installdir}/dmai-apps install 
 	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${TARGET}.sh ${D}/${installdir}/dmai-apps/loadmodule.sh 
-
     cd ${S}/tests
-    install -d ${D}/dmai-tests
+    install -d ${D}/${installdir}/dmai-tests
     make PLATFORM="${TARGET}" EXEC_DIR=${D}/${installdir}/dmai-tests install 
 	install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${TARGET}.sh ${D}/${installdir}/dmai-tests/loadmodule.sh 
 }
@@ -94,6 +95,7 @@ FILES_ti-dmai-tests = "${installdir}/dmai-tests/*"
 
 # run time dependencies 
 RDEPENDS_ti-dmai-apps_dm355-evm += "ti-dm355mm-module ti-linuxutils ti-codecs-dm355"
+RDEPENDS_ti-dmai-apps_dm365-evm += "ti-dm365mm-module ti-linuxutils ti-codecs-dm365"
 RDEPENDS_ti-dmai-apps_dm6446-evm += "ti-linuxutils ti-dsplink-module ti-codec-combo-dm6446"
 RDEPENDS_ti-dmai-apps_omap3evm += "ti-linuxutils ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module ti-sdma-module"
 RDEPENDS_ti-dmai-apps_beagleboard += "ti-linuxutils ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module ti-sdma-module"

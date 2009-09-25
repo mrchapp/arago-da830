@@ -1,7 +1,11 @@
 DESCRIPTION = "DMAI for TI ARM/DSP processors"
 
+BRANCH="SAJESH_GIT_091609"
+SRCREV="311"
+
 SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=${BRANCH};proto=https;user=anonymous;pswd='' \
 		file://loadmodules-ti-dmai-dm355_al.sh \
+		file://loadmodules-ti-dmai-dm365_al.sh \
 		file://loadmodules-ti-dmai-dm6446_al.sh \
 		file://loadmodules-ti-dmai-o3530_al.sh \
 	"

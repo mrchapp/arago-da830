@@ -56,6 +56,9 @@ ARAGO_DVSDK_PREREQ = "\
     cppstub \
     "
 
+DVSDK_TARGET_PACKAGE_dm355-evm = "ti-dvsdk-demos"
+DVSDK_TARGET_PACKAGE_dm365-evm = "ti-dmai-apps"
+
 # add dvsdk components
 RDEPENDS_${PN} = "\
     task-arago-base \
@@ -65,6 +68,5 @@ RDEPENDS_${PN} = "\
     ${ARAGO_FSTOOLS} \
     ${ARAGO_UTILS} \
     ${ARAGO_DVSDK_PREREQ} \
-	ti-dvsdk-demos \
+	${DVSDK_TARGET_PACKAGE} \
     "
-

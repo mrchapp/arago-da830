@@ -1,6 +1,7 @@
 inherit sdk
 
-PV = "${PV_pn-ti-dvsdk-demos}"
+PV           = "${PV_pn-ti-dvsdk-demos}"
+BASE_SRC_URI = "${BASE_SRC_URI_pn-ti-dvsdk-demos}"
 
 require ../ti-dvsdk-demos.inc
 

@@ -1,5 +1,7 @@
 DESCRIPTION = "DM355 Codecs"
 
+PV = "1_13_000"
+
 SRC_URI	= "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/dvsdk/codecs/dm355_codecs_setuplinux_${PV}.bin \
 		   file://mapdmaq \
 		 "

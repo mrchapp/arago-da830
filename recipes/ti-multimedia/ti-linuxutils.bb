@@ -1,13 +1,21 @@
 inherit module
 
+include ti-multimedia-common.inc
+
 # compile and run time dependencies
-DEPENDS 	= "virtual/kernel perl-native"
-RDEPENDS 	= "update-modules"
+DEPENDS     = "virtual/kernel perl-native"
+RDEPENDS     = "update-modules"
 
 require ti-linuxutils.inc
 
 #This is a kernel module, don't set PR directly
 MACHINE_KERNEL_PR_append = "a"
+
+# stage tree - other packages may need this
+do_stage() {
+    install -d ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}
+    cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}/ 
+}
 
 do_compile() {
     # TODO :: KERNEL_CC, etc need replacing with user CC
@@ -25,13 +33,15 @@ do_compile() {
       UCTOOL_PREFIX="${TARGET_PREFIX}" \
       clean debug release
 
-#   # Compile EDMA
-#    cd ${S}/packages/ti/sdo/linuxutils/edma
-#    make \
-#      LINUXKERNEL_INSTALL_DIR="${STAGING_KERNEL_DIR}" \
-#      MVTOOL_PREFIX="${TARGET_PREFIX}" \
-#      UCTOOL_PREFIX="${TARGET_PREFIX}" \
-#      clean debug release
+   # Compile EDMA
+    if [ ${PLATFORM} == "dm365" ] ; then
+        cd ${S}/packages/ti/sdo/linuxutils/edma
+        make \
+         LINUXKERNEL_INSTALL_DIR="${STAGING_KERNEL_DIR}" \
+         MVTOOL_PREFIX="${TARGET_PREFIX}" \
+         UCTOOL_PREFIX="${TARGET_PREFIX}" \
+         clean debug release
+    fi
 }
 
 do_install () {
@@ -46,20 +56,22 @@ do_install () {
       LINUXKERNEL_INSTALL_DIR="${STAGING_KERNEL_DIR}" \
       MVTOOL_PREFIX="${TARGET_PREFIX}" \
       UCTOOL_PREFIX="${TARGET_PREFIX}" \
-	  EXEC_DIR="${D}${prefix}/ti/ti-linuxutils-app/cmem-app" \
+      EXEC_DIR="${D}${prefix}/ti/ti-linuxutils-app/cmem-app" \
       install
 
-#    # Install EDMA
-#    install -m 0755 ${S}/packages/ti/sdo/linuxutils/cmem/src/module/edma.ko \
-#        ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp
-#
-#    cd ${S}/packages/ti/sdo/linuxutils/edma/apps
-#    make \
-#      LINUXKERNEL_INSTALL_DIR="${STAGING_KERNEL_DIR}" \
-#      MVTOOL_PREFIX="${TARGET_PREFIX}" \
-#      UCTOOL_PREFIX="${TARGET_PREFIX}" \
-#	  EXEC_DIR="${D}${prefix}/ti/ti-linuxutils-app/edma-app" \
-#      install
+    # Install EDMA
+    if [ ${PLATFORM} == "dm365" ] ; then
+        install -m 0755 ${S}/packages/ti/sdo/linuxutils/edma/src/module/edmak.ko \
+        ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/dsp
+
+        cd ${S}/packages/ti/sdo/linuxutils/edma/apps
+        make \
+         LINUXKERNEL_INSTALL_DIR="${STAGING_KERNEL_DIR}" \
+         MVTOOL_PREFIX="${TARGET_PREFIX}" \
+         UCTOOL_PREFIX="${TARGET_PREFIX}" \
+         EXEC_DIR="${D}${prefix}/ti/ti-linuxutils-app/edma-app" \
+         install
+    fi
 }
 
 pkg_postinst () {

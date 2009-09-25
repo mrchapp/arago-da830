@@ -1,50 +1,73 @@
 include Rules.make
 
-COMPONENTS:=$(DMAI_INSTALL_DIR) $(LINK_INSTALL_DIR) $(XDAIS_INSTALL_DIR) $(CMEM_INSTALL_DIR) $(EDMA3_LLD_INSTALL_DIR) $(FC_INSTALL_DIR) $(CE_INSTALL_DIR) $(XDC_INSTALL_DIR) $(BIOSUTILS_INSTALL_DIR) $(BIOS_INSTALL_DIR) $(DVTB_INSTALL_DIR) $(CODEC_INSTALL_DIR)
+COMPONENTS:=$(DMAI_INSTALL_DIR) $(XDAIS_INSTALL_DIR) $(LINUXUTILS_INSTALL_DIR) $(EDMA3_LLD_INSTALL_DIR) $(FC_INSTALL_DIR) $(CE_INSTALL_DIR) $(XDC_INSTALL_DIR) $(BIOS_INSTALL_DIR) $(CODEC_INSTALL_DIR)
 
-REPOSITORIES:=$(addsuffix /packages, $(COMPONENTS))
-
-CHECKLIST:=$(REPOSITORIES) $(CODEGEN_INSTALL_DIR)/bin/cl6x $(MVTOOL_PREFIX)gcc $(LINUXKERNEL_INSTALL_DIR)/Documentation $(DEMO_INSTALL_DIR)/$(PLATFORM) $(PSP_INSTALL_DIR)/docs
-
-.PHONY:	all clean everything clobber help cmem cmem_clean dmai dmai_clean demos demos_clean examples examples_clean dvtb dvtb_clean dm355mm dm355mm_clean dsplink dsplink_arm dsplink_dsp dsplink_samples dsplink_clean codecs codecs_clean linux linux_clean psp_examples psp_clean info check install
+.PHONY:	all clean everything clobber help cmem cmem_clean dmai dmai_clean demos demos_clean examples examples_clean dvtb dvtb_clean dmammapk dmammapk_clean dsplink dsplink_arm dsplink_dsp dsplink_samples dsplink_clean codecs codecs_clean linux linux_clean psp_examples psp_clean info check install
 
 #==============================================================================
 # Set up platform dependent variables.
 #==============================================================================
 ifeq ($(PLATFORM),dm6446)
+COMPONENTS+=$(BIOSUTILS_INSTALL_DIR) $(LINK_INSTALL_DIR)
+CHECKLIST:=$(CODEGEN_INSTALL_DIR)/bin/cl6x
+REPOSITORIES:=$(DVTB_INSTALL_DIR)/packages
 LINUXKERNEL_CONFIG=davinci_dm644x_defconfig
 LINUXSAMPLES_PLATFORM=dm644x
 DSPLINK_CONFIG=--platform=DAVINCI --nodsp=1 --dspcfg_0=DM6446GEMSHMEM --dspos_0=DSPBIOS5XX --gppos=MVL5G --comps=ponslrm
 DSPLINK_MODULE=$(LINK_INSTALL_DIR)/packages/dsplink/gpp/export/BIN/Linux/DAVINCI/RELEASE/dsplinkk.ko
+HAS_SERVER=true
+HAS_DSPLINK=true
 DMAI_PLATFORM=dm6446_al
 else
 ifeq ($(PLATFORM),dm6467)
+COMPONENTS+=$(BIOSUTILS_INSTALL_DIR) $(LINK_INSTALL_DIR)
+CHECKLIST:=$(CODEGEN_INSTALL_DIR)/bin/cl6x
+REPOSITORIES:=$(DVTB_INSTALL_DIR)/packages
 LINUXKERNEL_CONFIG=davinci_dm6467_defconfig
 LINUXSAMPLES_PLATFORM=dm646x
 DSPLINK_CONFIG=--platform=DAVINCIHD --nodsp=1 --dspcfg_0=DM6467GEMSHMEM --dspos_0=DSPBIOS5XX --gppos=MVL5G --comps=ponslrm
 DSPLINK_MODULE=$(LINK_INSTALL_DIR)/packages/dsplink/gpp/export/BIN/Linux/DAVINCIHD/RELEASE/dsplinkk.ko
+HAS_SERVER=true
+HAS_DSPLINK=true
 DMAI_PLATFORM=dm6467_al
 else
 ifeq ($(PLATFORM),dm355)
+REPOSITORIES:=$(DVTB_INSTALL_DIR)/packages
 LINUXKERNEL_CONFIG=davinci_dm355_defconfig
 LINUXSAMPLES_PLATFORM=dm355
+HAS_SERVER=false
+HAS_DSPLINK=false
+DMAMMAP_INSTALL_DIR=$(CODEC_INSTALL_DIR)/dm355mm/module
 DMAI_PLATFORM=dm355_al
+else
+ifeq ($(PLATFORM),dm365)
+REPOSITORIES:=$(DVTB_INSTALL_DIR)
+LINUXKERNEL_CONFIG=davinci_dm365_defconfig
+LINUXSAMPLES_PLATFORM=dm365
+HAS_SERVER=false
+HAS_DSPLINK=false
+DMAMMAP_INSTALL_DIR=$(DM365MMAP_INSTALL_DIR)/module
+DMAI_PLATFORM=dm365_al
 else
 	$(error PLATFORM not set correctly: $(PLATFORM))
 endif
 endif
 endif
+endif
 
+REPOSITORIES+=$(addsuffix /packages, $(COMPONENTS))
+
+CHECKLIST+=$(REPOSITORIES) $(MVTOOL_PREFIX)gcc $(LINUXKERNEL_INSTALL_DIR)/Documentation $(DEMO_INSTALL_DIR)/$(PLATFORM) $(PSP_INSTALL_DIR)/docs
 #==============================================================================
 # The default build target.
 #==============================================================================
-all:	check cmem dm355mm dmai demos 
+all:	check cmem dmammapk edmak irqk dmai demos
 #       examples dvtb
 
 #==============================================================================
 # Clean up the targets built by 'make all'.
 #==============================================================================
-clean:	cmem_clean dm355mm_clean dmai_clean demos_clean 
+clean:	cmem_clean dmammapk_clean edmak_clean irqk_clean dmai_clean demos_clean
 #	examples_clean dvtb_clean
 
 #==============================================================================
@@ -55,7 +78,7 @@ everything: check codecs linux dsplink psp_examples all
 #==============================================================================
 # Clean up all targets.
 #==============================================================================
-clobber:	clean dsplink_clean linux_clean codecs_clean psp_clean
+clobber:    clean dsplink_clean linux_clean codecs_clean psp_clean
 
 #==============================================================================
 # A help message target.
@@ -64,58 +87,74 @@ help:
 	@echo
 	@echo "Available build targets are:"
 	@echo
-	@echo "    check		   : Make sure Rules.make is set up properly"
-	@echo "    info			   : List versions of DVSDK components"
+	@echo "    check           : Make sure Rules.make is set up properly"
+	@echo "    info            : List versions of DVSDK components"
 	@echo
-	@echo "    all			   : Build the components below"
-	@echo "    clean		   : Remove files generated by the 'all' target"
+	@echo "    all             : Build the components below"
+	@echo "    clean           : Remove files generated by the 'all' target"
 	@echo
-	@echo "    cmem			   : Build the CMEM kernel module for $(PLATFORM)"
-	@echo "    cmem_clean	   : Remove generated cmem files."
+	@echo "    cmem            : Build the CMEM kernel module for $(PLATFORM)"
+	@echo "    cmem_clean      : Remove generated cmem files."
 	@echo
-	@echo "    dmai			   : Build DMAI for $(PLATFORM)_al"
-	@echo "    dmai_clean	   : Remove generated DMAI files."
+	@echo "    dmai            : Build DMAI for $(PLATFORM)_al"
+	@echo "    dmai_clean      : Remove generated DMAI files."
 	@echo
-	@echo "    demos		   : Build the DVSDK demos for $(PLATFORM)"
-	@echo "    demos_clean	   : Remove generated DVSDK demo files."
+	@echo "    demos           : Build the DVSDK demos for $(PLATFORM)"
+	@echo "    demos_clean     : Remove generated DVSDK demo files."
 	@echo
-	@echo "    examples		   : Build examples for $(PLATFORM)"
+	@echo "    examples        : Build examples for $(PLATFORM)"
 	@echo "    examples_clean  : Build examples for $(PLATFORM)"
 	@echo
-	@echo "    dvtb			   : Build DVTB for $(PLATFORM)"
-	@echo "    dvtb_clean	   : Remove generated DVTB files"
+	@echo "    dvtb            : Build DVTB for $(PLATFORM)"
+	@echo "    dvtb_clean      : Remove generated DVTB files"
+ifneq ($(DMAMMAP_INSTALL_DIR),)
 	@echo
-	@echo "    dm355mm		   : Build the dm355mm kernel module"
-	@echo "    dm355mm_clean   : Remove generated dm355mm files"
+	@echo "    dmammapk        : Build the DMA MMAP kernel module"
+	@echo "    dmammapk_clean  : Remove generated DMA MMAP files"
+endif
+ifeq ($(PLATFORM),dm365)
+	@echo
+	@echo "    edmak           : Build the EDMA kernel module"
+	@echo "    edmak_clean     : Remove generated EDMA files"
+endif
+ifeq ($(PLATFORM),dm365)
+	@echo
+	@echo "    irqk            : Build the IRQ kernel module"
+	@echo "    irqk_clean      : Remove generated IRQ files"
+endif
 	@echo
 	@echo "The following targets have to be explicitly built and cleaned:"
 	@echo
-	@echo "    everything	   : Rebuild everything including below targets"
-	@echo "    clobber		   : Remove all generated files"
+	@echo "    everything      : Rebuild everything including below targets"
+	@echo "    clobber         : Remove all generated files"
+ifeq ($(HAS_DSPLINK),true)
 	@echo
-	@echo "    dsplink		   : Configure and build DSP Link for $(PLATFORM) ARM and DSP"
-	@echo "    dsplink_arm	   : Configure and build DSP Link for $(PLATFORM) ARM"
-	@echo "    dsplink_dsp	   : Configure and build DSP Link for $(PLATFORM) DSP"
+	@echo "    dsplink         : Configure and build DSP Link for $(PLATFORM) ARM and DSP"
+	@echo "    dsplink_arm     : Configure and build DSP Link for $(PLATFORM) ARM"
+	@echo "    dsplink_dsp     : Configure and build DSP Link for $(PLATFORM) DSP"
 	@echo "    dsplink_samples : Build DSP Link ARM and DSP sample applications for $(PLATFORM)"
 	@echo "    dsplink_clean   : Remove generated DSP Link files"
+endif
+ifeq ($(HAS_SERVER),true)
 	@echo
-	@echo "    codecs		   : Build codec servers for $(PLATFORM)"
+	@echo "    codecs          : Build codec servers for $(PLATFORM)"
 	@echo "    codecs_clean    : Remove generated codec server files"
+endif
 	@echo
-	@echo "    linux		   : Build Linux kernel uImage for $(PLATFORM)"
-	@echo "    linux_clean	   : Remove generated Linux kernel files"
+	@echo "    linux           : Build Linux kernel uImage for $(PLATFORM)"
+	@echo "    linux_clean     : Remove generated Linux kernel files"
 	@echo
 	@echo "    psp_examples    : Build Linux examples for $(PLATFORM)"
-	@echo "    psp_clean	   : Build Linux examples for $(PLATFORM)"
+	@echo "    psp_clean       : Build Linux examples for $(PLATFORM)"
 	@echo
-	@echo "    install		   : Install binaries to $(EXEC_DIR)"
+	@echo "    install         : Install binaries to $(EXEC_DIR)"
 	@echo
 
 #==============================================================================
 # Target for listing information about the DVSDK components.
 #==============================================================================
 info:	check
-	@LINUXKERNEL_INSTALL_DIR="$(LINUXKERNEL_INSTALL_DIR)" CODEGEN_INSTALL_DIR="$(CODEGEN_INSTALL_DIR)" GCC_PREFIX="$(MVTOOL_PREFIX)" XDC_INSTALL_DIR="$(XDC_INSTALL_DIR)" REPOSITORIES="$(REPOSITORIES)" $(DVSDK_INSTALL_DIR)/bin/info.sh 
+	@LINUXKERNEL_INSTALL_DIR="$(LINUXKERNEL_INSTALL_DIR)" CODEGEN_INSTALL_DIR="$(CODEGEN_INSTALL_DIR)" GCC_PREFIX="$(MVTOOL_PREFIX)" XDC_INSTALL_DIR="$(XDC_INSTALL_DIR)" REPOSITORIES="$(REPOSITORIES)" $(DVSDK_INSTALL_DIR)/bin/info.sh
 
 #==============================================================================
 # Target for checking that the Rules.make file is set up properly.
@@ -128,10 +167,14 @@ check:
 # target is defined.
 #==============================================================================
 demos:
+ifneq ($(PLATFORM),dm365)
 	$(MAKE) -C $(DEMO_INSTALL_DIR)/$(PLATFORM) DVSDK_INSTALL_DIR=$(DVSDK_INSTALL_DIR) XDC_INSTALL_DIR=$(XDC_INSTALL_DIR) CE_INSTALL_DIR=$(CE_INSTALL_DIR) FC_INSTALL_DIR=$(FC_INSTALL_DIR) CMEM_INSTALL_DIR=$(CMEM_INSTALL_DIR) CODEC_INSTALL_DIR=$(CODEC_INSTALL_DIR) XDAIS_INSTALL_DIR=$(XDAIS_INSTALL_DIR) LINK_INSTALL_DIR=$(LINK_INSTALL_DIR) DMAI_INSTALL_DIR=$(DMAI_INSTALL_DIR) MVTOOL_DIR=$(MVTOOL_DIR) CC=$(CSTOOL_PREFIX)gcc CROSS_COMPILE=$(MVTOOL_PREFIX) LINUXLIBS_INSTALL_DIR=$(LINUXLIBS_INSTALL_DIR)
+endif
 
 demos_clean:
+ifneq ($(PLATFORM),dm365)
 	$(MAKE) -C $(DEMO_INSTALL_DIR)/$(PLATFORM) clean
+endif
 
 #==============================================================================
 # Build the Digital Video Test Bench for the configured platform. Also, an
@@ -174,49 +217,86 @@ psp_clean:
 # is defined.
 #==============================================================================
 cmem:
-	$(MAKE) -C $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/interface ../../lib/cmem.a470MV RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
-	$(MAKE) -C $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/module RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
+	$(MAKE) -C $(LINUXUTILS_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/interface ../../lib/cmem.a470MV RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
+	$(MAKE) -C $(LINUXUTILS_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/module RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
 	@mkdir -p $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)
-	@cp $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/module/cmemk.ko $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)/
+	@cp $(LINUXUTILS_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/module/cmemk.ko $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)/
 	@echo
 	@echo "cmemk.ko kernel module can be found under $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)"
 
 cmem_clean:
-	$(MAKE) -C $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/module clean RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
-	$(MAKE) -C $(CMEM_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/interface clean RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
+	$(MAKE) -C $(LINUXUTILS_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/module clean RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
+	$(MAKE) -C $(LINUXUTILS_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/interface clean RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
 
 #==============================================================================
 # Build the *evaluation* codec servers for the configured platform. Also, an
 # explicit cleanup target is defined.
 #==============================================================================
 codecs:
-ifneq ($(PLATFORM),dm355)
-	$(MAKE) -C $(CODEC_INSTALL_DIR) DVSDK_INSTALL_DIR=$(DVSDK_INSTALL_DIR) BIOS_INSTALL_DIR=$(BIOS_INSTALL_DIR) XDC_INSTALL_DIR=$(XDC_INSTALL_DIR) CE_INSTALL_DIR=$(CE_INSTALL_DIR) FC_INSTALL_DIR=$(FC_INSTALL_DIR) CMEM_INSTALL_DIR=$(CMEM_INSTALL_DIR) CODECS_INSTALL_DIR=$(CODEC_INSTALL_DIR) BIOSUTILS_INSTALL_DIR=$(BIOSUTILS_INSTALL_DIR) XDAIS_INSTALL_DIR=$(XDAIS_INSTALL_DIR) LINK_INSTALL_DIR=$(LINK_INSTALL_DIR) XDCARGS=\"eval\"
+ifeq ($(HAS_SERVER),true)
+	$(MAKE) -C $(CODEC_INSTALL_DIR) DVSDK_INSTALL_DIR=$(DVSDK_INSTALL_DIR) BIOS_INSTALL_DIR=$(BIOS_INSTALL_DIR) XDC_INSTALL_DIR=$(XDC_INSTALL_DIR) CE_INSTALL_DIR=$(CE_INSTALL_DIR) FC_INSTALL_DIR=$(FC_INSTALL_DIR) CMEM_INSTALL_DIR=$(LINUXUTILS_INSTALL_DIR) CODECS_INSTALL_DIR=$(CODEC_INSTALL_DIR) BIOSUTILS_INSTALL_DIR=$(BIOSUTILS_INSTALL_DIR) XDAIS_INSTALL_DIR=$(XDAIS_INSTALL_DIR) LINK_INSTALL_DIR=$(LINK_INSTALL_DIR) XDCARGS=\"eval\"
 endif
 
 codecs_clean:
-ifneq ($(PLATFORM),dm355)
-	$(MAKE) -C $(CODEC_INSTALL_DIR) DVSDK_INSTALL_DIR=$(DVSDK_INSTALL_DIR) BIOS_INSTALL_DIR=$(BIOS_INSTALL_DIR) XDC_INSTALL_DIR=$(XDC_INSTALL_DIR) CE_INSTALL_DIR=$(CE_INSTALL_DIR) FC_INSTALL_DIR=$(FC_INSTALL_DIR) CMEM_INSTALL_DIR=$(CMEM_INSTALL_DIR) CODECS_INSTALL_DIR=$(CODEC_INSTALL_DIR) BIOSUTILS_INSTALL_DIR=$(BIOSUTILS_INSTALL_DIR) XDAIS_INSTALL_DIR=$(XDAIS_INSTALL_DIR) LINK_INSTALL_DIR=$(LINK_INSTALL_DIR) XDCARGS=\"eval\" clean
+ifeq ($(HAS_SERVER),true)
+	$(MAKE) -C $(CODEC_INSTALL_DIR) DVSDK_INSTALL_DIR=$(DVSDK_INSTALL_DIR) BIOS_INSTALL_DIR=$(BIOS_INSTALL_DIR) XDC_INSTALL_DIR=$(XDC_INSTALL_DIR) CE_INSTALL_DIR=$(CE_INSTALL_DIR) FC_INSTALL_DIR=$(FC_INSTALL_DIR) CMEM_INSTALL_DIR=$(LINUXUTILS_INSTALL_DIR) CODECS_INSTALL_DIR=$(CODEC_INSTALL_DIR) BIOSUTILS_INSTALL_DIR=$(BIOSUTILS_INSTALL_DIR) XDAIS_INSTALL_DIR=$(XDAIS_INSTALL_DIR) LINK_INSTALL_DIR=$(LINK_INSTALL_DIR) XDCARGS=\"eval\" clean
 endif
 
 #==============================================================================
-# Build the dm355mm kernel module (if the configured platform is dm355). Also,
+# Build the dmammapk kernel module (if the configured for the platform). Also,
 # an explicit cleanup target is defined.
 #==============================================================================
-dm355mm:
-ifeq ($(PLATFORM),dm355)
-	$(MAKE) -C $(CODEC_INSTALL_DIR)/dm355mm/module KERNEL_DIR=$(LINUXKERNEL_INSTALL_DIR)
+dmammapk:
+ifneq ($(DMAMMAP_INSTALL_DIR),)
+	$(MAKE) -C $(DMAMMAP_INSTALL_DIR) KERNEL_DIR=$(LINUXKERNEL_INSTALL_DIR)
 	@mkdir -p $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)
-	@cp $(CODEC_INSTALL_DIR)/dm355mm/module/dm350mmap.ko $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)/
+	@cp $(DMAMMAP_INSTALL_DIR)/*.ko $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)/
 	@echo
-	@echo "dm350mmap.ko kernel module can be found under $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)"
+	@echo "dmammapk kernel module can be found under $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)"
 endif
 
-dm355mm_clean:
-ifeq ($(PLATFORM),dm355)
-	$(MAKE) -C $(CODEC_INSTALL_DIR)/dm355mm/module KERNEL_DIR=$(LINUXKERNEL_INSTALL_DIR) clean
+dmammapk_clean:
+ifneq ($(DMAMMAP_INSTALL_DIR),)
+	$(MAKE) -C $(DMAMMAP_INSTALL_DIR) KERNEL_DIR=$(LINUXKERNEL_INSTALL_DIR) clean
 endif
 
+#==============================================================================
+# Build the edma kernel module (if the configured platform is dm365). Also,
+# an explicit cleanup target is defined.
+#==============================================================================
+edmak:
+ifeq ($(PLATFORM),dm365)
+	$(MAKE) -C $(LINUXUTILS_INSTALL_DIR)/packages/ti/sdo/linuxutils/edma/src/module KERNEL_DIR=$(LINUXKERNEL_INSTALL_DIR)
+	@mkdir -p $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)
+	@cp $(LINUXUTILS_INSTALL_DIR)/packages/ti/sdo/linuxutils/edma/src/module/edmak.ko $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)/
+	@echo
+	@echo "edmak.ko kernel module can be found under $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)"
+endif
+
+edmak_clean:
+ifeq ($(PLATFORM),dm365)
+	$(MAKE) -C $(LINUXUTILS_INSTALL_DIR)/packages/ti/sdo/linuxutils/edma/src/module KERNEL_DIR=$(LINUXKERNEL_INSTALL_DIR) clean
+endif
+
+#==============================================================================
+# Build the irq kernel module (if the configured platform is dm365). Also,
+# an explicit cleanup target is defined.
+#==============================================================================
+irqk:
+ifeq ($(PLATFORM),dm365)
+	$(MAKE) -C $(LINUXUTILS_INSTALL_DIR)/packages/ti/sdo/linuxutils/irq/src/module KERNEL_DIR=$(LINUXKERNEL_INSTALL_DIR)
+	@mkdir -p $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)
+	@cp $(LINUXUTILS_INSTALL_DIR)/packages/ti/sdo/linuxutils/irq/src/module/irqk.ko $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)/
+	@echo
+	@echo "irqk.ko kernel module can be found under $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)"
+endif
+
+irqk_clean:
+ifeq ($(PLATFORM),dm365)
+	$(MAKE) -C $(LINUXUTILS_INSTALL_DIR)/packages/ti/sdo/linuxutils/irq/src/module KERNEL_DIR=$(LINUXKERNEL_INSTALL_DIR) clean
+endif
+
+#==============================================================================
 #==============================================================================
 # Build the DVSDK examples for the configured platform. Also, an explicit
 # cleanup target is defined.
@@ -263,7 +343,7 @@ dmai_clean:
 dsplink:	dsplink_arm dsplink_dsp dsplink_samples
 
 dsplink_cfg:
-ifneq ($(PLATFORM),dm355)
+ifneq ($(HAS_DSPLINK),true)
 	DSPLINK=$(LINK_INSTALL_DIR)/packages/dsplink perl $(LINK_INSTALL_DIR)/packages/dsplink/config/bin/dsplinkcfg.pl $(DSPLINK_CONFIG)
 else
 	$(error DSP Link build is not supported for $(PLATFORM))
@@ -300,8 +380,10 @@ install:
 	@echo Copying kernel modules to target file system: $(EXEC_DIR)/
 	@install -m 666 $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)/* $(EXEC_DIR)/
 
+ifneq ($(PLATFORM),dm365)
 	@echo Installing DVSDK demos..
 	$(MAKE) -C $(DEMO_INSTALL_DIR)/$(PLATFORM) install EXEC_DIR=$(EXEC_DIR)
+endif
 
 #	@echo Copying examples..
 #	@cp -rp examples/$(PLATFORM)/web $(EXEC_DIR)/

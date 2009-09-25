@@ -7,8 +7,10 @@ TOOLCHAIN_HOST_TASK = "task-arago-dvsdk-host"
 TOOLCHAIN_TARGET_TASK = "task-arago-dvsdk-target"
 
 DVSDK_TARGET_EXCLUDE_dm355-evm = "\
-       ti-linuxutils \
        ti-dm355mm-module \
+       ti-dmai-apps \
+"
+DVSDK_TARGET_EXCLUDE_dm365-evm = "\
        ti-dmai-apps \
 "
 DVSDK_TARGET_EXCLUDE_dm6446-evm = "\

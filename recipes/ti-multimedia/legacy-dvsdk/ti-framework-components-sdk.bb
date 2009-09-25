@@ -2,7 +2,8 @@ inherit sdk
 
 require ../ti-framework-components.inc
 
-PV      = "${PV_pn-ti-framework-components}"
+PV = "${PV_pn-ti-framework-components}"
+BASE_SRC_URI = "${BASE_SRC_URI_pn-ti-framework-components}"
 
 do_compile () {
         echo "! Do not rebuild for now !"

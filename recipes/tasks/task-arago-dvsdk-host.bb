@@ -6,10 +6,12 @@ inherit sdk
 
 PACKAGES = "${PN}"
 
-DVSDK_HOST_PACKAGE_dm355-evm = "\
+DVSDK_HOST_PACKAGE = "\
     ti-xdctools-sdk \
     ti-xdais-sdk \
+    ti-codecs-dm365-sdk \
     ti-codecs-dm355-sdk \
+    ti-dm365mm-module-sdk \
     ti-codec-engine-sdk \
     ti-framework-components-sdk \
     ti-linuxutils-sdk \
@@ -52,5 +54,5 @@ DVSDK_HOST_PACKAGE_beagleboard = "\
 RDEPENDS_${PN} = "\
     task-arago-base-host \
     ${DVSDK_HOST_PACKAGE} \
-    ti-rules-make-sdk \
+    ti-legacy-dvsdk \
     "

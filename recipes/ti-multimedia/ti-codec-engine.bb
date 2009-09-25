@@ -5,6 +5,7 @@ DEPENDS_dm6446-evm  += "ti-xdctools-native ti-xdais ti-linuxutils ti-framework-c
 DEPENDS_omap3evm    += "ti-xdctools-native ti-xdais ti-linuxutils ti-framework-components ti-cgt6x-native ti-dspbios-native"
 DEPENDS_beagleboard += "ti-xdctools-native ti-xdais ti-linuxutils ti-framework-components ti-cgt6x-native ti-dspbios-native"
 DEPENDS_dm355-evm   += "ti-xdctools-native ti-xdais ti-linuxutils ti-framework-components"
+DEPENDS_dm365-evm   += "ti-xdctools-native ti-xdais ti-linuxutils ti-framework-components"
 
 do_compile () {
         echo "! Do not rebuild for now !"
