@@ -2,8 +2,9 @@ inherit sdk
 
 require ../../ti-tools/ti-xdais.inc
 
-BASE_PV = "${BASE_PV_pn-ti-xdais}"
-PV      = "${PV_pn-ti-xdais}"
+PV           = "${PV_pn-ti-xdais}"
+PVEXTENSION  = "${PVEXTENSION_pn-ti-xdais}"
+BASE_SRC_URI = "${BASE_SRC_URI_pn-ti-xdais}"
 
 do_install() {
     install -d ${D}/${prefix}/dvsdk/xdais_${PV}

@@ -1,11 +1,12 @@
 DESCRIPTION = "TI DSP Algorithm Interface Standard specification"
 
-BASE_PV = "6.23"
 PV = "6.23"
+PVEXTENSION  = ""
+BASE_SRC_URI = "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/xdais/${PV}/exports"
 
-SRC_URI	= "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/xdais/${BASE_PV}/exports/xdais_${PV}.tar.gz"
+SRC_URI	= "${BASE_SRC_URI}/xdais_${PV}${PVEXTENSION}.tar.gz"
 
-S = "${WORKDIR}/xdais_${PV}"
+S = "${WORKDIR}/xdais_${PV}${PVEXTENSION}"
 
-PR = "r2"
+PR = "r4"
 
