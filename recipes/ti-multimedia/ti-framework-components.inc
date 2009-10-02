@@ -1,8 +1,8 @@
 DESCRIPTION ?= "Framework Components for TI ARM/DSP processors"
 
-PR = "r2"
+PR = "r3"
 
-PV = "2_25_00_00"
+PV = "2_25_00_01"
 BASE_SRC_URI = "http://install.source.dir.com"
 
 SRC_URI = "${BASE_SRC_URI}/framework_components_${PV},lite.tar.gz "
