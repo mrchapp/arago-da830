@@ -1,0 +1,63 @@
+From de440a850f7aa8539b3b8b128594debaf2bed610 Mon Sep 17 00:00:00 2001
+From: Paul Walmsley <paul@pwsan.com>
+Date: Tue, 23 Dec 2008 03:13:56 -0700
+Subject: [PATCH 025/426] OMAP2/3 clock: add clock abort-rate-change notifications
+
+Call clock notifiers with the CLK_ABORT_RATE_CHANGE message in two
+conditions:
+
+- in the PREPARE phase when another callback has denied the rate/parent
+  change; or
+
+- in the PRE phase if the set_rate() or set_parent() function fails.
+
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/clock.c |   16 ++++++++++++----
+ 1 files changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clock.c b/arch/arm/mach-omap2/clock.c
+index 52637bf..21361ad 100644
+--- a/arch/arm/mach-omap2/clock.c
++++ b/arch/arm/mach-omap2/clock.c
+@@ -798,6 +798,7 @@ int omap2_clk_set_rate(struct clk *clk, unsigned long rate)
+ 	if (r == NOTIFY_BAD) {
+ 		pr_debug("clock: %s: clk_set_rate() aborted by notifier\n",
+ 			 clk->name);
++		omap_clk_notify_downstream(clk, CLK_ABORT_RATE_CHANGE);
+ 		return -EAGAIN;
+ 	}
+ 
+@@ -808,10 +809,16 @@ int omap2_clk_set_rate(struct clk *clk, unsigned long rate)
+ 
+ 	ret = clk->set_rate(clk, rate);
+ 
+-	temp_rate = clk->rate;
+-	clk->rate = clk->temp_rate;
+-	omap_clk_notify_downstream(clk, CLK_POST_RATE_CHANGE);
+-	clk->rate = temp_rate;
++	if (ret == 0) {
++		temp_rate = clk->rate;
++		clk->rate = clk->temp_rate;
++		omap_clk_notify_downstream(clk, CLK_POST_RATE_CHANGE);
++		clk->rate = temp_rate;
++	} else {
++		pr_debug("clock: %s: clk_set_rate() aborted by failed "
++			 "set_rate(): %d\n", clk->name, ret);
++		omap_clk_notify_downstream(clk, CLK_ABORT_RATE_CHANGE);
++	}
+ 
+ 	return ret;
+ }
+@@ -877,6 +884,7 @@ int omap2_clk_set_parent(struct clk *clk, struct clk *new_parent)
+ 	if (r == NOTIFY_BAD) {
+ 		pr_debug("clock: %s: clk_set_parent() aborted by notifier\n",
+ 			 clk->name);
++		omap_clk_notify_downstream(clk, CLK_ABORT_RATE_CHANGE);
+ 		return -EAGAIN;
+ 	}
+ 
+-- 
+1.6.2.4
+

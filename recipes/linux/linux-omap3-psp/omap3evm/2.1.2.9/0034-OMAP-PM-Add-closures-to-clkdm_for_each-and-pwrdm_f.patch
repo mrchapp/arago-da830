@@ -1,0 +1,131 @@
+From 5f6365177c36873186dde8bda8a5c6669adfde3d Mon Sep 17 00:00:00 2001
+From: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+Date: Wed, 15 Oct 2008 18:13:47 +0300
+Subject: [PATCH 034/426] OMAP: PM: Add closures to clkdm_for_each and pwrdm_for_each.
+
+First add some infrastructure to easily iterate over clock and power domains.
+
+Signed-off-by: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/clockdomain.c             |    5 +++--
+ arch/arm/mach-omap2/pm24xx.c                  |    4 ++--
+ arch/arm/mach-omap2/pm34xx.c                  |    8 ++++----
+ arch/arm/plat-omap/include/mach/clockdomain.h |    3 ++-
+ arch/arm/plat-omap/include/mach/powerdomain.h |    3 ++-
+ 5 files changed, 13 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clockdomain.c b/arch/arm/mach-omap2/clockdomain.c
+index 6650d44..fa55b6f 100644
+--- a/arch/arm/mach-omap2/clockdomain.c
++++ b/arch/arm/mach-omap2/clockdomain.c
+@@ -295,7 +295,8 @@ struct clockdomain *clkdm_lookup(const char *name)
+  * anything else to indicate failure; or -EINVAL if the function pointer
+  * is null.
+  */
+-int clkdm_for_each(int (*fn)(struct clockdomain *clkdm))
++int clkdm_for_each(int (*fn)(struct clockdomain *clkdm, void *user),
++			void *user)
+ {
+ 	struct clockdomain *clkdm;
+ 	int ret = 0;
+@@ -305,7 +306,7 @@ int clkdm_for_each(int (*fn)(struct clockdomain *clkdm))
+ 
+ 	mutex_lock(&clkdm_mutex);
+ 	list_for_each_entry(clkdm, &clkdm_list, node) {
+-		ret = (*fn)(clkdm);
++		ret = (*fn)(clkdm, user);
+ 		if (ret)
+ 			break;
+ 	}
+diff --git a/arch/arm/mach-omap2/pm24xx.c b/arch/arm/mach-omap2/pm24xx.c
+index 90feb35..1095917 100644
+--- a/arch/arm/mach-omap2/pm24xx.c
++++ b/arch/arm/mach-omap2/pm24xx.c
+@@ -349,7 +349,7 @@ static struct platform_suspend_ops omap_pm_ops = {
+ 	.valid		= suspend_valid_only_mem,
+ };
+ 
+-static int _pm_clkdm_enable_hwsup(struct clockdomain *clkdm)
++static int _pm_clkdm_enable_hwsup(struct clockdomain *clkdm, void *unused)
+ {
+ 	omap2_clkdm_allow_idle(clkdm);
+ 	return 0;
+@@ -401,7 +401,7 @@ static void __init prcm_setup_regs(void)
+ 	omap2_clkdm_sleep(gfx_clkdm);
+ 
+ 	/* Enable clockdomain hardware-supervised control for all clkdms */
+-	clkdm_for_each(_pm_clkdm_enable_hwsup);
++	clkdm_for_each(_pm_clkdm_enable_hwsup, NULL);
+ 
+ 	/* Enable clock autoidle for all domains */
+ 	cm_write_mod_reg(OMAP24XX_AUTO_CAM |
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index 5697ddf..f2d787d 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -591,7 +591,7 @@ static void __init prcm_setup_regs(void)
+ 	omap3_iva_idle();
+ }
+ 
+-static int __init pwrdms_setup(struct powerdomain *pwrdm)
++static int __init pwrdms_setup(struct powerdomain *pwrdm, void *unused)
+ {
+ 	struct power_state *pwrst;
+ 
+@@ -616,7 +616,7 @@ static int __init pwrdms_setup(struct powerdomain *pwrdm)
+  * supported. Initiate sleep transition for other clockdomains, if
+  * they are not used
+  */
+-static int __init clkdms_setup(struct clockdomain *clkdm)
++static int __init clkdms_setup(struct clockdomain *clkdm, void *unused)
+ {
+ 	if (clkdm->flags & CLKDM_CAN_ENABLE_AUTO)
+ 		omap2_clkdm_allow_idle(clkdm);
+@@ -646,13 +646,13 @@ int __init omap3_pm_init(void)
+ 		goto err1;
+ 	}
+ 
+-	ret = pwrdm_for_each(pwrdms_setup);
++	ret = pwrdm_for_each(pwrdms_setup, NULL);
+ 	if (ret) {
+ 		printk(KERN_ERR "Failed to setup powerdomains\n");
+ 		goto err2;
+ 	}
+ 
+-	(void) clkdm_for_each(clkdms_setup);
++	(void) clkdm_for_each(clkdms_setup, NULL);
+ 
+ 	mpu_pwrdm = pwrdm_lookup("mpu_pwrdm");
+ 	if (mpu_pwrdm == NULL) {
+diff --git a/arch/arm/plat-omap/include/mach/clockdomain.h b/arch/arm/plat-omap/include/mach/clockdomain.h
+index b9d0dd2..99ebd88 100644
+--- a/arch/arm/plat-omap/include/mach/clockdomain.h
++++ b/arch/arm/plat-omap/include/mach/clockdomain.h
+@@ -95,7 +95,8 @@ int clkdm_register(struct clockdomain *clkdm);
+ int clkdm_unregister(struct clockdomain *clkdm);
+ struct clockdomain *clkdm_lookup(const char *name);
+ 
+-int clkdm_for_each(int (*fn)(struct clockdomain *clkdm));
++int clkdm_for_each(int (*fn)(struct clockdomain *clkdm, void *user),
++			void *user);
+ struct powerdomain *clkdm_get_pwrdm(struct clockdomain *clkdm);
+ 
+ void omap2_clkdm_allow_idle(struct clockdomain *clkdm);
+diff --git a/arch/arm/plat-omap/include/mach/powerdomain.h b/arch/arm/plat-omap/include/mach/powerdomain.h
+index 52663fc..de03f3d 100644
+--- a/arch/arm/plat-omap/include/mach/powerdomain.h
++++ b/arch/arm/plat-omap/include/mach/powerdomain.h
+@@ -128,7 +128,8 @@ int pwrdm_register(struct powerdomain *pwrdm);
+ int pwrdm_unregister(struct powerdomain *pwrdm);
+ struct powerdomain *pwrdm_lookup(const char *name);
+ 
+-int pwrdm_for_each(int (*fn)(struct powerdomain *pwrdm));
++int pwrdm_for_each(int (*fn)(struct powerdomain *pwrdm, void *user),
++			void *user);
+ 
+ int pwrdm_add_clkdm(struct powerdomain *pwrdm, struct clockdomain *clkdm);
+ int pwrdm_del_clkdm(struct powerdomain *pwrdm, struct clockdomain *clkdm);
+-- 
+1.6.2.4
+

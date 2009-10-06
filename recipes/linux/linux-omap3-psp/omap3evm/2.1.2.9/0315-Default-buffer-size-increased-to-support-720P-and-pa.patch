@@ -1,0 +1,47 @@
+From fdb45f9eedf5544be9d6fa0246686f6df1046df1 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Tue, 17 Feb 2009 19:16:09 +0530
+Subject: [PATCH 315/426] Default buffer size increased to support 720P and panning
+
+Earlier the default fbdev buffer size was
+xres * yres * bpp
+
+This is not sufficient for other modes, and there was
+no other option through which we can change it.
+
+The default buffer size now is -
+
+1280 * 720 	*4 	* 2
+(720P)      	(bpp)	(for panning)
+---
+ drivers/video/omap2/omapfb-main.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/video/omap2/omapfb-main.c b/drivers/video/omap2/omapfb-main.c
+index 9252629..f7b0a9c 100644
+--- a/drivers/video/omap2/omapfb-main.c
++++ b/drivers/video/omap2/omapfb-main.c
+@@ -42,8 +42,8 @@ static char *def_vram;
+ static int def_rotate_type;
+ static int def_rotate = -1;
+ 
+-#define VRFB_WIDTH 2048
+-
++#define VRFB_WIDTH 	(2048)
++#define FB_SIZE 	(1280 * 720 * 4 * 2)
+ #ifdef DEBUG
+ unsigned int omapfb_debug;
+ module_param_named(debug, omapfb_debug, bool, 0644);
+@@ -1165,8 +1165,7 @@ static int omapfb_alloc_fbmem_display(struct omapfb2_device *fbdev, int fbnum,
+ 						(def_rotate >= 0))
+ 		size = VRFB_SIZE;
+ 	else {
+-		display->get_resolution(display, &w, &h);
+-		size = w * h * bytespp;
++		size = FB_SIZE;
+ 	}
+ 
+ 	return omapfb_alloc_fbmem(fbdev, fbnum, size);
+-- 
+1.6.2.4
+

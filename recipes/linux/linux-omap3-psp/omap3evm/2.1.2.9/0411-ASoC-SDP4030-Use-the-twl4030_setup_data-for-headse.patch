@@ -1,0 +1,39 @@
+From 497dfdb74c128e4167dbe134c490a13c8194b4ea Mon Sep 17 00:00:00 2001
+From: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+Date: Fri, 22 May 2009 10:13:16 +0300
+Subject: [PATCH 411/426] ASoC: SDP4030: Use the twl4030_setup_data for headset pop-removal
+
+With this patch the initial headset pop-removal related values are
+configured for the twl4030 codec (ramp delay and sysclk).
+
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ sound/soc/omap/sdp3430.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/sound/soc/omap/sdp3430.c b/sound/soc/omap/sdp3430.c
+index 19966a7..b719e5d 100644
+--- a/sound/soc/omap/sdp3430.c
++++ b/sound/soc/omap/sdp3430.c
+@@ -276,10 +276,17 @@ static struct snd_soc_card snd_soc_sdp3430 = {
+ 	.num_links = ARRAY_SIZE(sdp3430_dai),
+ };
+ 
++/* twl4030 setup */
++static struct twl4030_setup_data twl4030_setup = {
++	.ramp_delay_value = 3,
++	.sysclk = 26000,
++};
++
+ /* Audio subsystem */
+ static struct snd_soc_device sdp3430_snd_devdata = {
+ 	.card = &snd_soc_sdp3430,
+ 	.codec_dev = &soc_codec_dev_twl4030,
++	.codec_data = &twl4030_setup,
+ };
+ 
+ static struct platform_device *sdp3430_snd_device;
+-- 
+1.6.2.4
+

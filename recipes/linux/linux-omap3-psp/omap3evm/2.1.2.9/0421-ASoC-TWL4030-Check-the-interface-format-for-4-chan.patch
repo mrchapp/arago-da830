@@ -1,0 +1,41 @@
+From 683d0b410d66f360d6114abd2c69a34ced9181ee Mon Sep 17 00:00:00 2001
+From: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+Date: Mon, 1 Jun 2009 14:06:40 +0300
+Subject: [PATCH 421/426] ASoC: TWL4030: Check the interface format for 4 channel mode
+
+In addition to the operating mode check, also check the
+codec's interface format in case of four channel mode.
+If the codec is not in TDM (DSP_A) mode, return with error.
+
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ sound/soc/codecs/twl4030.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
+index df474a5..c53c7ca 100644
+--- a/sound/soc/codecs/twl4030.c
++++ b/sound/soc/codecs/twl4030.c
+@@ -1608,9 +1608,15 @@ static int twl4030_hw_params(struct snd_pcm_substream *substream,
+ 
+ 	 /* If the substream has 4 channel, do the necessary setup */
+ 	if (params_channels(params) == 4) {
+-		/* Safety check: are we in the correct operating mode? */
+-		if ((twl4030_read_reg_cache(codec, TWL4030_REG_CODEC_MODE) &
+-			TWL4030_OPTION_1))
++		u8 format, mode;
++
++		format = twl4030_read_reg_cache(codec, TWL4030_REG_AUDIO_IF);
++		mode = twl4030_read_reg_cache(codec, TWL4030_REG_CODEC_MODE);
++
++		/* Safety check: are we in the correct operating mode and
++		 * the interface is in TDM mode? */
++		if ((mode & TWL4030_OPTION_1) &&
++		    ((format & TWL4030_AIF_FORMAT) == TWL4030_AIF_FORMAT_TDM))
+ 			twl4030_tdm_enable(codec, substream->stream, 1);
+ 		else
+ 			return -EINVAL;
+-- 
+1.6.2.4
+

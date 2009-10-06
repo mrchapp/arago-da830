@@ -1,0 +1,46 @@
+From 063cde6761fb6d77b72fb6724f078ffc674b9088 Mon Sep 17 00:00:00 2001
+From: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+Date: Fri, 29 May 2009 09:22:37 +0300
+Subject: [PATCH 420/426] ASoC: TWL4030: Use reg_cache in twl4030_init_chip
+
+Use the codec->reg_cache instead of the array directly
+in twl4030_init_chip for setting the default values.
+
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ sound/soc/codecs/twl4030.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
+index 63ebd17..df474a5 100644
+--- a/sound/soc/codecs/twl4030.c
++++ b/sound/soc/codecs/twl4030.c
+@@ -145,7 +145,6 @@ struct twl4030_priv {
+ static inline unsigned int twl4030_read_reg_cache(struct snd_soc_codec *codec,
+ 	unsigned int reg)
+ {
+-	u8 *cache = codec->reg_cache;
+ 
+ 	if (reg >= TWL4030_CACHEREGNUM)
+ 		return -EIO;
+@@ -204,6 +203,7 @@ static void twl4030_codec_enable(struct snd_soc_codec *codec, int enable)
+ 
+ static void twl4030_init_chip(struct snd_soc_codec *codec)
+ {
++	u8 *cache = codec->reg_cache;
+ 	int i;
+ 
+ 	/* clear CODECPDZ prior to setting register defaults */
+@@ -211,7 +211,7 @@ static void twl4030_init_chip(struct snd_soc_codec *codec)
+ 
+ 	/* set all audio section registers to reasonable defaults */
+ 	for (i = TWL4030_REG_OPTION; i <= TWL4030_REG_MISC_SET_2; i++)
+-		twl4030_write(codec, i,	twl4030_reg[i]);
++		twl4030_write(codec, i,	cache[i]);
+ 
+ }
+ 
+-- 
+1.6.2.4
+

@@ -1,0 +1,49 @@
+From a69df1ed05049513434224a57a89860117894fe6 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Mon, 9 Feb 2009 15:53:40 +0530
+Subject: [PATCH 267/426] MMDC patch made it work with new ISP Camera+Nokia fixes
+
+In the new Nokia fixes, there are some API changes in ISP
+code, this patch fixes the build error with referance to
+new ISP library.
+---
+ arch/arm/mach-omap2/board-omap3evm-dc-v4l.c |    9 ---------
+ 1 files changed, 0 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-omap3evm-dc-v4l.c b/arch/arm/mach-omap2/board-omap3evm-dc-v4l.c
+index a7b785e..c4fd04b 100644
+--- a/arch/arm/mach-omap2/board-omap3evm-dc-v4l.c
++++ b/arch/arm/mach-omap2/board-omap3evm-dc-v4l.c
+@@ -72,8 +72,6 @@ static struct isp_interface_config tvp5146_if_config = {
+ 	.ccdc_par_ser		= ISP_PARLL_YUV_BT,
+ 	.dataline_shift		= 0x1,
+ 	.hsvs_syncdetect	= ISPCTRL_SYNC_DETECT_VSRISE,
+-	.vdint0_timing		= 0x0,
+-	.vdint1_timing		= 0x0,
+ 	.strobe			= 0x0,
+ 	.prestrobe		= 0x0,
+ 	.shutter		= 0x0,
+@@ -223,10 +221,6 @@ static int tvp5146_power_set(enum v4l2_power power)
+ {
+ 	switch (power) {
+ 	case V4L2_POWER_OFF:
+-#if defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
+-		if (isp_free_interface(ISP_PARLL_YUV_BT))
+-			return -ENODEV;
+-#endif
+ 		/* Disable mux for TVP5146 decoder data path */
+ 		if (omap3evmdc_set_mux(MUX_TVP5146, DISABLE_MUX))
+ 			return -ENODEV;
+@@ -241,9 +235,6 @@ static int tvp5146_power_set(enum v4l2_power power)
+ 			return -ENODEV;
+ 
+ #if defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
+-		if (isp_request_interface(ISP_PARLL_YUV_BT))
+-			return -ENODEV;
+-
+ 		isp_configure_interface(&tvp5146_if_config);
+ #endif
+ 		break;
+-- 
+1.6.2.4
+

@@ -1,0 +1,44 @@
+From 48b458534b1e6d20df75472ddfcf2ffb66b9d0e7 Mon Sep 17 00:00:00 2001
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Mon, 18 May 2009 15:44:43 +0100
+Subject: [PATCH 409/426] ASoC: Add debug trace for bias level transitions
+
+A standard way of making sure we know when the bias level changes.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ sound/soc/soc-dapm.c |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
+
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index 4ca5e56..39a63f9 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -110,6 +110,24 @@ static int snd_soc_dapm_set_bias_level(struct snd_soc_device *socdev,
+ 	struct snd_soc_codec *codec = socdev->card->codec;
+ 	int ret = 0;
+ 
++	switch (level) {
++	case SND_SOC_BIAS_ON:
++		dev_dbg(socdev->dev, "Setting full bias\n");
++		break;
++	case SND_SOC_BIAS_PREPARE:
++		dev_dbg(socdev->dev, "Setting bias prepare\n");
++		break;
++	case SND_SOC_BIAS_STANDBY:
++		dev_dbg(socdev->dev, "Setting standby bias\n");
++		break;
++	case SND_SOC_BIAS_OFF:
++		dev_dbg(socdev->dev, "Setting bias off\n");
++		break;
++	default:
++		dev_err(socdev->dev, "Setting invalid bias %d\n", level);
++		return -EINVAL;
++	}
++
+ 	if (card->set_bias_level)
+ 		ret = card->set_bias_level(card, level);
+ 	if (ret == 0 && codec->set_bias_level)
+-- 
+1.6.2.4
+

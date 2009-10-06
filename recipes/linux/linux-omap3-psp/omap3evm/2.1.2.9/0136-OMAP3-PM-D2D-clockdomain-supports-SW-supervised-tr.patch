@@ -1,0 +1,27 @@
+From eceb9431c6c02fb39edc0c002eea756d8f664fe1 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Date: Tue, 25 Nov 2008 21:48:28 -0800
+Subject: [PATCH 136/426] OMAP3: PM: D2D clockdomain supports SW supervised transitions
+
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/clockdomains.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clockdomains.h b/arch/arm/mach-omap2/clockdomains.h
+index 3d4eaca..9dfc953 100644
+--- a/arch/arm/mach-omap2/clockdomains.h
++++ b/arch/arm/mach-omap2/clockdomains.h
+@@ -198,7 +198,7 @@ static struct clockdomain sgx_clkdm = {
+ static struct clockdomain d2d_clkdm = {
+ 	.name		= "d2d_clkdm",
+ 	.pwrdm		= { .name = "core_pwrdm" },
+-	.flags		= CLKDM_CAN_HWSUP,
++	.flags		= CLKDM_CAN_HWSUP_SWSUP,
+ 	.clktrctrl_mask = OMAP3430ES1_CLKTRCTRL_D2D_MASK,
+ 	.omap_chip	= OMAP_CHIP_INIT(CHIP_IS_OMAP3430),
+ };
+-- 
+1.6.2.4
+

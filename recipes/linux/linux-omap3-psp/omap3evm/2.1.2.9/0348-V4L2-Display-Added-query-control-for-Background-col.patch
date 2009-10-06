@@ -1,0 +1,41 @@
+From 188f836725b7e1fd1149f5e5ab0c2d7d9171b86e Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Fri, 13 Mar 2009 17:31:29 +0530
+Subject: [PATCH 348/426] V4L2 Display: Added query control for Background color.
+
+---
+ drivers/media/video/omap/omap_vout.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
+index ee9ea99..c5c580d 100644
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -170,6 +170,16 @@ static struct v4l2_queryctrl omap_vout_qctrl[] = {
+ 		.default_value = -1,
+ 		.flags         = 0,
+ 		.type          = V4L2_CTRL_TYPE_INTEGER,
++	},
++	{
++		.id            = V4L2_CID_BG_COLOR,
++		.name          = "Background color",
++		.minimum       = 0,
++		.maximum       = 16777215,/* 24bit RGB Max Value 2^24-1 */
++		.step          = 1,
++		.default_value = 0,
++		.flags         = 0,
++		.type          = V4L2_CTRL_TYPE_INTEGER,
+ 	}
+ };
+ 
+@@ -965,7 +975,6 @@ static int omap_vout_release(struct file *file)
+ 
+ 	kfree(fh);
+ 
+-
+ 	return r;
+ }
+ 
+-- 
+1.6.2.4
+

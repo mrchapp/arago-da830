@@ -1,0 +1,54 @@
+From f6192c01b04e79d89085e5fcbd77c57eb4790ff6 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Wed, 14 Jan 2009 20:09:39 +0530
+Subject: [PATCH 179/426] file mode restored back
+
+In last commit the files has been modified by windows,
+so while commiting the mode of the files changed to
+755, which is not acceptable.
+---
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+ mode change 100755 => 100644 arch/arm/plat-omap/dss/display.c
+ mode change 100755 => 100644 arch/arm/plat-omap/dss/dsi.c
+ mode change 100755 => 100644 arch/arm/plat-omap/fb-vrfb.c
+ mode change 100755 => 100644 arch/arm/plat-omap/include/mach/display.h
+ mode change 100755 => 100644 arch/arm/plat-omap/include/mach/omap34xx.h
+ mode change 100755 => 100644 arch/arm/plat-omap/include/mach/omapfb.h
+ mode change 100755 => 100644 drivers/video/omap2/omapfb-ioctl.c
+ mode change 100755 => 100644 drivers/video/omap2/omapfb-main.c
+ mode change 100755 => 100644 drivers/video/omap2/omapfb-sysfs.c
+ mode change 100755 => 100644 drivers/video/omap2/omapfb.h
+
+diff --git a/arch/arm/plat-omap/dss/display.c b/arch/arm/plat-omap/dss/display.c
+old mode 100755
+new mode 100644
+diff --git a/arch/arm/plat-omap/dss/dsi.c b/arch/arm/plat-omap/dss/dsi.c
+old mode 100755
+new mode 100644
+diff --git a/arch/arm/plat-omap/fb-vrfb.c b/arch/arm/plat-omap/fb-vrfb.c
+old mode 100755
+new mode 100644
+diff --git a/arch/arm/plat-omap/include/mach/display.h b/arch/arm/plat-omap/include/mach/display.h
+old mode 100755
+new mode 100644
+diff --git a/arch/arm/plat-omap/include/mach/omap34xx.h b/arch/arm/plat-omap/include/mach/omap34xx.h
+old mode 100755
+new mode 100644
+diff --git a/arch/arm/plat-omap/include/mach/omapfb.h b/arch/arm/plat-omap/include/mach/omapfb.h
+old mode 100755
+new mode 100644
+diff --git a/drivers/video/omap2/omapfb-ioctl.c b/drivers/video/omap2/omapfb-ioctl.c
+old mode 100755
+new mode 100644
+diff --git a/drivers/video/omap2/omapfb-main.c b/drivers/video/omap2/omapfb-main.c
+old mode 100755
+new mode 100644
+diff --git a/drivers/video/omap2/omapfb-sysfs.c b/drivers/video/omap2/omapfb-sysfs.c
+old mode 100755
+new mode 100644
+diff --git a/drivers/video/omap2/omapfb.h b/drivers/video/omap2/omapfb.h
+old mode 100755
+new mode 100644
+-- 
+1.6.2.4
+

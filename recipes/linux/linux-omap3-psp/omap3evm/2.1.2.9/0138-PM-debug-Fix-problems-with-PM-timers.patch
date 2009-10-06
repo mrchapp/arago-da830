@@ -1,0 +1,53 @@
+From a76b4e008432932847c6b916619b4b0287086e54 Mon Sep 17 00:00:00 2001
+From: Tero Kristo <tero.kristo@nokia.com>
+Date: Mon, 26 Jan 2009 10:42:51 +0200
+Subject: [PATCH 138/426] PM debug: Fix problems with PM timers
+
+Camera sleep deny fix introduced a problem that broke MPU state timers, this
+is now fixed. Also removed DPLL* powerdomain timers from the status dumps.
+
+Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/pm-debug.c |    3 ++-
+ arch/arm/mach-omap2/pm34xx.c   |    3 +--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm-debug.c b/arch/arm/mach-omap2/pm-debug.c
+index 2895eec..c0de09e 100644
+--- a/arch/arm/mach-omap2/pm-debug.c
++++ b/arch/arm/mach-omap2/pm-debug.c
+@@ -396,7 +396,8 @@ static int pwrdm_dbg_show_timer(struct powerdomain *pwrdm, void *user)
+ 	int i;
+ 
+ 	if (strcmp(pwrdm->name, "emu_pwrdm") == 0 ||
+-		strcmp(pwrdm->name, "wkup_pwrdm") == 0)
++		strcmp(pwrdm->name, "wkup_pwrdm") == 0 ||
++		strncmp(pwrdm->name, "dpll", 4) == 0)
+ 		return 0;
+ 
+ 	pwrdm_state_switch(pwrdm);
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index eccfc90..615b327 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -409,8 +409,6 @@ void omap_sram_idle(void)
+ 					       OMAP3_PRM_VOLTCTRL_OFFSET);
+ 	}
+ 
+-	omap2_clkdm_allow_idle(mpu_pwrdm->pwrdm_clkdms[0]);
+-
+ 	/* PER */
+ 	if (per_next_state < PWRDM_POWER_ON) {
+ 		per_prev_state = pwrdm_read_prev_pwrst(per_pwrdm);
+@@ -433,6 +431,7 @@ void omap_sram_idle(void)
+ 
+ 	pwrdm_post_transition();
+ 
++	omap2_clkdm_allow_idle(mpu_pwrdm->pwrdm_clkdms[0]);
+ }
+ 
+ /*
+-- 
+1.6.2.4
+

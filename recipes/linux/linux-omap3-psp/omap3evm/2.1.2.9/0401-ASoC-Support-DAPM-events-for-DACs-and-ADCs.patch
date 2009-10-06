@@ -1,0 +1,71 @@
+From 092226c0b8996d075dcf754c1077c5b7907275e7 Mon Sep 17 00:00:00 2001
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Mon, 13 Apr 2009 11:27:03 +0100
+Subject: [PATCH 401/426] ASoC: Support DAPM events for DACs and ADCs
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ include/sound/soc-dapm.h |   10 ++++++++++
+ sound/soc/soc-dapm.c     |   16 ++++++++++------
+ 2 files changed, 20 insertions(+), 6 deletions(-)
+
+diff --git a/include/sound/soc-dapm.h b/include/sound/soc-dapm.h
+index a7def6a..fcc929d 100644
+--- a/include/sound/soc-dapm.h
++++ b/include/sound/soc-dapm.h
+@@ -140,9 +140,19 @@
+ #define SND_SOC_DAPM_DAC(wname, stname, wreg, wshift, winvert) \
+ {	.id = snd_soc_dapm_dac, .name = wname, .sname = stname, .reg = wreg, \
+ 	.shift = wshift, .invert = winvert}
++#define SND_SOC_DAPM_DAC_E(wname, stname, wreg, wshift, winvert, \
++			   wevent, wflags)				\
++{	.id = snd_soc_dapm_dac, .name = wname, .sname = stname, .reg = wreg, \
++	.shift = wshift, .invert = winvert, \
++	.event = wevent, .event_flags = wflags}
+ #define SND_SOC_DAPM_ADC(wname, stname, wreg, wshift, winvert) \
+ {	.id = snd_soc_dapm_adc, .name = wname, .sname = stname, .reg = wreg, \
+ 	.shift = wshift, .invert = winvert}
++#define SND_SOC_DAPM_ADC_E(wname, stname, wreg, wshift, winvert, \
++			   wevent, wflags)				\
++{	.id = snd_soc_dapm_adc, .name = wname, .sname = stname, .reg = wreg, \
++	.shift = wshift, .invert = winvert, \
++	.event = wevent, .event_flags = wflags}
+ 
+ /* generic register modifier widget */
+ #define SND_SOC_DAPM_REG(wid, wname, wreg, wshift, wmask, won_val, woff_val) \
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index 713d125..a6d7337 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -598,18 +598,22 @@ static int dapm_power_widget(struct snd_soc_codec *codec, int event,
+ 	if (w->id == snd_soc_dapm_adc && w->active) {
+ 		in = is_connected_input_ep(w);
+ 		dapm_clear_walk(w->codec);
+-		w->power = (in != 0) ? 1 : 0;
+-		dapm_update_bits(w);
+-		return 0;
++		power = (in != 0) ? 1 : 0;
++		if (power == w->power)
++			return 0;
++		w->power = power;
++		return dapm_generic_apply_power(w);
+ 	}
+ 
+ 	/* active DAC */
+ 	if (w->id == snd_soc_dapm_dac && w->active) {
+ 		out = is_connected_output_ep(w);
+ 		dapm_clear_walk(w->codec);
+-		w->power = (out != 0) ? 1 : 0;
+-		dapm_update_bits(w);
+-		return 0;
++		power = (out != 0) ? 1 : 0;
++		if (power == w->power)
++			return 0;
++		w->power = power;
++		return dapm_generic_apply_power(w);
+ 	}
+ 
+ 	/* pre and post event widgets */
+-- 
+1.6.2.4
+

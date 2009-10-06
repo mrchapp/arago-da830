@@ -1,0 +1,44 @@
+From f0d89bd0171f1ba131228d721e058c4860e7cdf7 Mon Sep 17 00:00:00 2001
+From: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+Date: Tue, 2 Dec 2008 17:31:16 +0200
+Subject: [PATCH 132/426] Fix omap_getspeed.
+
+Signed-off-by: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/clock34xx.c |    1 +
+ arch/arm/plat-omap/cpu-omap.c   |    6 ++++++
+ 2 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clock34xx.c b/arch/arm/mach-omap2/clock34xx.c
+index 17102ba..596230a 100644
+--- a/arch/arm/mach-omap2/clock34xx.c
++++ b/arch/arm/mach-omap2/clock34xx.c
+@@ -993,6 +993,7 @@ static int omap3_select_table_rate(struct clk *clk, unsigned long rate)
+ 
+ 	if (clk == &virt_vdd1_prcm_set) {
+ 		curr_mpu_speed = curr_vdd1_prcm_set->rate;
++		clk->rate = prcm_vdd->rate;
+ 		clk_set_rate(dpll1_clk, prcm_vdd->rate);
+ 		clk_set_rate(dpll2_clk, dsp_opps[index].rate);
+ 		curr_vdd1_prcm_set = prcm_vdd;
+diff --git a/arch/arm/plat-omap/cpu-omap.c b/arch/arm/plat-omap/cpu-omap.c
+index ae0817d..0a7ce46 100644
+--- a/arch/arm/plat-omap/cpu-omap.c
++++ b/arch/arm/plat-omap/cpu-omap.c
+@@ -146,6 +146,12 @@ static int __init omap_cpu_init(struct cpufreq_policy *policy)
+ 							VERY_HI_RATE) / 1000;
+ 	}
+ 
++	clk_set_rate(mpu_clk, policy->cpuinfo.max_freq * 1000);
++
++	policy->min = policy->cpuinfo.min_freq;
++	policy->max = policy->cpuinfo.max_freq;
++	policy->cur = omap_getspeed(0);
++
+ 	/* FIXME: what's the actual transition time? */
+ 	policy->cpuinfo.transition_latency = 10 * 1000 * 1000;
+ 	return 0;
+-- 
+1.6.2.4
+

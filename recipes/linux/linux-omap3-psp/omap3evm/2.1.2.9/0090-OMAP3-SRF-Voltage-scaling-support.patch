@@ -1,0 +1,139 @@
+From 9e56b97864a3923cdb7ce0f323132d4b26b40017 Mon Sep 17 00:00:00 2001
+From: Rajendra Nayak <rnayak@ti.com>
+Date: Mon, 10 Nov 2008 16:58:54 +0530
+Subject: [PATCH 090/426] OMAP3 SRF: Voltage scaling support
+
+Adds Voltage scaling support
+
+Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/board-3430sdp.c       |   26 +++++++++++++-------------
+ arch/arm/mach-omap2/resource34xx.c        |   17 ++++++++++++++++-
+ arch/arm/mach-omap2/resource34xx.h        |    1 +
+ arch/arm/plat-omap/include/mach/omap-pm.h |    2 +-
+ 4 files changed, 31 insertions(+), 15 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-3430sdp.c b/arch/arm/mach-omap2/board-3430sdp.c
+index 9584664..34143fb 100644
+--- a/arch/arm/mach-omap2/board-3430sdp.c
++++ b/arch/arm/mach-omap2/board-3430sdp.c
+@@ -71,39 +71,39 @@
+ static struct omap_opp mpu_rate_table[] = {
+ 	{0, 0, 0},
+ 	/*OPP1*/
+-	{S125M, VDD1_OPP1, 0},
++	{S125M, VDD1_OPP1, 0x18},
+ 	/*OPP2*/
+-	{S250M, VDD1_OPP2, 0},
++	{S250M, VDD1_OPP2, 0x20},
+ 	/*OPP3*/
+-	{S500M, VDD1_OPP3, 0},
++	{S500M, VDD1_OPP3, 0x30},
+ 	/*OPP4*/
+-	{S550M, VDD1_OPP4, 0},
++	{S550M, VDD1_OPP4, 0x36},
+ 	/*OPP5*/
+-	{S600M, VDD1_OPP5, 0},
++	{S600M, VDD1_OPP5, 0x3C},
+ };
+ 
+ static struct omap_opp l3_rate_table[] = {
+ 	{0, 0, 0},
+ 	/*OPP1*/
+-	{0, VDD2_OPP1, 0},
++	{0, VDD2_OPP1, 0x18},
+ 	/*OPP2*/
+-	{S83M, VDD2_OPP2, 0},
++	{S83M, VDD2_OPP2, 0x20},
+ 	/*OPP3*/
+-	{S166M, VDD2_OPP3, 0},
++	{S166M, VDD2_OPP3, 0x2C},
+ };
+ 
+ struct omap_opp dsp_rate_table[] = {
+ 	{0, 0, 0},
+ 	/*OPP1*/
+-	{S90M, VDD1_OPP1, 0},
++	{S90M, VDD1_OPP1, 0x18},
+ 	/*OPP2*/
+-	{S180M, VDD1_OPP2, 0},
++	{S180M, VDD1_OPP2, 0x20},
+ 	/*OPP3*/
+-	{S360M, VDD1_OPP3, 0},
++	{S360M, VDD1_OPP3, 0x30},
+ 	/*OPP4*/
+-	{S400M, VDD1_OPP4, 0},
++	{S400M, VDD1_OPP4, 0x36},
+ 	/*OPP5*/
+-	{S430M, VDD1_OPP5, 0},
++	{S430M, VDD1_OPP5, 0x3C},
+ };
+ 
+ #define CONFIG_DISABLE_HFCLK 1
+diff --git a/arch/arm/mach-omap2/resource34xx.c b/arch/arm/mach-omap2/resource34xx.c
+index c4c6c17..f5dbdd3 100644
+--- a/arch/arm/mach-omap2/resource34xx.c
++++ b/arch/arm/mach-omap2/resource34xx.c
+@@ -19,6 +19,7 @@
+ #include <linux/pm_qos_params.h>
+ #include <mach/powerdomain.h>
+ #include <mach/clockdomain.h>
++#include "smartreflex.h"
+ #include "resource34xx.h"
+ #include "pm.h"
+ 
+@@ -157,10 +158,24 @@ void init_opp(struct shared_resource *resp)
+ int set_opp(struct shared_resource *resp, u32 target_level)
+ {
+ 	unsigned long mpu_freq;
++
++	if (resp->curr_level == target_level)
++		return 0;
++
+ 	if (strcmp(resp->name, "vdd1_opp") == 0) {
+ 		mpu_freq = get_freq(mpu_opps + MAX_VDD1_OPP,
+ 					target_level);
+-		clk_set_rate(vdd1_clk, mpu_freq);
++		if (resp->curr_level > target_level) {
++			/* Scale Frequency and then voltage */
++			clk_set_rate(vdd1_clk, mpu_freq);
++			sr_voltagescale_vcbypass(PRCM_VDD1,
++					mpu_opps[target_level-1].vsel);
++		} else {
++			/* Scale Voltage and then frequency */
++			sr_voltagescale_vcbypass(PRCM_VDD1,
++					mpu_opps[target_level-1].vsel);
++			clk_set_rate(vdd1_clk, mpu_freq);
++		}
+ 		resp->curr_level = curr_vdd1_prcm_set->opp_id;
+ 	} else if (strcmp(resp->name, "vdd2_opp") == 0) {
+ 		/* Not supported yet */
+diff --git a/arch/arm/mach-omap2/resource34xx.h b/arch/arm/mach-omap2/resource34xx.h
+index f1953b9..b5393c8 100644
+--- a/arch/arm/mach-omap2/resource34xx.h
++++ b/arch/arm/mach-omap2/resource34xx.h
+@@ -31,6 +31,7 @@ extern struct omap_opp *curr_vdd1_prcm_set;
+ extern struct omap_opp *curr_vdd2_prcm_set;
+ extern unsigned long get_freq(struct  omap_opp *, unsigned short);
+ extern unsigned short get_opp(struct omap_opp *, unsigned long);
++extern int sr_voltagescale_vcbypass(u32 target_opp, u8 vsel);
+ 
+ /*
+  * mpu_latency/core_latency are used to control the cpuidle C state.
+diff --git a/arch/arm/plat-omap/include/mach/omap-pm.h b/arch/arm/plat-omap/include/mach/omap-pm.h
+index c00acfd..f0bbd36 100644
+--- a/arch/arm/plat-omap/include/mach/omap-pm.h
++++ b/arch/arm/plat-omap/include/mach/omap-pm.h
+@@ -30,7 +30,7 @@
+ struct omap_opp {
+ 	unsigned long rate;
+ 	u8 opp_id;
+-	u16 min_vdd;
++	u16 vsel;
+ };
+ 
+ extern struct omap_opp *mpu_opps;
+-- 
+1.6.2.4
+

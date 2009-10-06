@@ -1,0 +1,275 @@
+From 2f13897159a2ddcc6a063661128eee58a9c485f0 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Mon, 16 Feb 2009 15:19:09 +0530
+Subject: [PATCH 299/426] Added Alpha blending support in DSS Library
+
+---
+ arch/arm/plat-omap/dss/dispc.c            |   33 ++++++++++++++++++++--------
+ arch/arm/plat-omap/dss/display.c          |    7 ++++-
+ arch/arm/plat-omap/dss/dpi.c              |    8 +++++++
+ arch/arm/plat-omap/dss/dss.h              |    3 +-
+ arch/arm/plat-omap/dss/venc.c             |    7 ++++++
+ arch/arm/plat-omap/include/mach/display.h |    5 +++-
+ 6 files changed, 49 insertions(+), 14 deletions(-)
+
+diff --git a/arch/arm/plat-omap/dss/dispc.c b/arch/arm/plat-omap/dss/dispc.c
+index 72db1b0..f9203e5 100644
+--- a/arch/arm/plat-omap/dss/dispc.c
++++ b/arch/arm/plat-omap/dss/dispc.c
+@@ -1046,6 +1046,8 @@ static void _dispc_calc_and_set_row_inc(enum omap_plane plane,
+ 		break;
+ 
+ 	case OMAP_DSS_COLOR_RGB24U:
++	case OMAP_DSS_COLOR_ARGB32:
++	case OMAP_DSS_COLOR_RGBA32:
+ 		ps = 4;		/* pixel size is 4 bytes */
+ 		break;
+ 
+@@ -1091,13 +1093,12 @@ static int _dispc_setup_plane(enum omap_plane plane,
+ 		int width, int height,
+ 		int out_width, int out_height,
+ 		enum omap_color_mode color_mode,
+-		int ilace, int rotation, int mirror)
++		int ilace, int rotation, int mirror, int global_alpha)
+ {
+ 	int fieldmode = 0;
+ 	int bpp;
+ 	int cconv;
+ 	int scaling = 0;
+-	u32 attr_value;
+ 
+ 	if (plane == OMAP_DSS_GFX) {
+ 		if (width != out_width || height != out_height)
+@@ -1115,7 +1116,6 @@ static int _dispc_setup_plane(enum omap_plane plane,
+ 		   out_height > height*8)
+ 			return -EINVAL;
+ 	}
+-
+ 	switch (color_mode) {
+ 	case OMAP_DSS_COLOR_RGB16:
+ 		bpp = 16;
+@@ -1128,6 +1128,8 @@ static int _dispc_setup_plane(enum omap_plane plane,
+ 		break;
+ 
+ 	case OMAP_DSS_COLOR_RGB24U:
++	case OMAP_DSS_COLOR_ARGB32:
++	case OMAP_DSS_COLOR_RGBA32:
+ 		bpp = 32;
+ 		cconv = 0;
+ 		break;
+@@ -1143,7 +1145,6 @@ static int _dispc_setup_plane(enum omap_plane plane,
+ 		BUG();
+ 		return 1;
+ 	}
+-
+ 	if (ilace) {
+ 		if (height == out_height || height > out_height)
+ 			fieldmode = 1;
+@@ -1159,7 +1160,6 @@ static int _dispc_setup_plane(enum omap_plane plane,
+ 		_dispc_set_scaling(plane, width, height,
+ 				   out_width, out_height,
+ 				   ilace);
+-
+ 	/* attributes */
+ 	_dispc_set_channel_out(plane, channel_out);
+ 
+@@ -1172,7 +1172,6 @@ static int _dispc_setup_plane(enum omap_plane plane,
+ 		_dispc_set_vid_color_conv(plane, cconv);
+ 
+ 	/* */
+-
+ 	_dispc_set_plane_ba0(plane, paddr);
+ 
+ 	if (fieldmode)
+@@ -1191,7 +1190,11 @@ static int _dispc_setup_plane(enum omap_plane plane,
+ 	_dispc_calc_and_set_row_inc(plane, screen_width, width, 0,
+ 			color_mode, rotation, mirror, fieldmode);
+ 
+-	attr_value = dispc_read_reg(DISPC_VID_ATTRIBUTES(0));
++	if (plane == OMAP_DSS_GFX)
++		REG_FLD_MOD(DISPC_GLOBAL_ALPHA, global_alpha, 7, 0);
++	else if (plane == OMAP_DSS_VIDEO2)
++		REG_FLD_MOD(DISPC_GLOBAL_ALPHA, global_alpha, 23, 16);
++
+ 	return 0;
+ }
+ 
+@@ -1311,6 +1314,16 @@ void omap_dispc_set_trans_key(enum omap_channel ch,
+ 	enable_clocks(0);
+ }
+ 
++void dispc_enable_alpha_blending(enum omap_channel ch, int enable)
++{
++	enable_clocks(1);
++	if (ch == OMAP_DSS_CHANNEL_LCD)
++		REG_FLD_MOD(DISPC_CONFIG, enable, 18, 18);
++	else /* OMAP_DSS_CHANNEL_DIGIT */
++		REG_FLD_MOD(DISPC_CONFIG, enable, 19, 19);
++	enable_clocks(0);
++}
++
+ void omap_dispc_enable_trans_key(enum omap_channel ch, int enable)
+ {
+ 	enable_clocks(1);
+@@ -1982,7 +1995,7 @@ int dispc_setup_plane(enum omap_plane plane, enum omap_channel channel_out,
+ 		       int width, int height,
+ 		       int out_width, int out_height,
+ 		       enum omap_color_mode color_mode,
+-		       int ilace, int rotation, int mirror)
++		       int ilace, int rotation, int mirror, int global_alpha)
+ {
+ 	int r = 0;
+ 
+@@ -1999,7 +2012,7 @@ int dispc_setup_plane(enum omap_plane plane, enum omap_channel channel_out,
+ 			   pos_x, pos_y,
+ 			   width, height,
+ 			   out_width, out_height,
+-			   color_mode, ilace, rotation, mirror);
++			   color_mode, ilace, rotation, mirror, global_alpha);
+ 
+ 	enable_clocks(0);
+ 
+@@ -2209,7 +2222,7 @@ void dispc_setup_partial_planes(struct omap_display *display,
+ 				px, py,
+ 				pw, ph,
+ 				pow, poh,
+-				pi->color_mode, 0, 0, 0);
++				pi->color_mode, 0, 0, 0, 0);
+ 
+ 		dispc_enable_plane(ovl->id, 1);
+ 	}
+diff --git a/arch/arm/plat-omap/dss/display.c b/arch/arm/plat-omap/dss/display.c
+index b93e745..e8e5b3c 100644
+--- a/arch/arm/plat-omap/dss/display.c
++++ b/arch/arm/plat-omap/dss/display.c
+@@ -262,7 +262,8 @@ static int omap_dss_unset_display(struct omap_overlay_manager *mgr)
+ static int omap_dss_setup_overlay_input(struct omap_overlay *ovl,
+ 		u32 paddr, void *vaddr, int tv_field1_offset, int screen_width,
+ 		int width, int height,
+-		enum omap_color_mode color_mode, int rotation, int mirror)
++		enum omap_color_mode color_mode, int rotation, int mirror,
++		int global_alpha)
+ {
+ 	int r;
+ 	struct omap_overlay_info old_info;
+@@ -283,6 +284,7 @@ static int omap_dss_setup_overlay_input(struct omap_overlay *ovl,
+ 	ovl->info.width = width;
+ 	ovl->info.height = height;
+ 	ovl->info.color_mode = color_mode;
++	ovl->info.global_alpha = global_alpha;
+ 
+ 	if (ovl->manager) {
+ 		r = check_overlay(ovl, ovl->manager->display);
+@@ -408,7 +410,8 @@ static int omap_dss_mgr_apply(struct omap_overlay_manager *mgr)
+ 				ovl->info.color_mode,
+ 				ilace,
+ 				ovl->info.rotation,
+-				ovl->info.mirror);
++				ovl->info.mirror,
++				ovl->info.global_alpha);
+ 
+ 		if (r) {
+ 			DSSERR("dispc_setup_plane failed\n");
+diff --git a/arch/arm/plat-omap/dss/dpi.c b/arch/arm/plat-omap/dss/dpi.c
+index d8a197c..13a2311 100644
+--- a/arch/arm/plat-omap/dss/dpi.c
++++ b/arch/arm/plat-omap/dss/dpi.c
+@@ -352,6 +352,13 @@ static void dpi_display_set_color_keying(struct omap_display *display,
+ 	dispc_go(OMAP_DSS_CHANNEL_LCD);
+ }
+ 
++static void dpi_enable_alpha_blending(struct omap_display *display,
++	unsigned int enable)
++{
++	dispc_enable_alpha_blending(OMAP_DSS_CHANNEL_LCD, enable);
++	dispc_go(OMAP_DSS_CHANNEL_LCD);
++}
++
+ void dpi_init_display(struct omap_display *display)
+ {
+ 	DSSDBG("DPI init_display\n");
+@@ -368,6 +375,7 @@ void dpi_init_display(struct omap_display *display)
+ 	display->set_bg_color = dpi_display_set_bg_color;
+ 	display->get_bg_color = dpi_display_get_bg_color;
+ 	display->set_color_keying = dpi_display_set_color_keying;
++	display->enable_alpha_blending = dpi_enable_alpha_blending;
+ }
+ 
+ int dpi_init(void)
+diff --git a/arch/arm/plat-omap/dss/dss.h b/arch/arm/plat-omap/dss/dss.h
+index 4bc073b..19f1b0c 100644
+--- a/arch/arm/plat-omap/dss/dss.h
++++ b/arch/arm/plat-omap/dss/dss.h
+@@ -217,7 +217,7 @@ int dispc_setup_plane(enum omap_plane plane, enum omap_channel channel_out,
+ 		      int width, int height,
+ 		      int out_width, int out_height,
+ 		      enum omap_color_mode color_mode,
+-		      int ilace, int rotation, int mirror);
++		      int ilace, int rotation, int mirror, int global_alpha);
+ 
+ void dispc_go(enum omap_channel channel);
+ void dispc_enable_lcd_out(int enable);
+@@ -233,6 +233,7 @@ void omap_dispc_set_trans_key(enum omap_channel ch,
+ 		enum omap_dss_color_key_type type,
+ 		u32 trans_key);
+ void omap_dispc_enable_trans_key(enum omap_channel ch, int enable);
++void dispc_enable_alpha_blending(enum omap_channel ch, int enable);
+ 
+ void dispc_set_lcd_timings(struct omap_video_timings *timings);
+ unsigned long dispc_fclk_rate(void);
+diff --git a/arch/arm/plat-omap/dss/venc.c b/arch/arm/plat-omap/dss/venc.c
+index aaf472e..97b403a 100644
+--- a/arch/arm/plat-omap/dss/venc.c
++++ b/arch/arm/plat-omap/dss/venc.c
+@@ -521,6 +521,12 @@ static void venc_display_set_color_keying(struct omap_display *display,
+ 	omap_dispc_enable_trans_key(OMAP_DSS_CHANNEL_DIGIT, key->enable);
+ 	dispc_go(OMAP_DSS_CHANNEL_DIGIT);
+ }
++static void venc_enable_alpha_blending(struct omap_display *display,
++	unsigned int enable)
++{
++	dispc_enable_alpha_blending(OMAP_DSS_CHANNEL_DIGIT, enable);
++	dispc_go(OMAP_DSS_CHANNEL_DIGIT);
++}
+ 
+ void venc_init_display(struct omap_display *display)
+ {
+@@ -531,4 +537,5 @@ void venc_init_display(struct omap_display *display)
+ 	display->set_bg_color = venc_display_set_bg_color;
+ 	display->get_bg_color = venc_display_get_bg_color;
+ 	display->set_color_keying = venc_display_set_color_keying;
++	display->enable_alpha_blending = venc_enable_alpha_blending;
+ }
+diff --git a/arch/arm/plat-omap/include/mach/display.h b/arch/arm/plat-omap/include/mach/display.h
+index 3a319d1..2e6d73e 100644
+--- a/arch/arm/plat-omap/include/mach/display.h
++++ b/arch/arm/plat-omap/include/mach/display.h
+@@ -340,6 +340,7 @@ struct omap_overlay_info {
+ 	int rotation;
+ 	int mirror;
+ 	enum omap_color_mode color_mode;
++	int global_alpha;
+ };
+ 
+ enum omap_overlay_caps {
+@@ -365,7 +366,7 @@ struct omap_overlay {
+ 			int screen_width,
+ 			int width, int height,
+ 			enum omap_color_mode color_mode, int rotation,
+-			int mirror);
++			int mirror, int global_alpha);
+ 	int (*setup_output)(struct omap_overlay *ovl,
+ 			int pos_x, int pos_y,
+ 			int out_width, int out_height);
+@@ -446,6 +447,8 @@ struct omap_display {
+ 			struct omap_video_timings *timings);
+ 	void (*set_color_keying)(struct omap_display *display,
+ 			struct omap_color_key *key);
++	void (*enable_alpha_blending)(struct omap_display *display,
++			unsigned int enable);
+ 	int (*update)(struct omap_display *display,
+ 			       int x, int y, int w, int h);
+ 	int (*sync)(struct omap_display *display);
+-- 
+1.6.2.4
+

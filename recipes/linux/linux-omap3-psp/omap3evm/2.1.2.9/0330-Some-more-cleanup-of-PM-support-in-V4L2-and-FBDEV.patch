@@ -1,0 +1,177 @@
+From 48d61f1bce88b1cb09c7c31803808990699d3388 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Mon, 9 Mar 2009 15:07:11 +0530
+Subject: [PATCH 330/426] Some more cleanup of PM support in V4L2 and FBDEV
+
+After discussion and some testing we found that -
+
+	- V4L2 was enabling and disabling displays for
+	  no. video nodes, it should be for the corrosponding
+	  diesply only.
+	- Problem will occur if sysfs display enable come into picture,
+	  we need to enforce constraint to user "once he enables the
+	  display through sysfs, then he should be the onle who needs to
+	  disable the display for PM to work"
+	  Check for DSS_DISABLE removed.
+	- ref_count for venc.c file added.
+---
+ arch/arm/plat-omap/dss/venc.c        |   12 ++++++++
+ drivers/media/video/omap/omap_vout.c |   48 ++++++++-------------------------
+ drivers/video/omap2/omapfb-sysfs.c   |   20 ++++++++-----
+ 3 files changed, 36 insertions(+), 44 deletions(-)
+
+diff --git a/arch/arm/plat-omap/dss/venc.c b/arch/arm/plat-omap/dss/venc.c
+index fac91b2..c92aa10 100644
+--- a/arch/arm/plat-omap/dss/venc.c
++++ b/arch/arm/plat-omap/dss/venc.c
+@@ -427,6 +427,11 @@ static int venc_enable_display(struct omap_display *display)
+ 
+ 	mutex_lock(&venc.venc_lock);
+ 
++	if (display->ref_count > 0) {
++		display->ref_count++;
++		mutex_unlock(&venc.venc_lock);
++		return -EINVAL;
++	}
+ 	if (display->state != OMAP_DSS_DISPLAY_DISABLED) {
+ 		mutex_unlock(&venc.venc_lock);
+ 		return -EINVAL;
+@@ -465,6 +470,7 @@ static int venc_enable_display(struct omap_display *display)
+ 	omap_dispc_unregister_isr(isr_handle);
+ 
+ 	display->state = OMAP_DSS_DISPLAY_ACTIVE;
++	display->ref_count++;
+ 
+ 	mutex_unlock(&venc.venc_lock);
+ 
+@@ -477,6 +483,11 @@ static void venc_disable_display(struct omap_display *display)
+ 
+ 	mutex_lock(&venc.venc_lock);
+ 
++	if (display->ref_count > 1) {
++		display->ref_count--;
++		mutex_unlock(&venc.venc_lock);
++		return;
++	}
+ 	if (display->state == OMAP_DSS_DISPLAY_DISABLED) {
+ 		mutex_unlock(&venc.venc_lock);
+ 		return;
+@@ -493,6 +504,7 @@ static void venc_disable_display(struct omap_display *display)
+ 	venc_enable_clocks(0);
+ 
+ 	display->state = OMAP_DSS_DISPLAY_DISABLED;
++	display->ref_count--;
+ 
+ 	mutex_unlock(&venc.venc_lock);
+ }
+diff --git a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
+index 77bfd13..ee9ea99 100644
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -939,14 +939,11 @@ static int omap_vout_release(struct file *file)
+ 	if (vout->streaming == fh) {
+ 		omap_dispc_unregister_isr(vout->isr_handle);
+ 		vout->streaming = NULL;
+-		for (t = 1; t < (ovid->vid_dev->num_videos + 1); t++) {
+-			struct omap_display *display =
+-				ovid->vid_dev->overlays[t]->manager->display;
+-			/* We are not checking retur value here since it is
+-			 * this function only returns if somebody has already
+-			 * enabled the display
+-			 */
+-			display->disable(display);
++		for (t = 0; t < ovid->num_overlays; t++) {
++			struct omap_overlay *ovl = ovid->overlays[t];
++			if (ovl->manager && ovl->manager->display)
++				ovl->manager->display->disable
++					(ovl->manager->display);
+ 		}
+ 		/*
+ 		 * This is temperory implementation to support CPU Idle,
+@@ -1672,23 +1669,12 @@ static int vidioc_streamon(struct file *file, void *fh,
+ 	 */
+ 	omap2_block_sleep();
+ 
+-	/*
+-	 * Check for the right location of enabling the display,
+-	 * temporory enabling here
+-	 */
+-	for (t = 1; t < (ovid->vid_dev->num_videos + 1); t++) {
+-		struct omap_display *display =
+-			ovid->vid_dev->overlays[t]->manager->display;
+-		/* We are not checking retur value here since it is
+-		 * this function only returns if somebody has already
+-		 * enabled the display
+-		 */
+-		display->enable(display);
+-	}
+ 	for (t = 0; t < ovid->num_overlays; t++) {
+ 		struct omap_overlay *ovl = ovid->overlays[t];
+-		if (ovl->manager && ovl->manager->display)
++		if (ovl->manager && ovl->manager->display) {
++			ovl->manager->display->enable(ovl->manager->display);
+ 			ovl->enable(ovl, 1);
++		}
+ 	}
+ 
+ 	r = omapvid_apply_changes(vout, addr, 0);
+@@ -1718,21 +1704,11 @@ static int vidioc_streamoff(struct file *file, void *fh,
+ 
+ 		for (t = 0; t < ovid->num_overlays; t++) {
+ 			struct omap_overlay *ovl = ovid->overlays[t];
+-			if (ovl->manager && ovl->manager->display)
++			if (ovl->manager && ovl->manager->display) {
+ 				ovl->enable(ovl, 0);
+-		}
+-		/*
+-		 * Check for the right location of enabling
+-		 * the display, temporory enabling here
+-		 */
+-		for (t = 1; t < (ovid->vid_dev->num_videos + 1); t++) {
+-			struct omap_display *display =
+-				ovid->vid_dev->overlays[t]->manager->display;
+-			/* We are not checking retur value here since it is
+-			 * this function only returns if somebody has already
+-			 * enabled the display
+-			 */
+-			display->disable(display);
++				ovl->manager->display->disable
++					(ovl->manager->display);
++			}
+ 		}
+ 		/*
+ 		 * This is temperory implementation to support CPU Idle,
+diff --git a/drivers/video/omap2/omapfb-sysfs.c b/drivers/video/omap2/omapfb-sysfs.c
+index f510c6a..c6a38aa 100755
+--- a/drivers/video/omap2/omapfb-sysfs.c
++++ b/drivers/video/omap2/omapfb-sysfs.c
+@@ -864,14 +864,18 @@ static ssize_t store_displays(struct device *dev,
+ 		//def_display->panel->bpp = bpp;
+ 	}
+ 
+-	if (enable != (display->state != OMAP_DSS_DISPLAY_DISABLED)) {
+-		if (enable) {
+-			r = display->enable(display);
+-			if (r)
+-				dev_err(dev, "failed to enable display\n");
+-		} else {
+-			display->disable(display);
+-		}
++	if (enable) {
++		/*
++		 * We are not checking return value of
++		 * display->enable call, since it only returns if
++		 * display is alreay enabled.
++		 */
++		r = display->enable(display);
++/*		if (r)
++			dev_err(dev, "failed to enable display\n");
++*/
++	} else {
++		display->disable(display);
+ 	}
+ 
+ 	if (display->set_update_mode && display->get_update_mode) {
+-- 
+1.6.2.4
+

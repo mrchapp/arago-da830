@@ -1,0 +1,26 @@
+From 9073e3db54406352e2936cea81ee263d55529e31 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Fri, 5 Jun 2009 11:01:02 +0530
+Subject: [PATCH 378/426] DSS2: Changed omap3_evm_deconfig to select DSI as the source of pixel clock
+
+---
+ arch/arm/configs/omap3_evm_defconfig |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/configs/omap3_evm_defconfig b/arch/arm/configs/omap3_evm_defconfig
+index 4c43675..ca87aab 100644
+--- a/arch/arm/configs/omap3_evm_defconfig
++++ b/arch/arm/configs/omap3_evm_defconfig
+@@ -211,7 +211,8 @@ CONFIG_OMAP2_DSS=y
+ # CONFIG_OMAP2_DSS_RFBI is not set
+ CONFIG_OMAP2_DSS_VENC=y
+ # CONFIG_OMAP2_DSS_SDI is not set
+-# CONFIG_OMAP2_DSS_DSI is not set
++CONFIG_OMAP2_DSS_DSI=y
++CONFIG_OMAP2_DSS_USE_DSI_PLL=y
+ # CONFIG_OMAP2_DSS_FAKE_VSYNC is not set
+ CONFIG_OMAP2_DSS_MIN_FCK_PER_PCK=4
+ CONFIG_ARCH_OMAP34XX=y
+-- 
+1.6.2.4
+

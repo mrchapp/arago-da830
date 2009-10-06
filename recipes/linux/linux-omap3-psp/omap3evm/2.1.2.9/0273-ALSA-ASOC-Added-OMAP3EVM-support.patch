@@ -1,0 +1,69 @@
+From 6d9b567c2c9d320ab98ba3f6656f105293118d65 Mon Sep 17 00:00:00 2001
+From: Satish N <gitadmin@gitsvr01.(none)>
+Date: Fri, 13 Feb 2009 12:57:12 +0530
+Subject: [PATCH 273/426] ALSA ASOC : Added OMAP3EVM support.
+
+---
+ sound/soc/codecs/twl4030.c |    6 +++---
+ sound/soc/omap/Kconfig     |    8 ++++++++
+ sound/soc/omap/Makefile    |    2 ++
+ 3 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
+index ea370a4..869d88f 100644
+--- a/sound/soc/codecs/twl4030.c
++++ b/sound/soc/codecs/twl4030.c
+@@ -46,9 +46,9 @@ static const u8 twl4030_reg[TWL4030_CACHEREGNUM] = {
+ 	0xc3, /* REG_OPTION		(0x2)	*/
+ 	0x00, /* REG_UNKNOWN		(0x3)	*/
+ 	0x00, /* REG_MICBIAS_CTL	(0x4)	*/
+-	0x20, /* REG_ANAMICL		(0x5)	*/
+-	0x00, /* REG_ANAMICR		(0x6)	*/
+-	0x00, /* REG_AVADC_CTL		(0x7)	*/
++	0x34, /* REG_ANAMICL		(0x5)	*/
++	0x14, /* REG_ANAMICR		(0x6)	*/
++	0x0a, /* REG_AVADC_CTL		(0x7)	*/
+ 	0x00, /* REG_ADCMICSEL		(0x8)	*/
+ 	0x00, /* REG_DIGMIXING		(0x9)	*/
+ 	0x0c, /* REG_ATXL1PGA		(0xA)	*/
+diff --git a/sound/soc/omap/Kconfig b/sound/soc/omap/Kconfig
+index 4f7f040..d45c6dc 100644
+--- a/sound/soc/omap/Kconfig
++++ b/sound/soc/omap/Kconfig
+@@ -39,6 +39,14 @@ config SND_OMAP_SOC_OMAP2EVM
+ 	help
+ 	  Say Y if you want to add support for SoC audio on the omap2evm board.
+ 
++config SND_OMAP_SOC_OMAP3EVM
++	tristate "SoC Audio support for OMAP3EVM board"
++	depends on TWL4030_CORE && SND_OMAP_SOC && MACH_OMAP3EVM
++	select SND_OMAP_SOC_MCBSP
++	select SND_SOC_TWL4030
++	help
++	  Say Y if you want to add support for SoC audio on the omap3evm board.
++
+ config SND_OMAP_SOC_SDP3430
+ 	tristate "SoC Audio support for Texas Instruments SDP3430"
+ 	depends on TWL4030_CORE && SND_OMAP_SOC && MACH_OMAP_3430SDP
+diff --git a/sound/soc/omap/Makefile b/sound/soc/omap/Makefile
+index 76fedd9..a3effcb 100644
+--- a/sound/soc/omap/Makefile
++++ b/sound/soc/omap/Makefile
+@@ -10,6 +10,7 @@ snd-soc-n810-objs := n810.o
+ snd-soc-osk5912-objs := osk5912.o
+ snd-soc-overo-objs := overo.o
+ snd-soc-omap2evm-objs := omap2evm.o
++snd-soc-omap3evm-objs := omap3evm.o
+ snd-soc-sdp3430-objs := sdp3430.o
+ snd-soc-omap3pandora-objs := omap3pandora.o
+ 
+@@ -17,5 +18,6 @@ obj-$(CONFIG_SND_OMAP_SOC_N810) += snd-soc-n810.o
+ obj-$(CONFIG_SND_OMAP_SOC_OSK5912) += snd-soc-osk5912.o
+ obj-$(CONFIG_SND_OMAP_SOC_OVERO) += snd-soc-overo.o
+ obj-$(CONFIG_MACH_OMAP2EVM) += snd-soc-omap2evm.o
++obj-$(CONFIG_MACH_OMAP3EVM) += snd-soc-omap3evm.o
+ obj-$(CONFIG_SND_OMAP_SOC_SDP3430) += snd-soc-sdp3430.o
+ obj-$(CONFIG_SND_OMAP_SOC_OMAP3_PANDORA) += snd-soc-omap3pandora.o
+-- 
+1.6.2.4
+

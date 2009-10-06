@@ -1,0 +1,176 @@
+From f1d35f7608a58de18a1d6fe335c4797be346c275 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Fri, 13 Mar 2009 14:54:32 +0530
+Subject: [PATCH 345/426] Suspend/Resume moved to DSS2 Library
+
+Earlier the Suspend and Resume functionality imlemented under
+FBDEV driver, which actualy should be part of DSS2 library.
+
+Reverted back FBDEV changes and moved to DSS2 library.
+---
+ arch/arm/plat-omap/dss/display.c  |   53 +++++++++++++++++++++++++++++++++++++
+ arch/arm/plat-omap/dss/dss.c      |   15 ++++++++++
+ arch/arm/plat-omap/dss/dss.h      |    2 +
+ drivers/video/omap2/omapfb-main.c |   36 -------------------------
+ 4 files changed, 70 insertions(+), 36 deletions(-)
+
+diff --git a/arch/arm/plat-omap/dss/display.c b/arch/arm/plat-omap/dss/display.c
+index 97da44e..46f8943 100644
+--- a/arch/arm/plat-omap/dss/display.c
++++ b/arch/arm/plat-omap/dss/display.c
+@@ -665,6 +665,59 @@ void initialize_overlays(const char *def_disp_name)
+ 
+ }
+ 
++int omap_dss_suspend_all_displays(void)
++{
++	int i = 0, r;
++
++	for (i = 0; i < num_displays; ++i) {
++		struct omap_display *display = &displays[i];
++
++		if (!display)
++			continue;
++
++		if (display->state != OMAP_DSS_DISPLAY_ACTIVE) {
++			continue;
++		}
++
++		if (!display->suspend) {
++			DSSERR("display '%s' doesn't implement suspend\n",
++					display->name);
++			r = -ENOSYS;
++			goto err;
++		}
++
++		r = display->suspend(display);
++
++		if (r)
++			goto err;
++	}
++
++	return 0;
++err:
++	/* resume all displays that were suspended */
++	omap_dss_resume_all_displays();
++	return r;
++}
++
++int omap_dss_resume_all_displays(void)
++{
++	int i = 0, r;
++
++	for (i = 0; i < num_displays; ++i) {
++		struct omap_display *display = &displays[i];
++		if (display && display->resume) {
++			if (display->state != OMAP_DSS_DISPLAY_SUSPENDED)
++				continue;
++
++			r = display->resume(display);
++			if (r)
++				return r;
++		}
++	}
++
++	return 0;
++}
++
+ int omap_dss_get_num_displays(void)
+ {
+ 	return num_displays;
+diff --git a/arch/arm/plat-omap/dss/dss.c b/arch/arm/plat-omap/dss/dss.c
+index 579438f..cad7b5d 100644
+--- a/arch/arm/plat-omap/dss/dss.c
++++ b/arch/arm/plat-omap/dss/dss.c
+@@ -743,10 +743,25 @@ static int omap_dss_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static int omap_dss_suspend(struct platform_device *pdev, pm_message_t state)
++{
++	DSSDBG("suspend %d\n", state.event);
++
++	return omap_dss_suspend_all_displays();
++}
++
++static int omap_dss_resume(struct platform_device *pdev)
++{
++	DSSDBG("resume\n");
++
++	return omap_dss_resume_all_displays();
++}
+ 
+ static struct platform_driver omap_dss_driver = {
+ 	.probe          = omap_dss_probe,
+ 	.remove         = omap_dss_remove,
++	.suspend	= omap_dss_suspend,
++	.resume		= omap_dss_resume,
+ 	.driver         = {
+ 		.name   = "omap-dss",
+ 		.owner  = THIS_MODULE,
+diff --git a/arch/arm/plat-omap/dss/dss.h b/arch/arm/plat-omap/dss/dss.h
+index 23ee24b..8fa9b26 100644
+--- a/arch/arm/plat-omap/dss/dss.h
++++ b/arch/arm/plat-omap/dss/dss.h
+@@ -139,6 +139,8 @@ int initialize_sysfs(struct device *dev);
+ void uninitialize_sysfs(struct device *dev);
+ void initialize_displays(struct omap_dss_platform_data *pdata);
+ void initialize_overlays(const char *def_disp_name);
++int omap_dss_suspend_all_displays(void);
++int omap_dss_resume_all_displays(void);
+ 
+ /* DSS */
+ int dss_init(void);
+diff --git a/drivers/video/omap2/omapfb-main.c b/drivers/video/omap2/omapfb-main.c
+index 32b909f..0ba70ca 100644
+--- a/drivers/video/omap2/omapfb-main.c
++++ b/drivers/video/omap2/omapfb-main.c
+@@ -1716,45 +1716,9 @@ static int omapfb_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static int omapfb_suspend(struct platform_device *pdev, pm_message_t mesg)
+-{
+-	struct omapfb2_device *fbdev = platform_get_drvdata(pdev);
+-	struct omap_display *display;
+-	int i;
+-
+-	for (i=0; i < fbdev->num_fbs; i++) {
+-		if (fbdev->overlays[i]->manager &&
+-				fbdev->overlays[i]->manager->display) {
+-			display = fbdev->overlays[i]->manager->display;
+-			if (display->suspend)
+-				display->suspend(display);
+-		}
+-	}
+-
+-	pdev->dev.power.power_state = mesg;
+-	return 0;
+-}
+-static int omapfb_resume(struct platform_device *pdev)
+-{
+-	struct omapfb2_device *fbdev = platform_get_drvdata(pdev);
+-	struct omap_display *display;
+-	int i;
+-
+-	for (i=0; i < fbdev->num_fbs; i++) {
+-		if (fbdev->overlays[i]->manager &&
+-				fbdev->overlays[i]->manager->display) {
+-			display = fbdev->overlays[i]->manager->display;
+-			if (display->suspend)
+-				display->resume(display);
+-		}
+-	}
+-	return 0;
+-}
+ static struct platform_driver omapfb_driver = {
+ 	.probe          = omapfb_probe,
+ 	.remove         = omapfb_remove,
+-	.suspend  	= omapfb_suspend,
+-	.resume		= omapfb_resume,
+ 	.driver         = {
+ 		.name   = "omapfb",
+ 		.owner  = THIS_MODULE,
+-- 
+1.6.2.4
+

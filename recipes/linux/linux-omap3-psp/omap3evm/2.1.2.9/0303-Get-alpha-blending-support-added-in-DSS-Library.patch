@@ -1,0 +1,116 @@
+From 19676984ed37f9943f3db55711b432e4aefd8b7e Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Tue, 17 Feb 2009 12:34:54 +0530
+Subject: [PATCH 303/426] Get alpha blending support added in DSS Library
+
+---
+ arch/arm/plat-omap/dss/dispc.c            |   20 ++++++++++++++++++++
+ arch/arm/plat-omap/dss/dpi.c              |    5 +++++
+ arch/arm/plat-omap/dss/dss.h              |    1 +
+ arch/arm/plat-omap/dss/venc.c             |    6 ++++++
+ arch/arm/plat-omap/include/mach/display.h |    1 +
+ 5 files changed, 33 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/plat-omap/dss/dispc.c b/arch/arm/plat-omap/dss/dispc.c
+index f9203e5..342e8cc 100644
+--- a/arch/arm/plat-omap/dss/dispc.c
++++ b/arch/arm/plat-omap/dss/dispc.c
+@@ -829,6 +829,26 @@ void dispc_set_digit_size(int width, int height)
+ 	enable_clocks(0);
+ }
+ 
++int dispc_get_alpha_blending(enum omap_channel ch)
++{
++	u32 config;
++	config = dispc_read_reg(DISPC_CONFIG);
++
++	if (ch == OMAP_DSS_CHANNEL_LCD) {
++		if (config & 0x40000)
++			return 1;
++		else
++			return 0;
++	} else if (ch == OMAP_DSS_CHANNEL_DIGIT) {
++		if (config & 0x80000)
++			return 1;
++		else
++			return 0;
++	}
++	return 0;
++
++}
++
+ u32 dispc_get_plane_fifo_size(enum omap_plane plane)
+ {
+ 	const struct dispc_reg fsz_reg[] = { DISPC_GFX_FIFO_SIZE_STATUS,
+diff --git a/arch/arm/plat-omap/dss/dpi.c b/arch/arm/plat-omap/dss/dpi.c
+index d329cf6..fe957bb 100644
+--- a/arch/arm/plat-omap/dss/dpi.c
++++ b/arch/arm/plat-omap/dss/dpi.c
+@@ -341,6 +341,10 @@ static void dpi_enable_alpha_blending(struct omap_display *display,
+ 	dispc_enable_alpha_blending(OMAP_DSS_CHANNEL_LCD, enable);
+ 	dispc_go(OMAP_DSS_CHANNEL_LCD);
+ }
++static int dpi_get_alpha_blending(struct omap_display *display)
++{
++	return dispc_get_alpha_blending(OMAP_DSS_CHANNEL_LCD);
++}
+ 
+ void dpi_init_display(struct omap_display *display)
+ {
+@@ -359,6 +363,7 @@ void dpi_init_display(struct omap_display *display)
+ 	display->get_bg_color = dpi_display_get_bg_color;
+ 	display->set_color_keying = dpi_display_set_color_keying;
+ 	display->enable_alpha_blending = dpi_enable_alpha_blending;
++	display->get_alpha_blending = dpi_get_alpha_blending;
+ }
+ 
+ int dpi_init(void)
+diff --git a/arch/arm/plat-omap/dss/dss.h b/arch/arm/plat-omap/dss/dss.h
+index 19f1b0c..0cfb986 100644
+--- a/arch/arm/plat-omap/dss/dss.h
++++ b/arch/arm/plat-omap/dss/dss.h
+@@ -252,6 +252,7 @@ void dispc_draw_partial_planes(struct omap_display *display);
+ 
+ ssize_t dispc_print_clocks(char *buf, ssize_t size);
+ void omap_dispc_set_default_color(enum omap_channel channel, u32 color);
++int dispc_get_alpha_blending(enum omap_channel ch);
+ int omap_dispc_get_default_color(enum omap_channel channel);
+ 
+ /* VENC */
+diff --git a/arch/arm/plat-omap/dss/venc.c b/arch/arm/plat-omap/dss/venc.c
+index 97b403a..4c8a6ae 100644
+--- a/arch/arm/plat-omap/dss/venc.c
++++ b/arch/arm/plat-omap/dss/venc.c
+@@ -528,6 +528,11 @@ static void venc_enable_alpha_blending(struct omap_display *display,
+ 	dispc_go(OMAP_DSS_CHANNEL_DIGIT);
+ }
+ 
++static int venc_get_alpha_blending(struct omap_display *display)
++{
++	return dispc_get_alpha_blending(OMAP_DSS_CHANNEL_DIGIT);
++}
++
+ void venc_init_display(struct omap_display *display)
+ {
+ 	display->panel = &venc_panel;
+@@ -538,4 +543,5 @@ void venc_init_display(struct omap_display *display)
+ 	display->get_bg_color = venc_display_get_bg_color;
+ 	display->set_color_keying = venc_display_set_color_keying;
+ 	display->enable_alpha_blending = venc_enable_alpha_blending;
++	display->get_alpha_blending = venc_get_alpha_blending;
+ }
+diff --git a/arch/arm/plat-omap/include/mach/display.h b/arch/arm/plat-omap/include/mach/display.h
+index 2e6d73e..e9d2528 100644
+--- a/arch/arm/plat-omap/include/mach/display.h
++++ b/arch/arm/plat-omap/include/mach/display.h
+@@ -449,6 +449,7 @@ struct omap_display {
+ 			struct omap_color_key *key);
+ 	void (*enable_alpha_blending)(struct omap_display *display,
+ 			unsigned int enable);
++	int (*get_alpha_blending)(struct omap_display *display);
+ 	int (*update)(struct omap_display *display,
+ 			       int x, int y, int w, int h);
+ 	int (*sync)(struct omap_display *display);
+-- 
+1.6.2.4
+

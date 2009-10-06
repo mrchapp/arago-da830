@@ -1,0 +1,64 @@
+From cad608cd0c714bd8697466274b87e994316d4949 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Date: Tue, 9 Dec 2008 08:03:05 -0800
+Subject: [PATCH 099/426] OMAP2/3: PM: system_rev -> omap_rev()
+
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/control.c |    2 +-
+ arch/arm/mach-omap2/pm.c      |    2 +-
+ arch/arm/mach-omap2/pm34xx.c  |    4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/control.c b/arch/arm/mach-omap2/control.c
+index d28b823..31284c6 100644
+--- a/arch/arm/mach-omap2/control.c
++++ b/arch/arm/mach-omap2/control.c
+@@ -209,7 +209,7 @@ void omap3_save_scratchpad_contents(void)
+ 
+ 	/* Populate the Scratchpad contents */
+ 	scratchpad_contents.boot_config_ptr = 0x0;
+-	if (system_rev != OMAP3430_REV_ES3_0)
++	if (omap_rev() != OMAP3430_REV_ES3_0)
+ 		scratchpad_contents.public_restore_ptr =
+ 			virt_to_phys(get_restore_pointer());
+ 	else
+diff --git a/arch/arm/mach-omap2/pm.c b/arch/arm/mach-omap2/pm.c
+index 6fa17e9..285f596 100644
+--- a/arch/arm/mach-omap2/pm.c
++++ b/arch/arm/mach-omap2/pm.c
+@@ -231,7 +231,7 @@ static int __init omap_pm_init(void)
+ #endif
+ 	voltage_off_while_idle = 0;
+ 	/* Going to 0V on anything under ES2.1 will eventually cause a crash */
+-	if (system_rev > OMAP3430_REV_ES2_0) {
++	if (omap_rev() > OMAP3430_REV_ES2_0) {
+ 		error = sysfs_create_file(power_kobj,
+ 				  &voltage_off_while_idle_attr.attr);
+ 		if (error)
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index 0bf47ca..9596ab0 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -348,7 +348,7 @@ void omap_sram_idle(void)
+ 	 * autocount. This is needed on ES3.0 to avoid SDRAM controller
+ 	 * hang-ups.
+ 	 */
+-	if (system_rev >= OMAP3430_REV_ES3_0 &&
++	if (omap_rev() >= OMAP3430_REV_ES3_0 &&
+ 	    omap_type() != OMAP2_DEVICE_TYPE_GP &&
+ 	    core_next_state == PWRDM_POWER_OFF) {
+ 		sdrc_pwr = sdrc_read_reg(SDRC_POWER);
+@@ -366,7 +366,7 @@ void omap_sram_idle(void)
+ 	_omap_sram_idle(omap3_arm_context, save_state);
+ 
+ 	/* Restore normal SDRAM settings */
+-	if (system_rev >= OMAP3430_REV_ES3_0 &&
++	if (omap_rev() >= OMAP3430_REV_ES3_0 &&
+ 	    omap_type() != OMAP2_DEVICE_TYPE_GP &&
+ 	    core_next_state == PWRDM_POWER_OFF)
+ 		sdrc_write_reg(sdrc_pwr, SDRC_POWER);
+-- 
+1.6.2.4
+

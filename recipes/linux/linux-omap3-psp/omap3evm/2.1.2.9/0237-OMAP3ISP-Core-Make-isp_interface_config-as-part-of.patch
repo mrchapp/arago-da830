@@ -1,0 +1,35 @@
+From 4fbbb1df5a9da8b54cc6bbbaed961976d3decd6d Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:39 -0600
+Subject: [PATCH 237/426] OMAP3ISP: Core: Make isp_interface_config as part of struct isp.
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/isp/isp.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/media/video/isp/isp.c b/drivers/media/video/isp/isp.c
+index b3b2fad..7c0e449 100644
+--- a/drivers/media/video/isp/isp.c
++++ b/drivers/media/video/isp/isp.c
+@@ -225,6 +225,7 @@ static struct isp {
+ 	struct clk *cam_ick;
+ 	struct clk *cam_mclk;
+ 	struct clk *csi2_fck;
++	struct isp_interface_config *config;
+ } isp_obj;
+ 
+ struct isp_bufs ispbufs;
+@@ -973,6 +974,8 @@ int isp_configure_interface(struct isp_interface_config *config)
+ 	isppreview_set_skip(config->prev_sph, config->prev_slv);
+ 	ispccdc_set_wenlog(config->wenlog);
+ 
++	isp_obj.config = config;
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL(isp_configure_interface);
+-- 
+1.6.2.4
+

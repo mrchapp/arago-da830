@@ -1,0 +1,141 @@
+From d63666440a9a80a83906ce67382351ed9bce74da Mon Sep 17 00:00:00 2001
+From: Rajendra Nayak <rnayak@ti.com>
+Date: Wed, 8 Oct 2008 17:31:22 +0530
+Subject: [PATCH 059/426] OMAP3: PM: CPUidle: Enables state C4
+
+This patch adds support and enables state C4(MPU RET + CORE RET).
+
+Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/cpuidle34xx.c    |   22 ++++++++++++----------
+ arch/arm/mach-omap2/pm.h             |    1 +
+ arch/arm/mach-omap2/pm34xx.c         |    6 ++----
+ arch/arm/plat-omap/include/mach/pm.h |    1 +
+ 4 files changed, 16 insertions(+), 14 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
+index f9ce420..33dee9f 100644
+--- a/arch/arm/mach-omap2/cpuidle34xx.c
++++ b/arch/arm/mach-omap2/cpuidle34xx.c
+@@ -51,10 +51,12 @@ struct omap3_processor_cx {
+ 
+ struct omap3_processor_cx omap3_power_states[OMAP3_MAX_STATES];
+ struct omap3_processor_cx current_cx_state;
+-struct powerdomain *mpu_pd;
++struct powerdomain *mpu_pd, *core_pd;
+ 
+ static int omap3_idle_bm_check(void)
+ {
++	if (!omap3_can_sleep())
++		return 1;
+ 	return 0;
+ }
+ 
+@@ -80,24 +82,23 @@ static int omap3_enter_idle(struct cpuidle_device *dev,
+ 	local_irq_disable();
+ 	local_fiq_disable();
+ 
+-	/* Program MPU to target state */
+-	if (cx->mpu_state < PWRDM_POWER_ON)
+-		pwrdm_set_next_pwrst(mpu_pd, cx->mpu_state);
++	set_pwrdm_state(mpu_pd, cx->mpu_state);
++	set_pwrdm_state(core_pd, cx->core_state);
++
++	if (omap_irq_pending())
++		goto return_sleep_time;
+ 
+ 	/* Execute ARM wfi */
+ 	omap_sram_idle();
+ 
+-	/* Program MPU to ON */
+-	if (cx->mpu_state < PWRDM_POWER_ON)
+-		pwrdm_set_next_pwrst(mpu_pd, PWRDM_POWER_ON);
+-
++return_sleep_time:
+ 	getnstimeofday(&ts_postidle);
+ 	ts_idle = timespec_sub(ts_postidle, ts_preidle);
+ 
+ 	local_irq_enable();
+ 	local_fiq_enable();
+ 
+-	return timespec_to_ns(&ts_idle);
++	return (u32)timespec_to_ns(&ts_idle)/1000;
+ }
+ 
+ /**
+@@ -186,7 +187,7 @@ void omap_init_power_states(void)
+ 	omap3_power_states[OMAP3_STATE_C3].flags = CPUIDLE_FLAG_TIME_VALID;
+ 
+ 	/* C4 . MPU CSWR + Core CSWR*/
+-	omap3_power_states[OMAP3_STATE_C4].valid = 0;
++	omap3_power_states[OMAP3_STATE_C4].valid = 1;
+ 	omap3_power_states[OMAP3_STATE_C4].type = OMAP3_STATE_C4;
+ 	omap3_power_states[OMAP3_STATE_C4].sleep_latency = 2500;
+ 	omap3_power_states[OMAP3_STATE_C4].wakeup_latency = 7500;
+@@ -268,6 +269,7 @@ int omap3_idle_init(void)
+ 		return -EIO;
+ 	}
+ 	mpu_pd = pwrdm_lookup("mpu_pwrdm");
++	core_pd = pwrdm_lookup("core_pwrdm");
+ 	return 0;
+ }
+ device_initcall(omap3_idle_init);
+diff --git a/arch/arm/mach-omap2/pm.h b/arch/arm/mach-omap2/pm.h
+index b28d756..4ca318c 100644
+--- a/arch/arm/mach-omap2/pm.h
++++ b/arch/arm/mach-omap2/pm.h
+@@ -26,6 +26,7 @@ extern atomic_t sleep_block;
+ extern void omap2_block_sleep(void);
+ extern void omap2_allow_sleep(void);
+ extern void omap3_pm_off_mode_enable(int);
++extern int set_pwrdm_state(struct powerdomain *pwrdm, u32 state);
+ 
+ 
+ #ifdef CONFIG_PM_DEBUG
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index 657f6be..418687d 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -71,8 +71,6 @@ static void (*saved_idle)(void);
+ static struct powerdomain *mpu_pwrdm, *neon_pwrdm;
+ static struct powerdomain *core_pwrdm, *per_pwrdm;
+ 
+-static int set_pwrdm_state(struct powerdomain *pwrdm, u32 state);
+-
+ static inline void omap3_per_save_context(void)
+ {
+ 	omap3_gpio_save_context();
+@@ -388,7 +386,7 @@ static int omap3_fclks_active(void)
+ 	return 0;
+ }
+ 
+-static int omap3_can_sleep(void)
++int omap3_can_sleep(void)
+ {
+ 	if (!enable_dyn_sleep)
+ 		return 0;
+@@ -404,7 +402,7 @@ static int omap3_can_sleep(void)
+ /* This sets pwrdm state (other than mpu & core. Currently only ON &
+  * RET are supported. Function is assuming that clkdm doesn't have
+  * hw_sup mode enabled. */
+-static int set_pwrdm_state(struct powerdomain *pwrdm, u32 state)
++int set_pwrdm_state(struct powerdomain *pwrdm, u32 state)
+ {
+ 	u32 cur_state;
+ 	int sleep_switch = 0;
+diff --git a/arch/arm/plat-omap/include/mach/pm.h b/arch/arm/plat-omap/include/mach/pm.h
+index 4727dc0..8785df3 100644
+--- a/arch/arm/plat-omap/include/mach/pm.h
++++ b/arch/arm/plat-omap/include/mach/pm.h
+@@ -143,6 +143,7 @@ extern void omap2_allow_sleep(void);
+ static inline void omap2_block_sleep(void) { }
+ static inline void omap2_allow_sleep(void) { }
+ #endif
++extern int omap3_can_sleep(void);
+ extern void omap730_cpu_suspend(unsigned short, unsigned short);
+ extern void omap1510_cpu_suspend(unsigned short, unsigned short);
+ extern void omap1610_cpu_suspend(unsigned short, unsigned short);
+-- 
+1.6.2.4
+

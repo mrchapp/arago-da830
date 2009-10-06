@@ -1,0 +1,103 @@
+From ca7375fd8509d4329dcb3848bd09c6b4cc929ba6 Mon Sep 17 00:00:00 2001
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Mon, 20 Apr 2009 17:56:13 +0100
+Subject: [PATCH 404/426] ASoC: Make the DAPM power check an operation on the widget
+
+Rather than having switch statements at point of use make the DAPM
+power check a member of the widget structure and set it when we
+instantiate the widget.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ include/sound/soc-dapm.h |    2 ++
+ sound/soc/soc-dapm.c     |   27 +++++++++++++--------------
+ 2 files changed, 15 insertions(+), 14 deletions(-)
+
+diff --git a/include/sound/soc-dapm.h b/include/sound/soc-dapm.h
+index fcc929d..839a97b 100644
+--- a/include/sound/soc-dapm.h
++++ b/include/sound/soc-dapm.h
+@@ -367,6 +367,8 @@ struct snd_soc_dapm_widget {
+ 	unsigned char suspend:1;		/* was active before suspend */
+ 	unsigned char pmdown:1;			/* waiting for timeout */
+ 
++	int (*power_check)(struct snd_soc_dapm_widget *w);
++
+ 	/* external events */
+ 	unsigned short event_flags;		/* flags to specify event types */
+ 	int (*event)(struct snd_soc_dapm_widget*, struct snd_kcontrol *, int);
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index 22522e2..d3d1735 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -631,20 +631,7 @@ static int dapm_power_widget(struct snd_soc_codec *codec, int event,
+ {
+ 	int power, ret;
+ 
+-	/* Work out the new power state */
+ 	switch (w->id) {
+-	case snd_soc_dapm_vmid:
+-		/* No action required */
+-		return 0;
+-
+-	case snd_soc_dapm_adc:
+-		power = dapm_adc_check_power(w);
+-		break;
+-
+-	case snd_soc_dapm_dac:
+-		power = dapm_dac_check_power(w);
+-		break;
+-
+ 	case snd_soc_dapm_pre:
+ 		if (!w->event)
+ 			return 0;
+@@ -680,10 +667,13 @@ static int dapm_power_widget(struct snd_soc_codec *codec, int event,
+ 		return 0;
+ 
+ 	default:
+-		power = dapm_generic_check_power(w);
+ 		break;
+ 	}
+ 
++	if (!w->power_check)
++		return 0;
++
++	power = w->power_check(w);
+ 	if (w->power == power)
+ 		return 0;
+ 	w->power = power;
+@@ -1147,15 +1137,22 @@ int snd_soc_dapm_new_widgets(struct snd_soc_codec *codec)
+ 		case snd_soc_dapm_switch:
+ 		case snd_soc_dapm_mixer:
+ 		case snd_soc_dapm_mixer_named_ctl:
++			w->power_check = dapm_generic_check_power;
+ 			dapm_new_mixer(codec, w);
+ 			break;
+ 		case snd_soc_dapm_mux:
+ 		case snd_soc_dapm_value_mux:
++			w->power_check = dapm_generic_check_power;
+ 			dapm_new_mux(codec, w);
+ 			break;
+ 		case snd_soc_dapm_adc:
++			w->power_check = dapm_adc_check_power;
++			break;
+ 		case snd_soc_dapm_dac:
++			w->power_check = dapm_dac_check_power;
++			break;
+ 		case snd_soc_dapm_pga:
++			w->power_check = dapm_generic_check_power;
+ 			dapm_new_pga(codec, w);
+ 			break;
+ 		case snd_soc_dapm_input:
+@@ -1165,6 +1162,8 @@ int snd_soc_dapm_new_widgets(struct snd_soc_codec *codec)
+ 		case snd_soc_dapm_hp:
+ 		case snd_soc_dapm_mic:
+ 		case snd_soc_dapm_line:
++			w->power_check = dapm_generic_check_power;
++			break;
+ 		case snd_soc_dapm_vmid:
+ 		case snd_soc_dapm_pre:
+ 		case snd_soc_dapm_post:
+-- 
+1.6.2.4
+

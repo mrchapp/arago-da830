@@ -1,0 +1,44 @@
+From 9552cd515c305bf427314befcef7f660bf6433e7 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Thu, 4 Jun 2009 14:01:28 +0530
+Subject: [PATCH 377/426] DSS2: Timing parameters of LCD changed to get exact 60Hz framerate
+
+---
+ drivers/video/omap2/panel-sharp-ls037v7dw01.c |   21 +++++++++------------
+ 1 files changed, 9 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/video/omap2/panel-sharp-ls037v7dw01.c b/drivers/video/omap2/panel-sharp-ls037v7dw01.c
+index 7d67b6d..94defb4 100644
+--- a/drivers/video/omap2/panel-sharp-ls037v7dw01.c
++++ b/drivers/video/omap2/panel-sharp-ls037v7dw01.c
+@@ -70,18 +70,15 @@ static struct omap_panel sharp_ls_panel = {
+ 	/*.set_mode	= sharp_ls_set_mode, */
+ 
+ 	.timings = {
+-		.x_res = 480,
+-		.y_res = 640,
+-
+-		.pixel_clock	= 19200,
+-
+-		.hsw		= 2,
+-		.hfp		= 1,
+-		.hbp		= 28,
+-
+-		.vsw		= 1,
+-		.vfp		= 1,
+-		.vbp		= 1,
++		.x_res          = 480,
++		.y_res          = 640,
++		.pixel_clock    = 25190,
++		.hfp            = 78,
++		.hsw            = 2,
++		.hbp            = 88,
++		.vfp            = 5,
++		.vsw            = 1,
++		.vbp            = 2,
+ 	},
+ 
+ 	.acb		= 0x28,
+-- 
+1.6.2.4
+

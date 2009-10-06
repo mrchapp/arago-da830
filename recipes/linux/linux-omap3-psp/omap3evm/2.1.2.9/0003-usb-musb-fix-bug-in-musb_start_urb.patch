@@ -1,0 +1,31 @@
+From 0cd8f6cfd97f81d8a1e1a12e575b17c728a7b116 Mon Sep 17 00:00:00 2001
+From: Ajay Kumar Gupta <ajay.gupta@ti.com>
+Date: Thu, 5 Feb 2009 15:13:41 +0530
+Subject: [PATCH 003/426] usb: musb: fix bug in musb_start_urb
+
+urb->transfer_buffer_length and urb->transfer_buffer should be
+updated based on urb->actual_length.For a fresh and first time urb,
+actual_length will be zero but for urbs which has been stopped and
+restarted (as bulk nak scheme does) actual_length may not be zero.
+---
+ drivers/usb/musb/musb_host.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/musb/musb_host.c b/drivers/usb/musb/musb_host.c
+index 158c596..8401a3c 100644
+--- a/drivers/usb/musb/musb_host.c
++++ b/drivers/usb/musb/musb_host.c
+@@ -201,8 +201,8 @@ musb_start_urb(struct musb *musb, int is_in, struct musb_qh *qh)
+ 		len = urb->iso_frame_desc[0].length;
+ 		break;
+ 	default:		/* bulk, interrupt */
+-		buf = urb->transfer_buffer;
+-		len = urb->transfer_buffer_length;
++		buf = urb->transfer_buffer + urb->actual_length;
++		len = urb->transfer_buffer_length - urb->actual_length;
+ 	}
+ 
+ 	DBG(4, "qh %p urb %p dev%d ep%d%s%s, hw_ep %d, %p/%d\n",
+-- 
+1.6.2.4
+

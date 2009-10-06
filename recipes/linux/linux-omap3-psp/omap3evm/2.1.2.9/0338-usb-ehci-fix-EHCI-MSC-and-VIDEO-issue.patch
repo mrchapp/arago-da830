@@ -1,0 +1,25 @@
+From 98aad5c5b80c7e06682336235a44a21f229349e9 Mon Sep 17 00:00:00 2001
+From: Ravi B <a0393587@gitsvr01.(none)>
+Date: Tue, 24 Feb 2009 17:38:04 +0530
+Subject: [PATCH 338/426] usb: ehci: fix EHCI MSC and VIDEO issue
+
+---
+ drivers/usb/host/ehci-omap.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+index 8437f26..731ff51 100644
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -333,6 +333,8 @@ static int omap_start_ehc(struct platform_device *dev, struct usb_hcd *hcd)
+ #endif
+ 	}
+ 
++	omap_writel(uhh_hostconfig_value, OMAP_UHH_HOSTCONFIG);
++
+ 	if (omap_rev_le21()) {
+ 		/* Ensure that BYPASS is set */
+ 		while (omap_readl(OMAP_UHH_HOSTCONFIG)
+-- 
+1.6.2.4
+

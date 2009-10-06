@@ -1,0 +1,30 @@
+From ea489bb6886c0284a36e4a1a62c2832722acddd0 Mon Sep 17 00:00:00 2001
+From: Takashi Iwai <tiwai@suse.de>
+Date: Thu, 4 Jun 2009 09:58:18 +0200
+Subject: [PATCH 422/426] ASoC: Fix build error in twl4030.c
+
+Fix the (likely cut-n-paste) error by commit
+16a30fbb0d3aa4ee829a2dd3d0e314e2b5ae96a9, which causes the error below:
+  sound/soc/codecs/twl4030.c: In function 'twl4030_read_reg_cache':
+  sound/soc/codecs/twl4030.c:152: error: 'cache' undeclared (first use in this function)
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+ sound/soc/codecs/twl4030.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
+index c53c7ca..4dbb853 100644
+--- a/sound/soc/codecs/twl4030.c
++++ b/sound/soc/codecs/twl4030.c
+@@ -145,6 +145,7 @@ struct twl4030_priv {
+ static inline unsigned int twl4030_read_reg_cache(struct snd_soc_codec *codec,
+ 	unsigned int reg)
+ {
++	u8 *cache = codec->reg_cache;
+ 
+ 	if (reg >= TWL4030_CACHEREGNUM)
+ 		return -EIO;
+-- 
+1.6.2.4
+

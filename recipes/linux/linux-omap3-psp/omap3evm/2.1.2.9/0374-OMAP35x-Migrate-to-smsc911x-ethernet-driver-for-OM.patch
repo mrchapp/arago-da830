@@ -1,0 +1,84 @@
+From 2d2091941a3a0507f08dda271fcc06dffff3e2d1 Mon Sep 17 00:00:00 2001
+From: Sriram <srk@ti.com>
+Date: Fri, 22 May 2009 17:50:55 +0530
+Subject: [PATCH 374/426] OMAP35x : Migrate to smsc911x ethernet driver for OMAP3EVM
+
+Migrate to smsc911x ethernet driver instead of smc911x driver
+The smsc911x ethernet driver supports the NAPI interface and
+performs better under heavy traffic. With the smc911x driver
+we were witnessing very high iowait time for high IO
+load over NFS.
+---
+ arch/arm/configs/omap3_evm_defconfig |    4 ++--
+ arch/arm/mach-omap2/board-omap3evm.c |   15 ++++++++++++++-
+ drivers/net/smsc911x.c               |    2 +-
+ 3 files changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/configs/omap3_evm_defconfig b/arch/arm/configs/omap3_evm_defconfig
+index 623a8ab..4c43675 100644
+--- a/arch/arm/configs/omap3_evm_defconfig
++++ b/arch/arm/configs/omap3_evm_defconfig
+@@ -629,8 +629,8 @@ CONFIG_MII=y
+ # CONFIG_SMC91X is not set
+ # CONFIG_DM9000 is not set
+ # CONFIG_ENC28J60 is not set
+-CONFIG_SMC911X=y
+-# CONFIG_SMSC911X is not set
++# CONFIG_SMC911X is not set
++CONFIG_SMSC911X=y
+ # CONFIG_IBM_NEW_EMAC_ZMII is not set
+ # CONFIG_IBM_NEW_EMAC_RGMII is not set
+ # CONFIG_IBM_NEW_EMAC_TAH is not set
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index 4ed2043..75b7aff 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -48,6 +48,7 @@
+ #include "pm.h"
+ #include "omap3-opp.h"
+ #include <linux/regulator/machine.h>
++#include <linux/smsc911x.h>
+ 
+ #if defined(CONFIG_OMAP3EVM_PR785) && defined(CONFIG_TWL4030_CORE)
+ #error config err : only one of OMAP3EVM_PR785 or TWL4030_CORE can be defined
+@@ -73,11 +74,23 @@ static struct resource omap3evm_smc911x_resources[] = {
+ 	},
+ };
+ 
++static struct smsc911x_platform_config smsc911x_config = {
++        .phy_interface  = PHY_INTERFACE_MODE_MII,
++        .irq_polarity   = SMSC911X_IRQ_POLARITY_ACTIVE_LOW,
++        .irq_type       = SMSC911X_IRQ_TYPE_OPEN_DRAIN,
++        .flags          = SMSC911X_USE_32BIT,
++};	
++
++
++
+ static struct platform_device omap3evm_smc911x_device = {
+-	.name		= "smc911x",
++	.name		= "smsc911x",
+ 	.id		= -1,
+ 	.num_resources	= ARRAY_SIZE(omap3evm_smc911x_resources),
+ 	.resource	= &omap3evm_smc911x_resources [0],
++	.dev  = {
++		  .platform_data = &smsc911x_config,
++	},
+ };
+ 
+ static inline void __init omap3evm_init_smc911x(void)
+diff --git a/drivers/net/smsc911x.c b/drivers/net/smsc911x.c
+index f513bdf..3289234 100644
+--- a/drivers/net/smsc911x.c
++++ b/drivers/net/smsc911x.c
+@@ -1968,7 +1968,7 @@ static int __devinit smsc911x_drv_probe(struct platform_device *pdev)
+ 	smsc911x_reg_write(pdata, INT_EN, 0);
+ 	smsc911x_reg_write(pdata, INT_STS, 0xFFFFFFFF);
+ 
+-	retval = request_irq(dev->irq, smsc911x_irqhandler, IRQF_DISABLED,
++	retval = request_irq(dev->irq, smsc911x_irqhandler, (IRQF_TRIGGER_LOW | IRQF_DISABLED),
+ 			     dev->name, dev);
+ 	if (retval) {
+ 		SMSC_WARNING(PROBE,
+-- 
+1.6.2.4
+

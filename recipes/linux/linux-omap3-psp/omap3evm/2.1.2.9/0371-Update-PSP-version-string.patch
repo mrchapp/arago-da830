@@ -1,0 +1,25 @@
+From 3b34db7219476f6dea4d92522e9ebcb357319c99 Mon Sep 17 00:00:00 2001
+From: Sriram <srk@ti.com>
+Date: Tue, 12 May 2009 15:56:02 +0530
+Subject: [PATCH 371/426] Update PSP version string.
+
+---
+ arch/arm/plat-omap/psp-version.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/plat-omap/psp-version.h b/arch/arm/plat-omap/psp-version.h
+index dcc06e2..9209d70 100644
+--- a/arch/arm/plat-omap/psp-version.h
++++ b/arch/arm/plat-omap/psp-version.h
+@@ -23,7 +23,7 @@
+ #define __ARCH_ARM_PLAT_PSP_VERSION_H
+ 
+ #define TI_PSP_ENTRY		"ti-psp-version"
+-#define TI_PSP_VERSION		"02.01.00.04"
++#define TI_PSP_VERSION		"02.01.01.06"
+ 
+ #if defined (CONFIG_MACH_OMAP3EVM)
+ #define TI_PSP_DEVICE		"OMAP35x"
+-- 
+1.6.2.4
+

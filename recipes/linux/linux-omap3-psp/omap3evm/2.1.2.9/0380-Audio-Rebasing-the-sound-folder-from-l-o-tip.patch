@@ -1,0 +1,4802 @@
+From 192b0fd6f1f3f93b24210fd06c6d22f19f29a4bc Mon Sep 17 00:00:00 2001
+From: Anuj Aggarwal <anuj.aggarwal@ti.com>
+Date: Mon, 8 Jun 2009 11:05:52 +0530
+Subject: [PATCH 380/426] Audio: Rebasing the sound/ folder from l-o tip
+
+Since the ASoC framework has changed a lot with respect to the
+current kernel version, this commit pulls the required changes
+in the sound/ folder. This update is done to take the twl4030
+audio codec patches from the community, which solve the beep
+noise issue.
+---
+ sound/core/control.c          |   42 +--
+ sound/core/hwdep.c            |    9 +-
+ sound/core/info.c             |   31 +--
+ sound/core/init.c             |   89 ++++---
+ sound/core/jack.c             |   50 ++--
+ sound/core/misc.c             |   10 +-
+ sound/core/pcm.c              |    3 +-
+ sound/core/pcm_compat.c       |   11 +-
+ sound/core/pcm_lib.c          |  195 ++++++++++----
+ sound/core/pcm_native.c       |  103 +++-----
+ sound/core/pcm_timer.c        |    6 -
+ sound/core/rawmidi.c          |  379 ++++++++++++++-------------
+ sound/core/seq/seq_compat.c   |    9 +-
+ sound/core/seq/seq_prioq.c    |    3 +-
+ sound/core/sgbuf.c            |    7 +-
+ sound/core/timer.c            |   17 +-
+ sound/core/vmaster.c          |   62 +++--
+ sound/soc/codecs/twl4030.c    |  597 +++++++++++++++++++++++++++++++----------
+ sound/soc/codecs/twl4030.h    |   16 ++
+ sound/soc/omap/Kconfig        |   14 +-
+ sound/soc/omap/n810.c         |   51 +++-
+ sound/soc/omap/omap-mcbsp.c   |   43 ++-
+ sound/soc/omap/omap-mcbsp.h   |    3 +-
+ sound/soc/omap/omap-pcm.c     |   17 +-
+ sound/soc/omap/omap-pcm.h     |    3 +-
+ sound/soc/omap/omap3pandora.c |   49 ++--
+ sound/soc/omap/osk5912.c      |   16 +-
+ sound/soc/omap/sdp3430.c      |  119 ++++++++-
+ sound/soc/soc-core.c          |  206 +++++++++------
+ sound/soc/soc-dapm.c          |  390 +++++++++++++++++----------
+ sound/soc/soc-jack.c          |  267 ++++++++++++++++++
+ 31 files changed, 1892 insertions(+), 925 deletions(-)
+ create mode 100644 sound/soc/soc-jack.c
+
+diff --git a/sound/core/control.c b/sound/core/control.c
+index 636b3b5..17b8d47 100644
+--- a/sound/core/control.c
++++ b/sound/core/control.c
+@@ -723,14 +723,11 @@ static int snd_ctl_elem_read_user(struct snd_card *card,
+ {
+ 	struct snd_ctl_elem_value *control;
+ 	int result;
+-	
+-	control = kmalloc(sizeof(*control), GFP_KERNEL);
+-	if (control == NULL)
+-		return -ENOMEM;	
+-	if (copy_from_user(control, _control, sizeof(*control))) {
+-		kfree(control);
+-		return -EFAULT;
+-	}
++
++	control = memdup_user(_control, sizeof(*control));
++	if (IS_ERR(control))
++		return PTR_ERR(control);
++
+ 	snd_power_lock(card);
+ 	result = snd_power_wait(card, SNDRV_CTL_POWER_D0);
+ 	if (result >= 0)
+@@ -784,13 +781,10 @@ static int snd_ctl_elem_write_user(struct snd_ctl_file *file,
+ 	struct snd_card *card;
+ 	int result;
+ 
+-	control = kmalloc(sizeof(*control), GFP_KERNEL);
+-	if (control == NULL)
+-		return -ENOMEM;	
+-	if (copy_from_user(control, _control, sizeof(*control))) {
+-		kfree(control);
+-		return -EFAULT;
+-	}
++	control = memdup_user(_control, sizeof(*control));
++	if (IS_ERR(control))
++		return PTR_ERR(control);
++
+ 	card = file->card;
+ 	snd_power_lock(card);
+ 	result = snd_power_wait(card, SNDRV_CTL_POWER_D0);
+@@ -916,13 +910,10 @@ static int snd_ctl_elem_user_tlv(struct snd_kcontrol *kcontrol,
+ 	if (op_flag > 0) {
+ 		if (size > 1024 * 128)	/* sane value */
+ 			return -EINVAL;
+-		new_data = kmalloc(size, GFP_KERNEL);
+-		if (new_data == NULL)
+-			return -ENOMEM;
+-		if (copy_from_user(new_data, tlv, size)) {
+-			kfree(new_data);
+-			return -EFAULT;
+-		}
++
++		new_data = memdup_user(tlv, size);
++		if (IS_ERR(new_data))
++			return PTR_ERR(new_data);
+ 		change = ue->tlv_data_size != size;
+ 		if (!change)
+ 			change = memcmp(ue->tlv_data, new_data, size);
+@@ -1373,12 +1364,9 @@ EXPORT_SYMBOL(snd_ctl_unregister_ioctl_compat);
+ static int snd_ctl_fasync(int fd, struct file * file, int on)
+ {
+ 	struct snd_ctl_file *ctl;
+-	int err;
++
+ 	ctl = file->private_data;
+-	err = fasync_helper(fd, file, on, &ctl->fasync);
+-	if (err < 0)
+-		return err;
+-	return 0;
++	return fasync_helper(fd, file, on, &ctl->fasync);
+ }
+ 
+ /*
+diff --git a/sound/core/hwdep.c b/sound/core/hwdep.c
+index 195cafc..a70ee7f 100644
+--- a/sound/core/hwdep.c
++++ b/sound/core/hwdep.c
+@@ -99,9 +99,6 @@ static int snd_hwdep_open(struct inode *inode, struct file * file)
+ 	if (hw == NULL)
+ 		return -ENODEV;
+ 
+-	if (!hw->ops.open)
+-		return -ENXIO;
+-
+ 	if (!try_module_get(hw->card->module))
+ 		return -EFAULT;
+ 
+@@ -113,6 +110,10 @@ static int snd_hwdep_open(struct inode *inode, struct file * file)
+ 			err = -EBUSY;
+ 			break;
+ 		}
++		if (!hw->ops.open) {
++			err = 0;
++			break;
++		}
+ 		err = hw->ops.open(hw, file);
+ 		if (err >= 0)
+ 			break;
+@@ -151,7 +152,7 @@ static int snd_hwdep_open(struct inode *inode, struct file * file)
+ 
+ static int snd_hwdep_release(struct inode *inode, struct file * file)
+ {
+-	int err = -ENXIO;
++	int err = 0;
+ 	struct snd_hwdep *hw = file->private_data;
+ 	struct module *mod = hw->card->module;
+ 
+diff --git a/sound/core/info.c b/sound/core/info.c
+index 70fa871..35df614 100644
+--- a/sound/core/info.c
++++ b/sound/core/info.c
+@@ -154,11 +154,6 @@ EXPORT_SYMBOL(snd_seq_root);
+ struct snd_info_entry *snd_oss_root;
+ #endif
+ 
+-static inline void snd_info_entry_prepare(struct proc_dir_entry *de)
+-{
+-	de->owner = THIS_MODULE;
+-}
+-
+ static void snd_remove_proc_entry(struct proc_dir_entry *parent,
+ 				  struct proc_dir_entry *de)
+ {
+@@ -522,32 +517,11 @@ static const struct file_operations snd_info_entry_operations =
+ 	.release =		snd_info_entry_release,
+ };
+ 
+-/**
+- * snd_create_proc_entry - create a procfs entry
+- * @name: the name of the proc file
+- * @mode: the file permission bits, S_Ixxx
+- * @parent: the parent proc-directory entry
+- *
+- * Creates a new proc file entry with the given name and permission
+- * on the given directory.
+- *
+- * Returns the pointer of new instance or NULL on failure.
+- */
+-static struct proc_dir_entry *snd_create_proc_entry(const char *name, mode_t mode,
+-						    struct proc_dir_entry *parent)
+-{
+-	struct proc_dir_entry *p;
+-	p = create_proc_entry(name, mode, parent);
+-	if (p)
+-		snd_info_entry_prepare(p);
+-	return p;
+-}
+-
+ int __init snd_info_init(void)
+ {
+ 	struct proc_dir_entry *p;
+ 
+-	p = snd_create_proc_entry("asound", S_IFDIR | S_IRUGO | S_IXUGO, NULL);
++	p = create_proc_entry("asound", S_IFDIR | S_IRUGO | S_IXUGO, NULL);
+ 	if (p == NULL)
+ 		return -ENOMEM;
+ 	snd_proc_root = p;
+@@ -974,12 +948,11 @@ int snd_info_register(struct snd_info_entry * entry)
+ 		return -ENXIO;
+ 	root = entry->parent == NULL ? snd_proc_root : entry->parent->p;
+ 	mutex_lock(&info_mutex);
+-	p = snd_create_proc_entry(entry->name, entry->mode, root);
++	p = create_proc_entry(entry->name, entry->mode, root);
+ 	if (!p) {
+ 		mutex_unlock(&info_mutex);
+ 		return -ENOMEM;
+ 	}
+-	p->owner = entry->module;
+ 	if (!S_ISDIR(entry->mode))
+ 		p->proc_fops = &snd_info_entry_operations;
+ 	p->size = entry->size;
+diff --git a/sound/core/init.c b/sound/core/init.c
+index 0d5520c..fd56afe 100644
+--- a/sound/core/init.c
++++ b/sound/core/init.c
+@@ -121,31 +121,44 @@ static inline int init_info_for_card(struct snd_card *card)
+ #endif
+ 
+ /**
+- *  snd_card_new - create and initialize a soundcard structure
++ *  snd_card_create - create and initialize a soundcard structure
+  *  @idx: card index (address) [0 ... (SNDRV_CARDS-1)]
+  *  @xid: card identification (ASCII string)
+  *  @module: top level module for locking
+  *  @extra_size: allocate this extra size after the main soundcard structure
++ *  @card_ret: the pointer to store the created card instance
+  *
+  *  Creates and initializes a soundcard structure.
+  *
+- *  Returns kmallocated snd_card structure. Creates the ALSA control interface
+- *  (which is blocked until snd_card_register function is called).
++ *  The function allocates snd_card instance via kzalloc with the given
++ *  space for the driver to use freely.  The allocated struct is stored
++ *  in the given card_ret pointer.
++ *
++ *  Returns zero if successful or a negative error code.
+  */
+-struct snd_card *snd_card_new(int idx, const char *xid,
+-			 struct module *module, int extra_size)
++int snd_card_create(int idx, const char *xid,
++		    struct module *module, int extra_size,
++		    struct snd_card **card_ret)
+ {
+ 	struct snd_card *card;
+ 	int err, idx2;
+ 
++	if (snd_BUG_ON(!card_ret))
++		return -EINVAL;
++	*card_ret = NULL;
++
+ 	if (extra_size < 0)
+ 		extra_size = 0;
+ 	card = kzalloc(sizeof(*card) + extra_size, GFP_KERNEL);
+-	if (card == NULL)
+-		return NULL;
++	if (!card)
++		return -ENOMEM;
+ 	if (xid) {
+-		if (!snd_info_check_reserved_words(xid))
++		if (!snd_info_check_reserved_words(xid)) {
++			snd_printk(KERN_ERR
++				   "given id string '%s' is reserved.\n", xid);
++			err = -EBUSY;
+ 			goto __error;
++		}
+ 		strlcpy(card->id, xid, sizeof(card->id));
+ 	}
+ 	err = 0;
+@@ -195,6 +208,7 @@ struct snd_card *snd_card_new(int idx, const char *xid,
+ 	INIT_LIST_HEAD(&card->controls);
+ 	INIT_LIST_HEAD(&card->ctl_files);
+ 	spin_lock_init(&card->files_lock);
++	INIT_LIST_HEAD(&card->files_list);
+ 	init_waitqueue_head(&card->shutdown_sleep);
+ #ifdef CONFIG_PM
+ 	mutex_init(&card->power_lock);
+@@ -202,26 +216,28 @@ struct snd_card *snd_card_new(int idx, const char *xid,
+ #endif
+ 	/* the control interface cannot be accessed from the user space until */
+ 	/* snd_cards_bitmask and snd_cards are set with snd_card_register */
+-	if ((err = snd_ctl_create(card)) < 0) {
+-		snd_printd("unable to register control minors\n");
++	err = snd_ctl_create(card);
++	if (err < 0) {
++		snd_printk(KERN_ERR "unable to register control minors\n");
+ 		goto __error;
+ 	}
+-	if ((err = snd_info_card_create(card)) < 0) {
+-		snd_printd("unable to create card info\n");
++	err = snd_info_card_create(card);
++	if (err < 0) {
++		snd_printk(KERN_ERR "unable to create card info\n");
+ 		goto __error_ctl;
+ 	}
+ 	if (extra_size > 0)
+ 		card->private_data = (char *)card + sizeof(struct snd_card);
+-	return card;
++	*card_ret = card;
++	return 0;
+ 
+       __error_ctl:
+ 	snd_device_free_all(card, SNDRV_DEV_CMD_PRE);
+       __error:
+ 	kfree(card);
+-      	return NULL;
++  	return err;
+ }
+-
+-EXPORT_SYMBOL(snd_card_new);
++EXPORT_SYMBOL(snd_card_create);
+ 
+ /* return non-zero if a card is already locked */
+ int snd_card_locked(int card)
+@@ -259,6 +275,7 @@ static int snd_disconnect_release(struct inode *inode, struct file *file)
+ 	list_for_each_entry(_df, &shutdown_files, shutdown_list) {
+ 		if (_df->file == file) {
+ 			df = _df;
++			list_del_init(&df->shutdown_list);
+ 			break;
+ 		}
+ 	}
+@@ -347,8 +364,7 @@ int snd_card_disconnect(struct snd_card *card)
+ 	/* phase 2: replace file->f_op with special dummy operations */
+ 	
+ 	spin_lock(&card->files_lock);
+-	mfile = card->files;
+-	while (mfile) {
++	list_for_each_entry(mfile, &card->files_list, list) {
+ 		file = mfile->file;
+ 
+ 		/* it's critical part, use endless loop */
+@@ -361,8 +377,6 @@ int snd_card_disconnect(struct snd_card *card)
+ 
+ 		mfile->file->f_op = &snd_shutdown_f_ops;
+ 		fops_get(mfile->file->f_op);
+-		
+-		mfile = mfile->next;
+ 	}
+ 	spin_unlock(&card->files_lock);	
+ 
+@@ -442,7 +456,7 @@ int snd_card_free_when_closed(struct snd_card *card)
+ 		return ret;
+ 
+ 	spin_lock(&card->files_lock);
+-	if (card->files == NULL)
++	if (list_empty(&card->files_list))
+ 		free_now = 1;
+ 	else
+ 		card->free_on_last_close = 1;
+@@ -462,7 +476,7 @@ int snd_card_free(struct snd_card *card)
+ 		return ret;
+ 
+ 	/* wait, until all devices are ready for the free operation */
+-	wait_event(card->shutdown_sleep, card->files == NULL);
++	wait_event(card->shutdown_sleep, list_empty(&card->files_list));
+ 	snd_card_do_free(card);
+ 	return 0;
+ }
+@@ -809,15 +823,13 @@ int snd_card_file_add(struct snd_card *card, struct file *file)
+ 		return -ENOMEM;
+ 	mfile->file = file;
+ 	mfile->disconnected_f_op = NULL;
+-	mfile->next = NULL;
+ 	spin_lock(&card->files_lock);
+ 	if (card->shutdown) {
+ 		spin_unlock(&card->files_lock);
+ 		kfree(mfile);
+ 		return -ENODEV;
+ 	}
+-	mfile->next = card->files;
+-	card->files = mfile;
++	list_add(&mfile->list, &card->files_list);
+ 	spin_unlock(&card->files_lock);
+ 	return 0;
+ }
+@@ -839,29 +851,20 @@ EXPORT_SYMBOL(snd_card_file_add);
+  */
+ int snd_card_file_remove(struct snd_card *card, struct file *file)
+ {
+-	struct snd_monitor_file *mfile, *pfile = NULL;
++	struct snd_monitor_file *mfile, *found = NULL;
+ 	int last_close = 0;
+ 
+ 	spin_lock(&card->files_lock);
+-	mfile = card->files;
+-	while (mfile) {
++	list_for_each_entry(mfile, &card->files_list, list) {
+ 		if (mfile->file == file) {
+-			if (pfile)
+-				pfile->next = mfile->next;
+-			else
+-				card->files = mfile->next;
++			list_del(&mfile->list);
++			if (mfile->disconnected_f_op)
++				fops_put(mfile->disconnected_f_op);
++			found = mfile;
+ 			break;
+ 		}
+-		pfile = mfile;
+-		mfile = mfile->next;
+-	}
+-	if (mfile && mfile->disconnected_f_op) {
+-		fops_put(mfile->disconnected_f_op);
+-		spin_lock(&shutdown_lock);
+-		list_del(&mfile->shutdown_list);
+-		spin_unlock(&shutdown_lock);
+ 	}
+-	if (card->files == NULL)
++	if (list_empty(&card->files_list))
+ 		last_close = 1;
+ 	spin_unlock(&card->files_lock);
+ 	if (last_close) {
+@@ -869,11 +872,11 @@ int snd_card_file_remove(struct snd_card *card, struct file *file)
+ 		if (card->free_on_last_close)
+ 			snd_card_do_free(card);
+ 	}
+-	if (!mfile) {
++	if (!found) {
+ 		snd_printk(KERN_ERR "ALSA card file remove problem (%p)\n", file);
+ 		return -ENOENT;
+ 	}
+-	kfree(mfile);
++	kfree(found);
+ 	return 0;
+ }
+ 
+diff --git a/sound/core/jack.c b/sound/core/jack.c
+index dd4a12d..d54d1a0 100644
+--- a/sound/core/jack.c
++++ b/sound/core/jack.c
+@@ -23,10 +23,21 @@
+ #include <sound/jack.h>
+ #include <sound/core.h>
+ 
++static int jack_types[] = {
++	SW_HEADPHONE_INSERT,
++	SW_MICROPHONE_INSERT,
++	SW_LINEOUT_INSERT,
++	SW_JACK_PHYSICAL_INSERT,
++	SW_VIDEOOUT_INSERT,
++};
++
+ static int snd_jack_dev_free(struct snd_device *device)
+ {
+ 	struct snd_jack *jack = device->device_data;
+ 
++	if (jack->private_free)
++		jack->private_free(jack);
++
+ 	/* If the input device is registered with the input subsystem
+ 	 * then we need to use a different deallocator. */
+ 	if (jack->registered)
+@@ -47,7 +58,7 @@ static int snd_jack_dev_register(struct snd_device *device)
+ 	int err;
+ 
+ 	snprintf(jack->name, sizeof(jack->name), "%s %s",
+-		 card->longname, jack->id);
++		 card->shortname, jack->id);
+ 	jack->input_dev->name = jack->name;
+ 
+ 	/* Default to the sound card device. */
+@@ -79,6 +90,7 @@ int snd_jack_new(struct snd_card *card, const char *id, int type,
+ {
+ 	struct snd_jack *jack;
+ 	int err;
++	int i;
+ 	static struct snd_device_ops ops = {
+ 		.dev_free = snd_jack_dev_free,
+ 		.dev_register = snd_jack_dev_register,
+@@ -100,18 +112,10 @@ int snd_jack_new(struct snd_card *card, const char *id, int type,
+ 
+ 	jack->type = type;
+ 
+-	if (type & SND_JACK_HEADPHONE)
+-		input_set_capability(jack->input_dev, EV_SW,
+-				     SW_HEADPHONE_INSERT);
+-	if (type & SND_JACK_LINEOUT)
+-		input_set_capability(jack->input_dev, EV_SW,
+-				     SW_LINEOUT_INSERT);
+-	if (type & SND_JACK_MICROPHONE)
+-		input_set_capability(jack->input_dev, EV_SW,
+-				     SW_MICROPHONE_INSERT);
+-	if (type & SND_JACK_MECHANICAL)
+-		input_set_capability(jack->input_dev, EV_SW,
+-				     SW_JACK_PHYSICAL_INSERT);
++	for (i = 0; i < ARRAY_SIZE(jack_types); i++)
++		if (type & (1 << i))
++			input_set_capability(jack->input_dev, EV_SW,
++					     jack_types[i]);
+ 
+ 	err = snd_device_new(card, SNDRV_DEV_JACK, jack, &ops);
+ 	if (err < 0)
+@@ -154,21 +158,17 @@ EXPORT_SYMBOL(snd_jack_set_parent);
+  */
+ void snd_jack_report(struct snd_jack *jack, int status)
+ {
++	int i;
++
+ 	if (!jack)
+ 		return;
+ 
+-	if (jack->type & SND_JACK_HEADPHONE)
+-		input_report_switch(jack->input_dev, SW_HEADPHONE_INSERT,
+-				    status & SND_JACK_HEADPHONE);
+-	if (jack->type & SND_JACK_LINEOUT)
+-		input_report_switch(jack->input_dev, SW_LINEOUT_INSERT,
+-				    status & SND_JACK_LINEOUT);
+-	if (jack->type & SND_JACK_MICROPHONE)
+-		input_report_switch(jack->input_dev, SW_MICROPHONE_INSERT,
+-				    status & SND_JACK_MICROPHONE);
+-	if (jack->type & SND_JACK_MECHANICAL)
+-		input_report_switch(jack->input_dev, SW_JACK_PHYSICAL_INSERT,
+-				    status & SND_JACK_MECHANICAL);
++	for (i = 0; i < ARRAY_SIZE(jack_types); i++) {
++		int testbit = 1 << i;
++		if (jack->type & testbit)
++			input_report_switch(jack->input_dev, jack_types[i],
++					    status & testbit);
++	}
+ 
+ 	input_sync(jack->input_dev);
+ }
+diff --git a/sound/core/misc.c b/sound/core/misc.c
+index 38524f6..a9710e0 100644
+--- a/sound/core/misc.c
++++ b/sound/core/misc.c
+@@ -95,12 +95,14 @@ snd_pci_quirk_lookup(struct pci_dev *pci, const struct snd_pci_quirk *list)
+ {
+ 	const struct snd_pci_quirk *q;
+ 
+-	for (q = list; q->subvendor; q++)
+-		if (q->subvendor == pci->subsystem_vendor &&
+-		    (!q->subdevice || q->subdevice == pci->subsystem_device))
++	for (q = list; q->subvendor; q++) {
++		if (q->subvendor != pci->subsystem_vendor)
++			continue;
++		if (!q->subdevice ||
++		    (pci->subsystem_device & q->subdevice_mask) == q->subdevice)
+ 			return q;
++	}
+ 	return NULL;
+ }
+-
+ EXPORT_SYMBOL(snd_pci_quirk_lookup);
+ #endif
+diff --git a/sound/core/pcm.c b/sound/core/pcm.c
+index 192a433..145931a 100644
+--- a/sound/core/pcm.c
++++ b/sound/core/pcm.c
+@@ -667,7 +667,6 @@ int snd_pcm_new_stream(struct snd_pcm *pcm, int stream, int substream_count)
+ 		spin_lock_init(&substream->self_group.lock);
+ 		INIT_LIST_HEAD(&substream->self_group.substreams);
+ 		list_add_tail(&substream->link_list, &substream->self_group.substreams);
+-		spin_lock_init(&substream->timer_lock);
+ 		atomic_set(&substream->mmap_count, 0);
+ 		prev = substream;
+ 	}
+@@ -692,7 +691,7 @@ EXPORT_SYMBOL(snd_pcm_new_stream);
+  *
+  * Returns zero if successful, or a negative error code on failure.
+  */
+-int snd_pcm_new(struct snd_card *card, char *id, int device,
++int snd_pcm_new(struct snd_card *card, const char *id, int device,
+ 		int playback_count, int capture_count,
+ 	        struct snd_pcm ** rpcm)
+ {
+diff --git a/sound/core/pcm_compat.c b/sound/core/pcm_compat.c
+index 36d7a59..08bfed5 100644
+--- a/sound/core/pcm_compat.c
++++ b/sound/core/pcm_compat.c
+@@ -232,14 +232,11 @@ static int snd_pcm_ioctl_hw_params_compat(struct snd_pcm_substream *substream,
+ 	if (! (runtime = substream->runtime))
+ 		return -ENOTTY;
+ 
+-	data = kmalloc(sizeof(*data), GFP_KERNEL);
+-	if (data == NULL)
+-		return -ENOMEM;
+ 	/* only fifo_size is different, so just copy all */
+-	if (copy_from_user(data, data32, sizeof(*data32))) {
+-		err = -EFAULT;
+-		goto error;
+-	}
++	data = memdup_user(data32, sizeof(*data32));
++	if (IS_ERR(data))
++		return PTR_ERR(data);
++
+ 	if (refine)
+ 		err = snd_pcm_hw_refine(substream, data);
+ 	else
+diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
+index 9216910..a2a792c 100644
+--- a/sound/core/pcm_lib.c
++++ b/sound/core/pcm_lib.c
+@@ -125,23 +125,32 @@ void snd_pcm_playback_silence(struct snd_pcm_substream *substream, snd_pcm_ufram
+ 	}
+ }
+ 
++#ifdef CONFIG_SND_PCM_XRUN_DEBUG
++#define xrun_debug(substream)	((substream)->pstr->xrun_debug)
++#else
++#define xrun_debug(substream)	0
++#endif
++
++#define dump_stack_on_xrun(substream) do {	\
++		if (xrun_debug(substream) > 1)	\
++			dump_stack();		\
++	} while (0)
++
+ static void xrun(struct snd_pcm_substream *substream)
+ {
+ 	snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
+-#ifdef CONFIG_SND_PCM_XRUN_DEBUG
+-	if (substream->pstr->xrun_debug) {
++	if (xrun_debug(substream)) {
+ 		snd_printd(KERN_DEBUG "XRUN: pcmC%dD%d%c\n",
+ 			   substream->pcm->card->number,
+ 			   substream->pcm->device,
+ 			   substream->stream ? 'c' : 'p');
+-		if (substream->pstr->xrun_debug > 1)
+-			dump_stack();
++		dump_stack_on_xrun(substream);
+ 	}
+-#endif
+ }
+ 
+-static inline snd_pcm_uframes_t snd_pcm_update_hw_ptr_pos(struct snd_pcm_substream *substream,
+-							  struct snd_pcm_runtime *runtime)
++static snd_pcm_uframes_t
++snd_pcm_update_hw_ptr_pos(struct snd_pcm_substream *substream,
++			  struct snd_pcm_runtime *runtime)
+ {
+ 	snd_pcm_uframes_t pos;
+ 
+@@ -150,17 +159,21 @@ static inline snd_pcm_uframes_t snd_pcm_update_hw_ptr_pos(struct snd_pcm_substre
+ 	pos = substream->ops->pointer(substream);
+ 	if (pos == SNDRV_PCM_POS_XRUN)
+ 		return pos; /* XRUN */
+-#ifdef CONFIG_SND_DEBUG
+ 	if (pos >= runtime->buffer_size) {
+-		snd_printk(KERN_ERR  "BUG: stream = %i, pos = 0x%lx, buffer size = 0x%lx, period size = 0x%lx\n", substream->stream, pos, runtime->buffer_size, runtime->period_size);
++		if (printk_ratelimit()) {
++			snd_printd(KERN_ERR  "BUG: stream = %i, pos = 0x%lx, "
++				   "buffer size = 0x%lx, period size = 0x%lx\n",
++				   substream->stream, pos, runtime->buffer_size,
++				   runtime->period_size);
++		}
++		pos = 0;
+ 	}
+-#endif
+ 	pos -= pos % runtime->min_align;
+ 	return pos;
+ }
+ 
+-static inline int snd_pcm_update_hw_ptr_post(struct snd_pcm_substream *substream,
+-					     struct snd_pcm_runtime *runtime)
++static int snd_pcm_update_hw_ptr_post(struct snd_pcm_substream *substream,
++				      struct snd_pcm_runtime *runtime)
+ {
+ 	snd_pcm_uframes_t avail;
+ 
+@@ -182,48 +195,108 @@ static inline int snd_pcm_update_hw_ptr_post(struct snd_pcm_substream *substream
+ 	return 0;
+ }
+ 
+-static inline int snd_pcm_update_hw_ptr_interrupt(struct snd_pcm_substream *substream)
++#define hw_ptr_error(substream, fmt, args...)				\
++	do {								\
++		if (xrun_debug(substream)) {				\
++			if (printk_ratelimit()) {			\
++				snd_printd("PCM: " fmt, ##args);	\
++			}						\
++			dump_stack_on_xrun(substream);			\
++		}							\
++	} while (0)
++
++static int snd_pcm_update_hw_ptr_interrupt(struct snd_pcm_substream *substream)
+ {
+ 	struct snd_pcm_runtime *runtime = substream->runtime;
+ 	snd_pcm_uframes_t pos;
+-	snd_pcm_uframes_t new_hw_ptr, hw_ptr_interrupt;
+-	snd_pcm_sframes_t delta;
++	snd_pcm_uframes_t old_hw_ptr, new_hw_ptr, hw_ptr_interrupt, hw_base;
++	snd_pcm_sframes_t hdelta, delta;
++	unsigned long jdelta;
+ 
++	old_hw_ptr = runtime->status->hw_ptr;
+ 	pos = snd_pcm_update_hw_ptr_pos(substream, runtime);
+ 	if (pos == SNDRV_PCM_POS_XRUN) {
+ 		xrun(substream);
+ 		return -EPIPE;
+ 	}
+-	if (runtime->period_size == runtime->buffer_size)
+-		goto __next_buf;
+-	new_hw_ptr = runtime->hw_ptr_base + pos;
++	hw_base = runtime->hw_ptr_base;
++	new_hw_ptr = hw_base + pos;
+ 	hw_ptr_interrupt = runtime->hw_ptr_interrupt + runtime->period_size;
+-
+-	delta = hw_ptr_interrupt - new_hw_ptr;
+-	if (delta > 0) {
+-		if ((snd_pcm_uframes_t)delta < runtime->buffer_size / 2) {
+-#ifdef CONFIG_SND_PCM_XRUN_DEBUG
+-			if (runtime->periods > 1 && substream->pstr->xrun_debug) {
+-				snd_printd(KERN_ERR "Unexpected hw_pointer value [1] (stream = %i, delta: -%ld, max jitter = %ld): wrong interrupt acknowledge?\n", substream->stream, (long) delta, runtime->buffer_size / 2);
+-				if (substream->pstr->xrun_debug > 1)
+-					dump_stack();
+-			}
+-#endif
+-			return 0;
++	delta = new_hw_ptr - hw_ptr_interrupt;
++	if (hw_ptr_interrupt >= runtime->boundary) {
++		hw_ptr_interrupt -= runtime->boundary;
++		if (hw_base < runtime->boundary / 2)
++			/* hw_base was already lapped; recalc delta */
++			delta = new_hw_ptr - hw_ptr_interrupt;
++	}
++	if (delta < 0) {
++		delta += runtime->buffer_size;
++		if (delta < 0) {
++			hw_ptr_error(substream, 
++				     "Unexpected hw_pointer value "
++				     "(stream=%i, pos=%ld, intr_ptr=%ld)\n",
++				     substream->stream, (long)pos,
++				     (long)hw_ptr_interrupt);
++			/* rebase to interrupt position */
++			hw_base = new_hw_ptr = hw_ptr_interrupt;
++			/* align hw_base to buffer_size */
++			hw_base -= hw_base % runtime->buffer_size;
++			delta = 0;
++		} else {
++			hw_base += runtime->buffer_size;
++			if (hw_base >= runtime->boundary)
++				hw_base = 0;
++			new_hw_ptr = hw_base + pos;
+ 		}
+-	      __next_buf:
+-		runtime->hw_ptr_base += runtime->buffer_size;
+-		if (runtime->hw_ptr_base == runtime->boundary)
+-			runtime->hw_ptr_base = 0;
+-		new_hw_ptr = runtime->hw_ptr_base + pos;
+ 	}
+-
++	/* Skip the jiffies check for hardwares with BATCH flag.
++	 * Such hardware usually just increases the position at each IRQ,
++	 * thus it can't give any strange position.
++	 */
++	if (runtime->hw.info & SNDRV_PCM_INFO_BATCH)
++		goto no_jiffies_check;
++	hdelta = new_hw_ptr - old_hw_ptr;
++	jdelta = jiffies - runtime->hw_ptr_jiffies;
++	if (((hdelta * HZ) / runtime->rate) > jdelta + HZ/100) {
++		delta = jdelta /
++			(((runtime->period_size * HZ) / runtime->rate)
++								+ HZ/100);
++		hw_ptr_error(substream,
++			     "hw_ptr skipping! [Q] "
++			     "(pos=%ld, delta=%ld, period=%ld, "
++			     "jdelta=%lu/%lu/%lu)\n",
++			     (long)pos, (long)hdelta,
++			     (long)runtime->period_size, jdelta,
++			     ((hdelta * HZ) / runtime->rate), delta);
++		hw_ptr_interrupt = runtime->hw_ptr_interrupt +
++				   runtime->period_size * delta;
++		if (hw_ptr_interrupt >= runtime->boundary)
++			hw_ptr_interrupt -= runtime->boundary;
++		/* rebase to interrupt position */
++		hw_base = new_hw_ptr = hw_ptr_interrupt;
++		/* align hw_base to buffer_size */
++		hw_base -= hw_base % runtime->buffer_size;
++		delta = 0;
++	}
++ no_jiffies_check:
++	if (delta > runtime->period_size + runtime->period_size / 2) {
++		hw_ptr_error(substream,
++			     "Lost interrupts? "
++			     "(stream=%i, delta=%ld, intr_ptr=%ld)\n",
++			     substream->stream, (long)delta,
++			     (long)hw_ptr_interrupt);
++		/* rebase hw_ptr_interrupt */
++		hw_ptr_interrupt =
++			new_hw_ptr - new_hw_ptr % runtime->period_size;
++	}
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
+ 	    runtime->silence_size > 0)
+ 		snd_pcm_playback_silence(substream, new_hw_ptr);
+ 
++	runtime->hw_ptr_base = hw_base;
+ 	runtime->status->hw_ptr = new_hw_ptr;
+-	runtime->hw_ptr_interrupt = new_hw_ptr - new_hw_ptr % runtime->period_size;
++	runtime->hw_ptr_jiffies = jiffies;
++	runtime->hw_ptr_interrupt = hw_ptr_interrupt;
+ 
+ 	return snd_pcm_update_hw_ptr_post(substream, runtime);
+ }
+@@ -233,8 +306,9 @@ int snd_pcm_update_hw_ptr(struct snd_pcm_substream *substream)
+ {
+ 	struct snd_pcm_runtime *runtime = substream->runtime;
+ 	snd_pcm_uframes_t pos;
+-	snd_pcm_uframes_t old_hw_ptr, new_hw_ptr;
++	snd_pcm_uframes_t old_hw_ptr, new_hw_ptr, hw_base;
+ 	snd_pcm_sframes_t delta;
++	unsigned long jdelta;
+ 
+ 	old_hw_ptr = runtime->status->hw_ptr;
+ 	pos = snd_pcm_update_hw_ptr_pos(substream, runtime);
+@@ -242,30 +316,42 @@ int snd_pcm_update_hw_ptr(struct snd_pcm_substream *substream)
+ 		xrun(substream);
+ 		return -EPIPE;
+ 	}
+-	new_hw_ptr = runtime->hw_ptr_base + pos;
+-
+-	delta = old_hw_ptr - new_hw_ptr;
+-	if (delta > 0) {
+-		if ((snd_pcm_uframes_t)delta < runtime->buffer_size / 2) {
+-#ifdef CONFIG_SND_PCM_XRUN_DEBUG
+-			if (runtime->periods > 2 && substream->pstr->xrun_debug) {
+-				snd_printd(KERN_ERR "Unexpected hw_pointer value [2] (stream = %i, delta: -%ld, max jitter = %ld): wrong interrupt acknowledge?\n", substream->stream, (long) delta, runtime->buffer_size / 2);
+-				if (substream->pstr->xrun_debug > 1)
+-					dump_stack();
+-			}
+-#endif
++	hw_base = runtime->hw_ptr_base;
++	new_hw_ptr = hw_base + pos;
++
++	delta = new_hw_ptr - old_hw_ptr;
++	jdelta = jiffies - runtime->hw_ptr_jiffies;
++	if (delta < 0) {
++		delta += runtime->buffer_size;
++		if (delta < 0) {
++			hw_ptr_error(substream, 
++				     "Unexpected hw_pointer value [2] "
++				     "(stream=%i, pos=%ld, old_ptr=%ld, jdelta=%li)\n",
++				     substream->stream, (long)pos,
++				     (long)old_hw_ptr, jdelta);
+ 			return 0;
+ 		}
+-		runtime->hw_ptr_base += runtime->buffer_size;
+-		if (runtime->hw_ptr_base == runtime->boundary)
+-			runtime->hw_ptr_base = 0;
+-		new_hw_ptr = runtime->hw_ptr_base + pos;
++		hw_base += runtime->buffer_size;
++		if (hw_base >= runtime->boundary)
++			hw_base = 0;
++		new_hw_ptr = hw_base + pos;
++	}
++	if (((delta * HZ) / runtime->rate) > jdelta + HZ/100) {
++		hw_ptr_error(substream,
++			     "hw_ptr skipping! "
++			     "(pos=%ld, delta=%ld, period=%ld, jdelta=%lu/%lu)\n",
++			     (long)pos, (long)delta,
++			     (long)runtime->period_size, jdelta,
++			     ((delta * HZ) / runtime->rate));
++		return 0;
+ 	}
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
+ 	    runtime->silence_size > 0)
+ 		snd_pcm_playback_silence(substream, new_hw_ptr);
+ 
++	runtime->hw_ptr_base = hw_base;
+ 	runtime->status->hw_ptr = new_hw_ptr;
++	runtime->hw_ptr_jiffies = jiffies;
+ 
+ 	return snd_pcm_update_hw_ptr_post(substream, runtime);
+ }
+@@ -1392,6 +1478,7 @@ static int snd_pcm_lib_ioctl_reset(struct snd_pcm_substream *substream,
+ 		runtime->status->hw_ptr %= runtime->buffer_size;
+ 	else
+ 		runtime->status->hw_ptr = 0;
++	runtime->hw_ptr_jiffies = jiffies;
+ 	snd_pcm_stream_unlock_irqrestore(substream, flags);
+ 	return 0;
+ }
+diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
+index a789efc..fc6f98e 100644
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -186,7 +186,7 @@ int snd_pcm_hw_refine(struct snd_pcm_substream *substream,
+ 		if (!(params->rmask & (1 << k)))
+ 			continue;
+ #ifdef RULES_DEBUG
+-		printk("%s = ", snd_pcm_hw_param_names[k]);
++		printk(KERN_DEBUG "%s = ", snd_pcm_hw_param_names[k]);
+ 		printk("%04x%04x%04x%04x -> ", m->bits[3], m->bits[2], m->bits[1], m->bits[0]);
+ #endif
+ 		changed = snd_mask_refine(m, constrs_mask(constrs, k));
+@@ -206,7 +206,7 @@ int snd_pcm_hw_refine(struct snd_pcm_substream *substream,
+ 		if (!(params->rmask & (1 << k)))
+ 			continue;
+ #ifdef RULES_DEBUG
+-		printk("%s = ", snd_pcm_hw_param_names[k]);
++		printk(KERN_DEBUG "%s = ", snd_pcm_hw_param_names[k]);
+ 		if (i->empty)
+ 			printk("empty");
+ 		else
+@@ -251,7 +251,7 @@ int snd_pcm_hw_refine(struct snd_pcm_substream *substream,
+ 			if (!doit)
+ 				continue;
+ #ifdef RULES_DEBUG
+-			printk("Rule %d [%p]: ", k, r->func);
++			printk(KERN_DEBUG "Rule %d [%p]: ", k, r->func);
+ 			if (r->var >= 0) {
+ 				printk("%s = ", snd_pcm_hw_param_names[r->var]);
+ 				if (hw_is_mask(r->var)) {
+@@ -327,21 +327,16 @@ static int snd_pcm_hw_refine_user(struct snd_pcm_substream *substream,
+ 	struct snd_pcm_hw_params *params;
+ 	int err;
+ 
+-	params = kmalloc(sizeof(*params), GFP_KERNEL);
+-	if (!params) {
+-		err = -ENOMEM;
+-		goto out;
+-	}
+-	if (copy_from_user(params, _params, sizeof(*params))) {
+-		err = -EFAULT;
+-		goto out;
+-	}
++	params = memdup_user(_params, sizeof(*params));
++	if (IS_ERR(params))
++		return PTR_ERR(params);
++
+ 	err = snd_pcm_hw_refine(substream, params);
+ 	if (copy_to_user(_params, params, sizeof(*params))) {
+ 		if (!err)
+ 			err = -EFAULT;
+ 	}
+-out:
++
+ 	kfree(params);
+ 	return err;
+ }
+@@ -465,21 +460,16 @@ static int snd_pcm_hw_params_user(struct snd_pcm_substream *substream,
+ 	struct snd_pcm_hw_params *params;
+ 	int err;
+ 
+-	params = kmalloc(sizeof(*params), GFP_KERNEL);
+-	if (!params) {
+-		err = -ENOMEM;
+-		goto out;
+-	}
+-	if (copy_from_user(params, _params, sizeof(*params))) {
+-		err = -EFAULT;
+-		goto out;
+-	}
++	params = memdup_user(_params, sizeof(*params));
++	if (IS_ERR(params))
++		return PTR_ERR(params);
++
+ 	err = snd_pcm_hw_params(substream, params);
+ 	if (copy_to_user(_params, params, sizeof(*params))) {
+ 		if (!err)
+ 			err = -EFAULT;
+ 	}
+-out:
++
+ 	kfree(params);
+ 	return err;
+ }
+@@ -2593,13 +2583,11 @@ static int snd_pcm_playback_ioctl1(struct file *file,
+ 			return -EFAULT;
+ 		if (copy_from_user(&xfern, _xfern, sizeof(xfern)))
+ 			return -EFAULT;
+-		bufs = kmalloc(sizeof(void *) * runtime->channels, GFP_KERNEL);
+-		if (bufs == NULL)
+-			return -ENOMEM;
+-		if (copy_from_user(bufs, xfern.bufs, sizeof(void *) * runtime->channels)) {
+-			kfree(bufs);
+-			return -EFAULT;
+-		}
++
++		bufs = memdup_user(xfern.bufs,
++				   sizeof(void *) * runtime->channels);
++		if (IS_ERR(bufs))
++			return PTR_ERR(bufs);
+ 		result = snd_pcm_lib_writev(substream, bufs, xfern.frames);
+ 		kfree(bufs);
+ 		__put_user(result, &_xfern->result);
+@@ -2675,13 +2663,11 @@ static int snd_pcm_capture_ioctl1(struct file *file,
+ 			return -EFAULT;
+ 		if (copy_from_user(&xfern, _xfern, sizeof(xfern)))
+ 			return -EFAULT;
+-		bufs = kmalloc(sizeof(void *) * runtime->channels, GFP_KERNEL);
+-		if (bufs == NULL)
+-			return -ENOMEM;
+-		if (copy_from_user(bufs, xfern.bufs, sizeof(void *) * runtime->channels)) {
+-			kfree(bufs);
+-			return -EFAULT;
+-		}
++
++		bufs = memdup_user(xfern.bufs,
++				   sizeof(void *) * runtime->channels);
++		if (IS_ERR(bufs))
++			return PTR_ERR(bufs);
+ 		result = snd_pcm_lib_readv(substream, bufs, xfern.frames);
+ 		kfree(bufs);
+ 		__put_user(result, &_xfern->result);
+@@ -3246,9 +3232,7 @@ static int snd_pcm_fasync(int fd, struct file * file, int on)
+ 	err = fasync_helper(fd, file, on, &runtime->fasync);
+ out:
+ 	unlock_kernel();
+-	if (err < 0)
+-		return err;
+-	return 0;
++	return err;
+ }
+ 
+ /*
+@@ -3314,18 +3298,12 @@ static int snd_pcm_hw_refine_old_user(struct snd_pcm_substream *substream,
+ 	int err;
+ 
+ 	params = kmalloc(sizeof(*params), GFP_KERNEL);
+-	if (!params) {
+-		err = -ENOMEM;
+-		goto out;
+-	}
+-	oparams = kmalloc(sizeof(*oparams), GFP_KERNEL);
+-	if (!oparams) {
+-		err = -ENOMEM;
+-		goto out;
+-	}
++	if (!params)
++		return -ENOMEM;
+ 
+-	if (copy_from_user(oparams, _oparams, sizeof(*oparams))) {
+-		err = -EFAULT;
++	oparams = memdup_user(_oparams, sizeof(*oparams));
++	if (IS_ERR(oparams)) {
++		err = PTR_ERR(oparams);
+ 		goto out;
+ 	}
+ 	snd_pcm_hw_convert_from_old_params(params, oparams);
+@@ -3335,9 +3313,10 @@ static int snd_pcm_hw_refine_old_user(struct snd_pcm_substream *substream,
+ 		if (!err)
+ 			err = -EFAULT;
+ 	}
++
++	kfree(oparams);
+ out:
+ 	kfree(params);
+-	kfree(oparams);
+ 	return err;
+ }
+ 
+@@ -3349,17 +3328,12 @@ static int snd_pcm_hw_params_old_user(struct snd_pcm_substream *substream,
+ 	int err;
+ 
+ 	params = kmalloc(sizeof(*params), GFP_KERNEL);
+-	if (!params) {
+-		err = -ENOMEM;
+-		goto out;
+-	}
+-	oparams = kmalloc(sizeof(*oparams), GFP_KERNEL);
+-	if (!oparams) {
+-		err = -ENOMEM;
+-		goto out;
+-	}
+-	if (copy_from_user(oparams, _oparams, sizeof(*oparams))) {
+-		err = -EFAULT;
++	if (!params)
++		return -ENOMEM;
++
++	oparams = memdup_user(_oparams, sizeof(*oparams));
++	if (IS_ERR(oparams)) {
++		err = PTR_ERR(oparams);
+ 		goto out;
+ 	}
+ 	snd_pcm_hw_convert_from_old_params(params, oparams);
+@@ -3369,9 +3343,10 @@ static int snd_pcm_hw_params_old_user(struct snd_pcm_substream *substream,
+ 		if (!err)
+ 			err = -EFAULT;
+ 	}
++
++	kfree(oparams);
+ out:
+ 	kfree(params);
+-	kfree(oparams);
+ 	return err;
+ }
+ #endif /* CONFIG_SND_SUPPORT_OLD_API */
+diff --git a/sound/core/pcm_timer.c b/sound/core/pcm_timer.c
+index 2c89c04..ca8068b 100644
+--- a/sound/core/pcm_timer.c
++++ b/sound/core/pcm_timer.c
+@@ -85,25 +85,19 @@ static unsigned long snd_pcm_timer_resolution(struct snd_timer * timer)
+ 
+ static int snd_pcm_timer_start(struct snd_timer * timer)
+ {
+-	unsigned long flags;
+ 	struct snd_pcm_substream *substream;
+ 	
+ 	substream = snd_timer_chip(timer);
+-	spin_lock_irqsave(&substream->timer_lock, flags);
+ 	substream->timer_running = 1;
+-	spin_unlock_irqrestore(&substream->timer_lock, flags);
+ 	return 0;
+ }
+ 
+ static int snd_pcm_timer_stop(struct snd_timer * timer)
+ {
+-	unsigned long flags;
+ 	struct snd_pcm_substream *substream;
+ 	
+ 	substream = snd_timer_chip(timer);
+-	spin_lock_irqsave(&substream->timer_lock, flags);
+ 	substream->timer_running = 0;
+-	spin_unlock_irqrestore(&substream->timer_lock, flags);
+ 	return 0;
+ }
+ 
+diff --git a/sound/core/rawmidi.c b/sound/core/rawmidi.c
+index 002777b..473247c 100644
+--- a/sound/core/rawmidi.c
++++ b/sound/core/rawmidi.c
+@@ -224,156 +224,143 @@ int snd_rawmidi_drain_input(struct snd_rawmidi_substream *substream)
+ 	return 0;
+ }
+ 
+-int snd_rawmidi_kernel_open(struct snd_card *card, int device, int subdevice,
+-			    int mode, struct snd_rawmidi_file * rfile)
++/* look for an available substream for the given stream direction;
++ * if a specific subdevice is given, try to assign it
++ */
++static int assign_substream(struct snd_rawmidi *rmidi, int subdevice,
++			    int stream, int mode,
++			    struct snd_rawmidi_substream **sub_ret)
++{
++	struct snd_rawmidi_substream *substream;
++	struct snd_rawmidi_str *s = &rmidi->streams[stream];
++	static unsigned int info_flags[2] = {
++		[SNDRV_RAWMIDI_STREAM_OUTPUT] = SNDRV_RAWMIDI_INFO_OUTPUT,
++		[SNDRV_RAWMIDI_STREAM_INPUT] = SNDRV_RAWMIDI_INFO_INPUT,
++	};
++
++	if (!(rmidi->info_flags & info_flags[stream]))
++		return -ENXIO;
++	if (subdevice >= 0 && subdevice >= s->substream_count)
++		return -ENODEV;
++	if (s->substream_opened >= s->substream_count)
++		return -EAGAIN;
++
++	list_for_each_entry(substream, &s->substreams, list) {
++		if (substream->opened) {
++			if (stream == SNDRV_RAWMIDI_STREAM_INPUT ||
++			    !(mode & SNDRV_RAWMIDI_LFLG_APPEND))
++				continue;
++		}
++		if (subdevice < 0 || subdevice == substream->number) {
++			*sub_ret = substream;
++			return 0;
++		}
++	}
++	return -EAGAIN;
++}
++
++/* open and do ref-counting for the given substream */
++static int open_substream(struct snd_rawmidi *rmidi,
++			  struct snd_rawmidi_substream *substream,
++			  int mode)
++{
++	int err;
++
++	err = snd_rawmidi_runtime_create(substream);
++	if (err < 0)
++		return err;
++	err = substream->ops->open(substream);
++	if (err < 0)
++		return err;
++	substream->opened = 1;
++	if (substream->use_count++ == 0)
++		substream->active_sensing = 1;
++	if (mode & SNDRV_RAWMIDI_LFLG_APPEND)
++		substream->append = 1;
++	rmidi->streams[substream->stream].substream_opened++;
++	return 0;
++}
++
++static void close_substream(struct snd_rawmidi *rmidi,
++			    struct snd_rawmidi_substream *substream,
++			    int cleanup);
++
++static int rawmidi_open_priv(struct snd_rawmidi *rmidi, int subdevice, int mode,
++			     struct snd_rawmidi_file *rfile)
+ {
+-	struct snd_rawmidi *rmidi;
+-	struct list_head *list1, *list2;
+ 	struct snd_rawmidi_substream *sinput = NULL, *soutput = NULL;
+-	struct snd_rawmidi_runtime *input = NULL, *output = NULL;
+ 	int err;
+ 
+-	if (rfile)
+-		rfile->input = rfile->output = NULL;
+-	mutex_lock(&register_mutex);
+-	rmidi = snd_rawmidi_search(card, device);
+-	mutex_unlock(&register_mutex);
+-	if (rmidi == NULL) {
+-		err = -ENODEV;
+-		goto __error1;
+-	}
+-	if (!try_module_get(rmidi->card->module)) {
+-		err = -EFAULT;
+-		goto __error1;
+-	}
+-	if (!(mode & SNDRV_RAWMIDI_LFLG_NOOPENLOCK))
+-		mutex_lock(&rmidi->open_mutex);
++	rfile->input = rfile->output = NULL;
+ 	if (mode & SNDRV_RAWMIDI_LFLG_INPUT) {
+-		if (!(rmidi->info_flags & SNDRV_RAWMIDI_INFO_INPUT)) {
+-			err = -ENXIO;
+-			goto __error;
+-		}
+-		if (subdevice >= 0 && (unsigned int)subdevice >= rmidi->streams[SNDRV_RAWMIDI_STREAM_INPUT].substream_count) {
+-			err = -ENODEV;
+-			goto __error;
+-		}
+-		if (rmidi->streams[SNDRV_RAWMIDI_STREAM_INPUT].substream_opened >=
+-		    rmidi->streams[SNDRV_RAWMIDI_STREAM_INPUT].substream_count) {
+-			err = -EAGAIN;
++		err = assign_substream(rmidi, subdevice,
++				       SNDRV_RAWMIDI_STREAM_INPUT,
++				       mode, &sinput);
++		if (err < 0)
+ 			goto __error;
+-		}
+ 	}
+ 	if (mode & SNDRV_RAWMIDI_LFLG_OUTPUT) {
+-		if (!(rmidi->info_flags & SNDRV_RAWMIDI_INFO_OUTPUT)) {
+-			err = -ENXIO;
+-			goto __error;
+-		}
+-		if (subdevice >= 0 && (unsigned int)subdevice >= rmidi->streams[SNDRV_RAWMIDI_STREAM_OUTPUT].substream_count) {
+-			err = -ENODEV;
+-			goto __error;
+-		}
+-		if (rmidi->streams[SNDRV_RAWMIDI_STREAM_OUTPUT].substream_opened >=
+-		    rmidi->streams[SNDRV_RAWMIDI_STREAM_OUTPUT].substream_count) {
+-			err = -EAGAIN;
++		err = assign_substream(rmidi, subdevice,
++				       SNDRV_RAWMIDI_STREAM_OUTPUT,
++				       mode, &soutput);
++		if (err < 0)
+ 			goto __error;
+-		}
+-	}
+-	list1 = rmidi->streams[SNDRV_RAWMIDI_STREAM_INPUT].substreams.next;
+-	while (1) {
+-		if (list1 == &rmidi->streams[SNDRV_RAWMIDI_STREAM_INPUT].substreams) {
+-			sinput = NULL;
+-			if (mode & SNDRV_RAWMIDI_LFLG_INPUT) {
+-				err = -EAGAIN;
+-				goto __error;
+-			}
+-			break;
+-		}
+-		sinput = list_entry(list1, struct snd_rawmidi_substream, list);
+-		if ((mode & SNDRV_RAWMIDI_LFLG_INPUT) && sinput->opened)
+-			goto __nexti;
+-		if (subdevice < 0 || (subdevice >= 0 && subdevice == sinput->number))
+-			break;
+-	      __nexti:
+-		list1 = list1->next;
+ 	}
+-	list2 = rmidi->streams[SNDRV_RAWMIDI_STREAM_OUTPUT].substreams.next;
+-	while (1) {
+-		if (list2 == &rmidi->streams[SNDRV_RAWMIDI_STREAM_OUTPUT].substreams) {
+-			soutput = NULL;
+-			if (mode & SNDRV_RAWMIDI_LFLG_OUTPUT) {
+-				err = -EAGAIN;
+-				goto __error;
+-			}
+-			break;
+-		}
+-		soutput = list_entry(list2, struct snd_rawmidi_substream, list);
+-		if (mode & SNDRV_RAWMIDI_LFLG_OUTPUT) {
+-			if (mode & SNDRV_RAWMIDI_LFLG_APPEND) {
+-				if (soutput->opened && !soutput->append)
+-					goto __nexto;
+-			} else {
+-				if (soutput->opened)
+-					goto __nexto;
+-			}
+-		}
+-		if (subdevice < 0 || (subdevice >= 0 && subdevice == soutput->number))
+-			break;
+-	      __nexto:
+-		list2 = list2->next;
+-	}
+-	if (mode & SNDRV_RAWMIDI_LFLG_INPUT) {
+-		if ((err = snd_rawmidi_runtime_create(sinput)) < 0)
+-			goto __error;
+-		input = sinput->runtime;
+-		if ((err = sinput->ops->open(sinput)) < 0)
++
++	if (sinput) {
++		err = open_substream(rmidi, sinput, mode);
++		if (err < 0)
+ 			goto __error;
+-		sinput->opened = 1;
+-		rmidi->streams[SNDRV_RAWMIDI_STREAM_INPUT].substream_opened++;
+-	} else {
+-		sinput = NULL;
+ 	}
+-	if (mode & SNDRV_RAWMIDI_LFLG_OUTPUT) {
+-		if (soutput->opened)
+-			goto __skip_output;
+-		if ((err = snd_rawmidi_runtime_create(soutput)) < 0) {
+-			if (mode & SNDRV_RAWMIDI_LFLG_INPUT)
+-				sinput->ops->close(sinput);
+-			goto __error;
+-		}
+-		output = soutput->runtime;
+-		if ((err = soutput->ops->open(soutput)) < 0) {
+-			if (mode & SNDRV_RAWMIDI_LFLG_INPUT)
+-				sinput->ops->close(sinput);
++	if (soutput) {
++		err = open_substream(rmidi, soutput, mode);
++		if (err < 0) {
++			if (sinput)
++				close_substream(rmidi, sinput, 0);
+ 			goto __error;
+ 		}
+-	      __skip_output:
+-		soutput->opened = 1;
+-		if (mode & SNDRV_RAWMIDI_LFLG_APPEND)
+-			soutput->append = 1;
+-	      	if (soutput->use_count++ == 0)
+-			soutput->active_sensing = 1;
+-		rmidi->streams[SNDRV_RAWMIDI_STREAM_OUTPUT].substream_opened++;
+-	} else {
+-		soutput = NULL;
+-	}
+-	if (!(mode & SNDRV_RAWMIDI_LFLG_NOOPENLOCK))
+-		mutex_unlock(&rmidi->open_mutex);
+-	if (rfile) {
+-		rfile->rmidi = rmidi;
+-		rfile->input = sinput;
+-		rfile->output = soutput;
+ 	}
++
++	rfile->rmidi = rmidi;
++	rfile->input = sinput;
++	rfile->output = soutput;
+ 	return 0;
+ 
+       __error:
+-	if (input != NULL)
++	if (sinput && sinput->runtime)
+ 		snd_rawmidi_runtime_free(sinput);
+-	if (output != NULL)
++	if (soutput && soutput->runtime)
+ 		snd_rawmidi_runtime_free(soutput);
+-	module_put(rmidi->card->module);
+-	if (!(mode & SNDRV_RAWMIDI_LFLG_NOOPENLOCK))
+-		mutex_unlock(&rmidi->open_mutex);
+-      __error1:
++	return err;
++}
++
++/* called from sound/core/seq/seq_midi.c */
++int snd_rawmidi_kernel_open(struct snd_card *card, int device, int subdevice,
++			    int mode, struct snd_rawmidi_file * rfile)
++{
++	struct snd_rawmidi *rmidi;
++	int err;
++
++	if (snd_BUG_ON(!rfile))
++		return -EINVAL;
++
++	mutex_lock(&register_mutex);
++	rmidi = snd_rawmidi_search(card, device);
++	if (rmidi == NULL) {
++		mutex_unlock(&register_mutex);
++		return -ENODEV;
++	}
++	if (!try_module_get(rmidi->card->module)) {
++		mutex_unlock(&register_mutex);
++		return -ENXIO;
++	}
++	mutex_unlock(&register_mutex);
++
++	mutex_lock(&rmidi->open_mutex);
++	err = rawmidi_open_priv(rmidi, subdevice, mode, rfile);
++	mutex_unlock(&rmidi->open_mutex);
++	if (err < 0)
++		module_put(rmidi->card->module);
+ 	return err;
+ }
+ 
+@@ -385,10 +372,13 @@ static int snd_rawmidi_open(struct inode *inode, struct file *file)
+ 	unsigned short fflags;
+ 	int err;
+ 	struct snd_rawmidi *rmidi;
+-	struct snd_rawmidi_file *rawmidi_file;
++	struct snd_rawmidi_file *rawmidi_file = NULL;
+ 	wait_queue_t wait;
+ 	struct snd_ctl_file *kctl;
+ 
++	if ((file->f_flags & O_APPEND) && !(file->f_flags & O_NONBLOCK)) 
++		return -EINVAL;		/* invalid combination */
++
+ 	if (maj == snd_major) {
+ 		rmidi = snd_lookup_minor_data(iminor(inode),
+ 					      SNDRV_DEVICE_TYPE_RAWMIDI);
+@@ -402,24 +392,25 @@ static int snd_rawmidi_open(struct inode *inode, struct file *file)
+ 
+ 	if (rmidi == NULL)
+ 		return -ENODEV;
+-	if ((file->f_flags & O_APPEND) && !(file->f_flags & O_NONBLOCK)) 
+-		return -EINVAL;		/* invalid combination */
++
++	if (!try_module_get(rmidi->card->module))
++		return -ENXIO;
++
++	mutex_lock(&rmidi->open_mutex);
+ 	card = rmidi->card;
+ 	err = snd_card_file_add(card, file);
+ 	if (err < 0)
+-		return -ENODEV;
++		goto __error_card;
+ 	fflags = snd_rawmidi_file_flags(file);
+ 	if ((file->f_flags & O_APPEND) || maj == SOUND_MAJOR) /* OSS emul? */
+ 		fflags |= SNDRV_RAWMIDI_LFLG_APPEND;
+-	fflags |= SNDRV_RAWMIDI_LFLG_NOOPENLOCK;
+ 	rawmidi_file = kmalloc(sizeof(*rawmidi_file), GFP_KERNEL);
+ 	if (rawmidi_file == NULL) {
+-		snd_card_file_remove(card, file);
+-		return -ENOMEM;
++		err = -ENOMEM;
++		goto __error;
+ 	}
+ 	init_waitqueue_entry(&wait, current);
+ 	add_wait_queue(&rmidi->open_wait, &wait);
+-	mutex_lock(&rmidi->open_mutex);
+ 	while (1) {
+ 		subdevice = -1;
+ 		read_lock(&card->ctl_files_rwlock);
+@@ -431,8 +422,7 @@ static int snd_rawmidi_open(struct inode *inode, struct file *file)
+ 			}
+ 		}
+ 		read_unlock(&card->ctl_files_rwlock);
+-		err = snd_rawmidi_kernel_open(rmidi->card, rmidi->device,
+-					      subdevice, fflags, rawmidi_file);
++		err = rawmidi_open_priv(rmidi, subdevice, fflags, rawmidi_file);
+ 		if (err >= 0)
+ 			break;
+ 		if (err == -EAGAIN) {
+@@ -451,67 +441,89 @@ static int snd_rawmidi_open(struct inode *inode, struct file *file)
+ 			break;
+ 		}
+ 	}
++	remove_wait_queue(&rmidi->open_wait, &wait);
++	if (err < 0) {
++		kfree(rawmidi_file);
++		goto __error;
++	}
+ #ifdef CONFIG_SND_OSSEMUL
+ 	if (rawmidi_file->input && rawmidi_file->input->runtime)
+ 		rawmidi_file->input->runtime->oss = (maj == SOUND_MAJOR);
+ 	if (rawmidi_file->output && rawmidi_file->output->runtime)
+ 		rawmidi_file->output->runtime->oss = (maj == SOUND_MAJOR);
+ #endif
+-	remove_wait_queue(&rmidi->open_wait, &wait);
+-	if (err >= 0) {
+-		file->private_data = rawmidi_file;
+-	} else {
+-		snd_card_file_remove(card, file);
+-		kfree(rawmidi_file);
+-	}
++	file->private_data = rawmidi_file;
++	mutex_unlock(&rmidi->open_mutex);
++	return 0;
++
++ __error:
++	snd_card_file_remove(card, file);
++ __error_card:
+ 	mutex_unlock(&rmidi->open_mutex);
++	module_put(rmidi->card->module);
+ 	return err;
+ }
+ 
+-int snd_rawmidi_kernel_release(struct snd_rawmidi_file * rfile)
++static void close_substream(struct snd_rawmidi *rmidi,
++			    struct snd_rawmidi_substream *substream,
++			    int cleanup)
+ {
+-	struct snd_rawmidi *rmidi;
+-	struct snd_rawmidi_substream *substream;
+-	struct snd_rawmidi_runtime *runtime;
++	rmidi->streams[substream->stream].substream_opened--;
++	if (--substream->use_count)
++		return;
+ 
+-	if (snd_BUG_ON(!rfile))
+-		return -ENXIO;
+-	rmidi = rfile->rmidi;
+-	mutex_lock(&rmidi->open_mutex);
+-	if (rfile->input != NULL) {
+-		substream = rfile->input;
+-		rfile->input = NULL;
+-		runtime = substream->runtime;
+-		snd_rawmidi_input_trigger(substream, 0);
+-		substream->ops->close(substream);
+-		if (runtime->private_free != NULL)
+-			runtime->private_free(substream);
+-		snd_rawmidi_runtime_free(substream);
+-		substream->opened = 0;
+-		rmidi->streams[SNDRV_RAWMIDI_STREAM_INPUT].substream_opened--;
+-	}
+-	if (rfile->output != NULL) {
+-		substream = rfile->output;
+-		rfile->output = NULL;
+-		if (--substream->use_count == 0) {
+-			runtime = substream->runtime;
++	if (cleanup) {
++		if (substream->stream == SNDRV_RAWMIDI_STREAM_INPUT)
++			snd_rawmidi_input_trigger(substream, 0);
++		else {
+ 			if (substream->active_sensing) {
+ 				unsigned char buf = 0xfe;
+-				/* sending single active sensing message to shut the device up */
++				/* sending single active sensing message
++				 * to shut the device up
++				 */
+ 				snd_rawmidi_kernel_write(substream, &buf, 1);
+ 			}
+ 			if (snd_rawmidi_drain_output(substream) == -ERESTARTSYS)
+ 				snd_rawmidi_output_trigger(substream, 0);
+-			substream->ops->close(substream);
+-			if (runtime->private_free != NULL)
+-				runtime->private_free(substream);
+-			snd_rawmidi_runtime_free(substream);
+-			substream->opened = 0;
+-			substream->append = 0;
+ 		}
+-		rmidi->streams[SNDRV_RAWMIDI_STREAM_OUTPUT].substream_opened--;
+ 	}
++	substream->ops->close(substream);
++	if (substream->runtime->private_free)
++		substream->runtime->private_free(substream);
++	snd_rawmidi_runtime_free(substream);
++	substream->opened = 0;
++	substream->append = 0;
++}
++
++static void rawmidi_release_priv(struct snd_rawmidi_file *rfile)
++{
++	struct snd_rawmidi *rmidi;
++
++	rmidi = rfile->rmidi;
++	mutex_lock(&rmidi->open_mutex);
++	if (rfile->input) {
++		close_substream(rmidi, rfile->input, 1);
++		rfile->input = NULL;
++	}
++	if (rfile->output) {
++		close_substream(rmidi, rfile->output, 1);
++		rfile->output = NULL;
++	}
++	rfile->rmidi = NULL;
+ 	mutex_unlock(&rmidi->open_mutex);
++	wake_up(&rmidi->open_wait);
++}
++
++/* called from sound/core/seq/seq_midi.c */
++int snd_rawmidi_kernel_release(struct snd_rawmidi_file *rfile)
++{
++	struct snd_rawmidi *rmidi;
++
++	if (snd_BUG_ON(!rfile))
++		return -ENXIO;
++	
++	rmidi = rfile->rmidi;
++	rawmidi_release_priv(rfile);
+ 	module_put(rmidi->card->module);
+ 	return 0;
+ }
+@@ -520,15 +532,14 @@ static int snd_rawmidi_release(struct inode *inode, struct file *file)
+ {
+ 	struct snd_rawmidi_file *rfile;
+ 	struct snd_rawmidi *rmidi;
+-	int err;
+ 
+ 	rfile = file->private_data;
+-	err = snd_rawmidi_kernel_release(rfile);
+ 	rmidi = rfile->rmidi;
+-	wake_up(&rmidi->open_wait);
++	rawmidi_release_priv(rfile);
+ 	kfree(rfile);
+ 	snd_card_file_remove(rmidi->card, file);
+-	return err;
++	module_put(rmidi->card->module);
++	return 0;
+ }
+ 
+ static int snd_rawmidi_info(struct snd_rawmidi_substream *substream,
+diff --git a/sound/core/seq/seq_compat.c b/sound/core/seq/seq_compat.c
+index 38693f4..c956fe4 100644
+--- a/sound/core/seq/seq_compat.c
++++ b/sound/core/seq/seq_compat.c
+@@ -48,12 +48,11 @@ static int snd_seq_call_port_info_ioctl(struct snd_seq_client *client, unsigned
+ 	struct snd_seq_port_info *data;
+ 	mm_segment_t fs;
+ 
+-	data = kmalloc(sizeof(*data), GFP_KERNEL);
+-	if (! data)
+-		return -ENOMEM;
++	data = memdup_user(data32, sizeof(*data32));
++	if (IS_ERR(data))
++		return PTR_ERR(data);
+ 
+-	if (copy_from_user(data, data32, sizeof(*data32)) ||
+-	    get_user(data->flags, &data32->flags) ||
++	if (get_user(data->flags, &data32->flags) ||
+ 	    get_user(data->time_queue, &data32->time_queue))
+ 		goto error;
+ 	data->kernel = NULL;
+diff --git a/sound/core/seq/seq_prioq.c b/sound/core/seq/seq_prioq.c
+index 0101a8b..29896ab 100644
+--- a/sound/core/seq/seq_prioq.c
++++ b/sound/core/seq/seq_prioq.c
+@@ -321,7 +321,8 @@ void snd_seq_prioq_leave(struct snd_seq_prioq * f, int client, int timestamp)
+ 			freeprev = cell;
+ 		} else {
+ #if 0
+-			printk("type = %i, source = %i, dest = %i, client = %i\n",
++			printk(KERN_DEBUG "type = %i, source = %i, dest = %i, "
++			       "client = %i\n",
+ 				cell->event.type,
+ 				cell->event.source.client,
+ 				cell->event.dest.client,
+diff --git a/sound/core/sgbuf.c b/sound/core/sgbuf.c
+index d4564ed..4e7ec2b 100644
+--- a/sound/core/sgbuf.c
++++ b/sound/core/sgbuf.c
+@@ -38,6 +38,10 @@ int snd_free_sgbuf_pages(struct snd_dma_buffer *dmab)
+ 	if (! sgbuf)
+ 		return -EINVAL;
+ 
++	if (dmab->area)
++		vunmap(dmab->area);
++	dmab->area = NULL;
++
+ 	tmpb.dev.type = SNDRV_DMA_TYPE_DEV;
+ 	tmpb.dev.dev = sgbuf->dev;
+ 	for (i = 0; i < sgbuf->pages; i++) {
+@@ -48,9 +52,6 @@ int snd_free_sgbuf_pages(struct snd_dma_buffer *dmab)
+ 		tmpb.bytes = (sgbuf->table[i].addr & ~PAGE_MASK) << PAGE_SHIFT;
+ 		snd_dma_free_pages(&tmpb);
+ 	}
+-	if (dmab->area)
+-		vunmap(dmab->area);
+-	dmab->area = NULL;
+ 
+ 	kfree(sgbuf->table);
+ 	kfree(sgbuf->page_table);
+diff --git a/sound/core/timer.c b/sound/core/timer.c
+index 7965320..8f8b17a 100644
+--- a/sound/core/timer.c
++++ b/sound/core/timer.c
+@@ -1395,13 +1395,10 @@ static int snd_timer_user_ginfo(struct file *file,
+ 	struct list_head *p;
+ 	int err = 0;
+ 
+-	ginfo = kmalloc(sizeof(*ginfo), GFP_KERNEL);
+-	if (! ginfo)
+-		return -ENOMEM;
+-	if (copy_from_user(ginfo, _ginfo, sizeof(*ginfo))) {
+-		kfree(ginfo);
+-		return -EFAULT;
+-	}
++	ginfo = memdup_user(_ginfo, sizeof(*ginfo));
++	if (IS_ERR(ginfo))
++		return PTR_ERR(ginfo);
++
+ 	tid = ginfo->tid;
+ 	memset(ginfo, 0, sizeof(*ginfo));
+ 	ginfo->tid = tid;
+@@ -1825,13 +1822,9 @@ static long snd_timer_user_ioctl(struct file *file, unsigned int cmd,
+ static int snd_timer_user_fasync(int fd, struct file * file, int on)
+ {
+ 	struct snd_timer_user *tu;
+-	int err;
+ 
+ 	tu = file->private_data;
+-	err = fasync_helper(fd, file, on, &tu->fasync);
+-        if (err < 0)
+-		return err;
+-	return 0;
++	return fasync_helper(fd, file, on, &tu->fasync);
+ }
+ 
+ static ssize_t snd_timer_user_read(struct file *file, char __user *buffer,
+diff --git a/sound/core/vmaster.c b/sound/core/vmaster.c
+index 4cc57f9..257624b 100644
+--- a/sound/core/vmaster.c
++++ b/sound/core/vmaster.c
+@@ -50,18 +50,38 @@ struct link_slave {
+ 	struct link_master *master;
+ 	struct link_ctl_info info;
+ 	int vals[2];		/* current values */
++	unsigned int flags;
+ 	struct snd_kcontrol slave; /* the copy of original control entry */
+ };
+ 
++static int slave_update(struct link_slave *slave)
++{
++	struct snd_ctl_elem_value *uctl;
++	int err, ch;
++
++	uctl = kmalloc(sizeof(*uctl), GFP_KERNEL);
++	if (!uctl)
++		return -ENOMEM;
++	uctl->id = slave->slave.id;
++	err = slave->slave.get(&slave->slave, uctl);
++	for (ch = 0; ch < slave->info.count; ch++)
++		slave->vals[ch] = uctl->value.integer.value[ch];
++	kfree(uctl);
++	return 0;
++}
++
+ /* get the slave ctl info and save the initial values */
+ static int slave_init(struct link_slave *slave)
+ {
+ 	struct snd_ctl_elem_info *uinfo;
+-	struct snd_ctl_elem_value *uctl;
+-	int err, ch;
++	int err;
+ 
+-	if (slave->info.count)
+-		return 0; /* already initialized */
++	if (slave->info.count) {
++		/* already initialized */
++		if (slave->flags & SND_CTL_SLAVE_NEED_UPDATE)
++			return slave_update(slave);
++		return 0;
++	}
+ 
+ 	uinfo = kmalloc(sizeof(*uinfo), GFP_KERNEL);
+ 	if (!uinfo)
+@@ -85,15 +105,7 @@ static int slave_init(struct link_slave *slave)
+ 	slave->info.max_val = uinfo->value.integer.max;
+ 	kfree(uinfo);
+ 
+-	uctl = kmalloc(sizeof(*uctl), GFP_KERNEL);
+-	if (!uctl)
+-		return -ENOMEM;
+-	uctl->id = slave->slave.id;
+-	err = slave->slave.get(&slave->slave, uctl);
+-	for (ch = 0; ch < slave->info.count; ch++)
+-		slave->vals[ch] = uctl->value.integer.value[ch];
+-	kfree(uctl);
+-	return 0;
++	return slave_update(slave);
+ }
+ 
+ /* initialize master volume */
+@@ -229,7 +241,8 @@ static void slave_free(struct snd_kcontrol *kcontrol)
+  * - logarithmic volume control (dB level), no linear volume
+  * - master can only attenuate the volume, no gain
+  */
+-int snd_ctl_add_slave(struct snd_kcontrol *master, struct snd_kcontrol *slave)
++int _snd_ctl_add_slave(struct snd_kcontrol *master, struct snd_kcontrol *slave,
++		       unsigned int flags)
+ {
+ 	struct link_master *master_link = snd_kcontrol_chip(master);
+ 	struct link_slave *srec;
+@@ -241,6 +254,7 @@ int snd_ctl_add_slave(struct snd_kcontrol *master, struct snd_kcontrol *slave)
+ 	srec->slave = *slave;
+ 	memcpy(srec->slave.vd, slave->vd, slave->count * sizeof(*slave->vd));
+ 	srec->master = master_link;
++	srec->flags = flags;
+ 
+ 	/* override callbacks */
+ 	slave->info = slave_info;
+@@ -254,8 +268,7 @@ int snd_ctl_add_slave(struct snd_kcontrol *master, struct snd_kcontrol *slave)
+ 	list_add_tail(&srec->list, &master_link->slaves);
+ 	return 0;
+ }
+-
+-EXPORT_SYMBOL(snd_ctl_add_slave);
++EXPORT_SYMBOL(_snd_ctl_add_slave);
+ 
+ /*
+  * ctl callbacks for master controls
+@@ -327,8 +340,20 @@ static void master_free(struct snd_kcontrol *kcontrol)
+ }
+ 
+ 
+-/*
+- * Create a virtual master control with the given name
++/**
++ * snd_ctl_make_virtual_master - Create a virtual master control
++ * @name: name string of the control element to create
++ * @tlv: optional TLV int array for dB information
++ *
++ * Creates a virtual matster control with the given name string.
++ * Returns the created control element, or NULL for errors (ENOMEM).
++ *
++ * After creating a vmaster element, you can add the slave controls
++ * via snd_ctl_add_slave() or snd_ctl_add_slave_uncached().
++ *
++ * The optional argument @tlv can be used to specify the TLV information
++ * for dB scale of the master control.  It should be a single element
++ * with #SNDRV_CTL_TLVT_DB_SCALE type, and should be the max 0dB.
+  */
+ struct snd_kcontrol *snd_ctl_make_virtual_master(char *name,
+ 						 const unsigned int *tlv)
+@@ -367,5 +392,4 @@ struct snd_kcontrol *snd_ctl_make_virtual_master(char *name,
+ 
+ 	return kctl;
+ }
+-
+ EXPORT_SYMBOL(snd_ctl_make_virtual_master);
+diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
+index 869d88f..df7c8c2 100644
+--- a/sound/soc/codecs/twl4030.c
++++ b/sound/soc/codecs/twl4030.c
+@@ -42,13 +42,13 @@
+  */
+ static const u8 twl4030_reg[TWL4030_CACHEREGNUM] = {
+ 	0x00, /* this register not used		*/
+-	0x93, /* REG_CODEC_MODE		(0x1)	*/
++	0x91, /* REG_CODEC_MODE		(0x1)	*/
+ 	0xc3, /* REG_OPTION		(0x2)	*/
+ 	0x00, /* REG_UNKNOWN		(0x3)	*/
+ 	0x00, /* REG_MICBIAS_CTL	(0x4)	*/
+-	0x34, /* REG_ANAMICL		(0x5)	*/
+-	0x14, /* REG_ANAMICR		(0x6)	*/
+-	0x0a, /* REG_AVADC_CTL		(0x7)	*/
++	0x20, /* REG_ANAMICL		(0x5)	*/
++	0x00, /* REG_ANAMICR		(0x6)	*/
++	0x00, /* REG_AVADC_CTL		(0x7)	*/
+ 	0x00, /* REG_ADCMICSEL		(0x8)	*/
+ 	0x00, /* REG_DIGMIXING		(0x9)	*/
+ 	0x0c, /* REG_ATXL1PGA		(0xA)	*/
+@@ -117,6 +117,16 @@ static const u8 twl4030_reg[TWL4030_CACHEREGNUM] = {
+ 	0x00, /* REG_MISC_SET_2		(0x49)	*/
+ };
+ 
++/* codec private data */
++struct twl4030_priv {
++	unsigned int bypass_state;
++	unsigned int codec_powered;
++	unsigned int codec_muted;
++
++	struct snd_pcm_substream *master_substream;
++	struct snd_pcm_substream *slave_substream;
++};
++
+ /*
+  * read twl4030 register cache
+  */
+@@ -125,6 +135,9 @@ static inline unsigned int twl4030_read_reg_cache(struct snd_soc_codec *codec,
+ {
+ 	u8 *cache = codec->reg_cache;
+ 
++	if (reg >= TWL4030_CACHEREGNUM)
++		return -EIO;
++
+ 	return cache[reg];
+ }
+ 
+@@ -151,26 +164,22 @@ static int twl4030_write(struct snd_soc_codec *codec,
+ 	return twl4030_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE, value, reg);
+ }
+ 
+-static void twl4030_clear_codecpdz(struct snd_soc_codec *codec)
++static void twl4030_codec_enable(struct snd_soc_codec *codec, int enable)
+ {
++	struct twl4030_priv *twl4030 = codec->private_data;
+ 	u8 mode;
+ 
+-	mode = twl4030_read_reg_cache(codec, TWL4030_REG_CODEC_MODE);
+-	twl4030_write(codec, TWL4030_REG_CODEC_MODE,
+-		mode & ~TWL4030_CODECPDZ);
+-
+-	/* REVISIT: this delay is present in TI sample drivers */
+-	/* but there seems to be no TRM requirement for it     */
+-	udelay(10);
+-}
+-
+-static void twl4030_set_codecpdz(struct snd_soc_codec *codec)
+-{
+-	u8 mode;
++	if (enable == twl4030->codec_powered)
++		return;
+ 
+ 	mode = twl4030_read_reg_cache(codec, TWL4030_REG_CODEC_MODE);
+-	twl4030_write(codec, TWL4030_REG_CODEC_MODE,
+-		mode | TWL4030_CODECPDZ);
++	if (enable)
++		mode |= TWL4030_CODECPDZ;
++	else
++		mode &= ~TWL4030_CODECPDZ;
++
++	twl4030_write(codec, TWL4030_REG_CODEC_MODE, mode);
++	twl4030->codec_powered = enable;
+ 
+ 	/* REVISIT: this delay is present in TI sample drivers */
+ 	/* but there seems to be no TRM requirement for it     */
+@@ -182,7 +191,7 @@ static void twl4030_init_chip(struct snd_soc_codec *codec)
+ 	int i;
+ 
+ 	/* clear CODECPDZ prior to setting register defaults */
+-	twl4030_clear_codecpdz(codec);
++	twl4030_codec_enable(codec, 0);
+ 
+ 	/* set all audio section registers to reasonable defaults */
+ 	for (i = TWL4030_REG_OPTION; i <= TWL4030_REG_MISC_SET_2; i++)
+@@ -190,6 +199,122 @@ static void twl4030_init_chip(struct snd_soc_codec *codec)
+ 
+ }
+ 
++static void twl4030_codec_mute(struct snd_soc_codec *codec, int mute)
++{
++	struct twl4030_priv *twl4030 = codec->private_data;
++	u8 reg_val;
++
++	if (mute == twl4030->codec_muted)
++		return;
++
++	if (mute) {
++		/* Bypass the reg_cache and mute the volumes
++		 * Headset mute is done in it's own event handler
++		 * Things to mute:  Earpiece, PreDrivL/R, CarkitL/R
++		 */
++		reg_val = twl4030_read_reg_cache(codec, TWL4030_REG_EAR_CTL);
++		twl4030_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
++					reg_val & (~TWL4030_EAR_GAIN),
++					TWL4030_REG_EAR_CTL);
++
++		reg_val = twl4030_read_reg_cache(codec, TWL4030_REG_PREDL_CTL);
++		twl4030_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
++					reg_val & (~TWL4030_PREDL_GAIN),
++					TWL4030_REG_PREDL_CTL);
++		reg_val = twl4030_read_reg_cache(codec, TWL4030_REG_PREDR_CTL);
++		twl4030_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
++					reg_val & (~TWL4030_PREDR_GAIN),
++					TWL4030_REG_PREDL_CTL);
++
++		reg_val = twl4030_read_reg_cache(codec, TWL4030_REG_PRECKL_CTL);
++		twl4030_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
++					reg_val & (~TWL4030_PRECKL_GAIN),
++					TWL4030_REG_PRECKL_CTL);
++		reg_val = twl4030_read_reg_cache(codec, TWL4030_REG_PRECKR_CTL);
++		twl4030_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
++					reg_val & (~TWL4030_PRECKL_GAIN),
++					TWL4030_REG_PRECKR_CTL);
++
++		/* Disable PLL */
++		reg_val = twl4030_read_reg_cache(codec, TWL4030_REG_APLL_CTL);
++		reg_val &= ~TWL4030_APLL_EN;
++		twl4030_write(codec, TWL4030_REG_APLL_CTL, reg_val);
++	} else {
++		/* Restore the volumes
++		 * Headset mute is done in it's own event handler
++		 * Things to restore:  Earpiece, PreDrivL/R, CarkitL/R
++		 */
++		twl4030_write(codec, TWL4030_REG_EAR_CTL,
++			twl4030_read_reg_cache(codec, TWL4030_REG_EAR_CTL));
++
++		twl4030_write(codec, TWL4030_REG_PREDL_CTL,
++			twl4030_read_reg_cache(codec, TWL4030_REG_PREDL_CTL));
++		twl4030_write(codec, TWL4030_REG_PREDR_CTL,
++			twl4030_read_reg_cache(codec, TWL4030_REG_PREDR_CTL));
++
++		twl4030_write(codec, TWL4030_REG_PRECKL_CTL,
++			twl4030_read_reg_cache(codec, TWL4030_REG_PRECKL_CTL));
++		twl4030_write(codec, TWL4030_REG_PRECKR_CTL,
++			twl4030_read_reg_cache(codec, TWL4030_REG_PRECKR_CTL));
++
++		/* Enable PLL */
++		reg_val = twl4030_read_reg_cache(codec, TWL4030_REG_APLL_CTL);
++		reg_val |= TWL4030_APLL_EN;
++		twl4030_write(codec, TWL4030_REG_APLL_CTL, reg_val);
++	}
++
++	twl4030->codec_muted = mute;
++}
++
++static void twl4030_power_up(struct snd_soc_codec *codec)
++{
++	struct twl4030_priv *twl4030 = codec->private_data;
++	u8 anamicl, regmisc1, byte;
++	int i = 0;
++
++	if (twl4030->codec_powered)
++		return;
++
++	/* set CODECPDZ to turn on codec */
++	twl4030_codec_enable(codec, 1);
++
++	/* initiate offset cancellation */
++	anamicl = twl4030_read_reg_cache(codec, TWL4030_REG_ANAMICL);
++	twl4030_write(codec, TWL4030_REG_ANAMICL,
++		anamicl | TWL4030_CNCL_OFFSET_START);
++
++	/* wait for offset cancellation to complete */
++	do {
++		/* this takes a little while, so don't slam i2c */
++		udelay(2000);
++		twl4030_i2c_read_u8(TWL4030_MODULE_AUDIO_VOICE, &byte,
++				    TWL4030_REG_ANAMICL);
++	} while ((i++ < 100) &&
++		 ((byte & TWL4030_CNCL_OFFSET_START) ==
++		  TWL4030_CNCL_OFFSET_START));
++
++	/* Make sure that the reg_cache has the same value as the HW */
++	twl4030_write_reg_cache(codec, TWL4030_REG_ANAMICL, byte);
++
++	/* anti-pop when changing analog gain */
++	regmisc1 = twl4030_read_reg_cache(codec, TWL4030_REG_MISC_SET_1);
++	twl4030_write(codec, TWL4030_REG_MISC_SET_1,
++		regmisc1 | TWL4030_SMOOTH_ANAVOL_EN);
++
++	/* toggle CODECPDZ as per TRM */
++	twl4030_codec_enable(codec, 0);
++	twl4030_codec_enable(codec, 1);
++}
++
++/*
++ * Unconditional power down
++ */
++static void twl4030_power_down(struct snd_soc_codec *codec)
++{
++	/* power down */
++	twl4030_codec_enable(codec, 0);
++}
++
+ /* Earpiece */
+ static const char *twl4030_earpiece_texts[] =
+ 		{"Off", "DACL1", "DACL2", "DACR1"};
+@@ -366,6 +491,41 @@ static const struct soc_enum twl4030_micpathtx2_enum =
+ static const struct snd_kcontrol_new twl4030_dapm_micpathtx2_control =
+ SOC_DAPM_ENUM("Route", twl4030_micpathtx2_enum);
+ 
++/* Analog bypass for AudioR1 */
++static const struct snd_kcontrol_new twl4030_dapm_abypassr1_control =
++	SOC_DAPM_SINGLE("Switch", TWL4030_REG_ARXR1_APGA_CTL, 2, 1, 0);
++
++/* Analog bypass for AudioL1 */
++static const struct snd_kcontrol_new twl4030_dapm_abypassl1_control =
++	SOC_DAPM_SINGLE("Switch", TWL4030_REG_ARXL1_APGA_CTL, 2, 1, 0);
++
++/* Analog bypass for AudioR2 */
++static const struct snd_kcontrol_new twl4030_dapm_abypassr2_control =
++	SOC_DAPM_SINGLE("Switch", TWL4030_REG_ARXR2_APGA_CTL, 2, 1, 0);
++
++/* Analog bypass for AudioL2 */
++static const struct snd_kcontrol_new twl4030_dapm_abypassl2_control =
++	SOC_DAPM_SINGLE("Switch", TWL4030_REG_ARXL2_APGA_CTL, 2, 1, 0);
++
++/* Digital bypass gain, 0 mutes the bypass */
++static const unsigned int twl4030_dapm_dbypass_tlv[] = {
++	TLV_DB_RANGE_HEAD(2),
++	0, 3, TLV_DB_SCALE_ITEM(-2400, 0, 1),
++	4, 7, TLV_DB_SCALE_ITEM(-1800, 600, 0),
++};
++
++/* Digital bypass left (TX1L -> RX2L) */
++static const struct snd_kcontrol_new twl4030_dapm_dbypassl_control =
++	SOC_DAPM_SINGLE_TLV("Volume",
++			TWL4030_REG_ATX2ARXPGA, 3, 7, 0,
++			twl4030_dapm_dbypass_tlv);
++
++/* Digital bypass right (TX1R -> RX2R) */
++static const struct snd_kcontrol_new twl4030_dapm_dbypassr_control =
++	SOC_DAPM_SINGLE_TLV("Volume",
++			TWL4030_REG_ATX2ARXPGA, 0, 7, 0,
++			twl4030_dapm_dbypass_tlv);
++
+ static int micpath_event(struct snd_soc_dapm_widget *w,
+ 	struct snd_kcontrol *kcontrol, int event)
+ {
+@@ -420,6 +580,79 @@ static int handsfree_event(struct snd_soc_dapm_widget *w,
+ 	return 0;
+ }
+ 
++static int headsetl_event(struct snd_soc_dapm_widget *w,
++		struct snd_kcontrol *kcontrol, int event)
++{
++	unsigned char hs_gain, hs_pop;
++
++	/* Save the current volume */
++	hs_gain = twl4030_read_reg_cache(w->codec, TWL4030_REG_HS_GAIN_SET);
++	hs_pop = twl4030_read_reg_cache(w->codec, TWL4030_REG_HS_POPN_SET);
++
++	switch (event) {
++	case SND_SOC_DAPM_POST_PMU:
++		/* Do the anti-pop/bias ramp enable according to the TRM */
++		hs_pop |= TWL4030_VMID_EN;
++		twl4030_write(w->codec, TWL4030_REG_HS_POPN_SET, hs_pop);
++		/* Is this needed? Can we just use whatever gain here? */
++		twl4030_write(w->codec, TWL4030_REG_HS_GAIN_SET,
++				(hs_gain & (~0x0f)) | 0x0a);
++		hs_pop |= TWL4030_RAMP_EN;
++		twl4030_write(w->codec, TWL4030_REG_HS_POPN_SET, hs_pop);
++
++		/* Restore the original volume */
++		twl4030_write(w->codec, TWL4030_REG_HS_GAIN_SET, hs_gain);
++		break;
++	case SND_SOC_DAPM_POST_PMD:
++		/* Do the anti-pop/bias ramp disable according to the TRM */
++		hs_pop &= ~TWL4030_RAMP_EN;
++		twl4030_write(w->codec, TWL4030_REG_HS_POPN_SET, hs_pop);
++		/* Bypass the reg_cache to mute the headset */
++		twl4030_i2c_write_u8(TWL4030_MODULE_AUDIO_VOICE,
++					hs_gain & (~0x0f),
++					TWL4030_REG_HS_GAIN_SET);
++		hs_pop &= ~TWL4030_VMID_EN;
++		twl4030_write(w->codec, TWL4030_REG_HS_POPN_SET, hs_pop);
++		break;
++	}
++	return 0;
++}
++
++static int bypass_event(struct snd_soc_dapm_widget *w,
++		struct snd_kcontrol *kcontrol, int event)
++{
++	struct soc_mixer_control *m =
++		(struct soc_mixer_control *)w->kcontrols->private_value;
++	struct twl4030_priv *twl4030 = w->codec->private_data;
++	unsigned char reg;
++
++	reg = twl4030_read_reg_cache(w->codec, m->reg);
++
++	if (m->reg <= TWL4030_REG_ARXR2_APGA_CTL) {
++		/* Analog bypass */
++		if (reg & (1 << m->shift))
++			twl4030->bypass_state |=
++				(1 << (m->reg - TWL4030_REG_ARXL1_APGA_CTL));
++		else
++			twl4030->bypass_state &=
++				~(1 << (m->reg - TWL4030_REG_ARXL1_APGA_CTL));
++	} else {
++		/* Digital bypass */
++		if (reg & (0x7 << m->shift))
++			twl4030->bypass_state |= (1 << (m->shift ? 5 : 4));
++		else
++			twl4030->bypass_state &= ~(1 << (m->shift ? 5 : 4));
++	}
++
++	if (w->codec->bias_level == SND_SOC_BIAS_STANDBY) {
++		if (twl4030->bypass_state)
++			twl4030_codec_mute(w->codec, 0);
++		else
++			twl4030_codec_mute(w->codec, 1);
++	}
++	return 0;
++}
++
+ /*
+  * Some of the gain controls in TWL (mostly those which are associated with
+  * the outputs) are implemented in an interesting way:
+@@ -603,6 +836,12 @@ static DECLARE_TLV_DB_SCALE(analog_tlv, -2400, 200, 0);
+ static DECLARE_TLV_DB_SCALE(output_tvl, -1200, 600, 1);
+ 
+ /*
++ * Gain control for earpiece amplifier
++ * 0 dB to 12 dB in 6 dB steps (mute instead of -6)
++ */
++static DECLARE_TLV_DB_SCALE(output_ear_tvl, -600, 600, 1);
++
++/*
+  * Capture gain after the ADCs
+  * from 0 dB to 31 dB in 1 dB steps
+  */
+@@ -614,6 +853,17 @@ static DECLARE_TLV_DB_SCALE(digital_capture_tlv, 0, 100, 0);
+  */
+ static DECLARE_TLV_DB_SCALE(input_gain_tlv, 0, 600, 0);
+ 
++static const char *twl4030_rampdelay_texts[] = {
++	"27/20/14 ms", "55/40/27 ms", "109/81/55 ms", "218/161/109 ms",
++	"437/323/218 ms", "874/645/437 ms", "1748/1291/874 ms",
++	"3495/2581/1748 ms"
++};
++
++static const struct soc_enum twl4030_rampdelay_enum =
++	SOC_ENUM_SINGLE(TWL4030_REG_HS_POPN_SET, 2,
++			ARRAY_SIZE(twl4030_rampdelay_texts),
++			twl4030_rampdelay_texts);
++
+ static const struct snd_kcontrol_new twl4030_snd_controls[] = {
+ 	/* Common playback gain controls */
+ 	SOC_DOUBLE_R_TLV("DAC1 Digital Fine Playback Volume",
+@@ -656,7 +906,7 @@ static const struct snd_kcontrol_new twl4030_snd_controls[] = {
+ 		4, 3, 0, output_tvl),
+ 
+ 	SOC_SINGLE_TLV_TWL4030("Earpiece Playback Volume",
+-		TWL4030_REG_EAR_CTL, 4, 3, 0, output_tvl),
++		TWL4030_REG_EAR_CTL, 4, 3, 0, output_ear_tvl),
+ 
+ 	/* Common capture gain controls */
+ 	SOC_DOUBLE_R_TLV("TX1 Digital Capture Volume",
+@@ -668,23 +918,9 @@ static const struct snd_kcontrol_new twl4030_snd_controls[] = {
+ 
+ 	SOC_DOUBLE_TLV("Analog Capture Volume", TWL4030_REG_ANAMIC_GAIN,
+ 		0, 3, 5, 0, input_gain_tlv),
+-};
+-
+-/* add non dapm controls */
+-static int twl4030_add_controls(struct snd_soc_codec *codec)
+-{
+-	int err, i;
+-
+-	for (i = 0; i < ARRAY_SIZE(twl4030_snd_controls); i++) {
+-		err = snd_ctl_add(codec->card,
+-				  snd_soc_cnew(&twl4030_snd_controls[i],
+-						codec, NULL));
+-		if (err < 0)
+-			return err;
+-	}
+ 
+-	return 0;
+-}
++	SOC_ENUM("HS ramp delay", twl4030_rampdelay_enum),
++};
+ 
+ static const struct snd_soc_dapm_widget twl4030_dapm_widgets[] = {
+ 	/* Left channel inputs */
+@@ -714,13 +950,13 @@ static const struct snd_soc_dapm_widget twl4030_dapm_widgets[] = {
+ 
+ 	/* DACs */
+ 	SND_SOC_DAPM_DAC("DAC Right1", "Right Front Playback",
+-			TWL4030_REG_AVDAC_CTL, 0, 0),
++			SND_SOC_NOPM, 0, 0),
+ 	SND_SOC_DAPM_DAC("DAC Left1", "Left Front Playback",
+-			TWL4030_REG_AVDAC_CTL, 1, 0),
++			SND_SOC_NOPM, 0, 0),
+ 	SND_SOC_DAPM_DAC("DAC Right2", "Right Rear Playback",
+-			TWL4030_REG_AVDAC_CTL, 2, 0),
++			SND_SOC_NOPM, 0, 0),
+ 	SND_SOC_DAPM_DAC("DAC Left2", "Left Rear Playback",
+-			TWL4030_REG_AVDAC_CTL, 3, 0),
++			SND_SOC_NOPM, 0, 0),
+ 
+ 	/* Analog PGAs */
+ 	SND_SOC_DAPM_PGA("ARXR1_APGA", TWL4030_REG_ARXR1_APGA_CTL,
+@@ -732,6 +968,37 @@ static const struct snd_soc_dapm_widget twl4030_dapm_widgets[] = {
+ 	SND_SOC_DAPM_PGA("ARXL2_APGA", TWL4030_REG_ARXL2_APGA_CTL,
+ 			0, 0, NULL, 0),
+ 
++	/* Analog bypasses */
++	SND_SOC_DAPM_SWITCH_E("Right1 Analog Loopback", SND_SOC_NOPM, 0, 0,
++			&twl4030_dapm_abypassr1_control, bypass_event,
++			SND_SOC_DAPM_POST_REG),
++	SND_SOC_DAPM_SWITCH_E("Left1 Analog Loopback", SND_SOC_NOPM, 0, 0,
++			&twl4030_dapm_abypassl1_control,
++			bypass_event, SND_SOC_DAPM_POST_REG),
++	SND_SOC_DAPM_SWITCH_E("Right2 Analog Loopback", SND_SOC_NOPM, 0, 0,
++			&twl4030_dapm_abypassr2_control,
++			bypass_event, SND_SOC_DAPM_POST_REG),
++	SND_SOC_DAPM_SWITCH_E("Left2 Analog Loopback", SND_SOC_NOPM, 0, 0,
++			&twl4030_dapm_abypassl2_control,
++			bypass_event, SND_SOC_DAPM_POST_REG),
++
++	/* Digital bypasses */
++	SND_SOC_DAPM_SWITCH_E("Left Digital Loopback", SND_SOC_NOPM, 0, 0,
++			&twl4030_dapm_dbypassl_control, bypass_event,
++			SND_SOC_DAPM_POST_REG),
++	SND_SOC_DAPM_SWITCH_E("Right Digital Loopback", SND_SOC_NOPM, 0, 0,
++			&twl4030_dapm_dbypassr_control, bypass_event,
++			SND_SOC_DAPM_POST_REG),
++
++	SND_SOC_DAPM_MIXER("Analog R1 Playback Mixer", TWL4030_REG_AVDAC_CTL,
++			0, 0, NULL, 0),
++	SND_SOC_DAPM_MIXER("Analog L1 Playback Mixer", TWL4030_REG_AVDAC_CTL,
++			1, 0, NULL, 0),
++	SND_SOC_DAPM_MIXER("Analog R2 Playback Mixer", TWL4030_REG_AVDAC_CTL,
++			2, 0, NULL, 0),
++	SND_SOC_DAPM_MIXER("Analog L2 Playback Mixer", TWL4030_REG_AVDAC_CTL,
++			3, 0, NULL, 0),
++
+ 	/* Output MUX controls */
+ 	/* Earpiece */
+ 	SND_SOC_DAPM_VALUE_MUX("Earpiece Mux", SND_SOC_NOPM, 0, 0,
+@@ -742,8 +1009,9 @@ static const struct snd_soc_dapm_widget twl4030_dapm_widgets[] = {
+ 	SND_SOC_DAPM_VALUE_MUX("PredriveR Mux", SND_SOC_NOPM, 0, 0,
+ 		&twl4030_dapm_predriver_control),
+ 	/* HeadsetL/R */
+-	SND_SOC_DAPM_MUX("HeadsetL Mux", SND_SOC_NOPM, 0, 0,
+-		&twl4030_dapm_hsol_control),
++	SND_SOC_DAPM_MUX_E("HeadsetL Mux", SND_SOC_NOPM, 0, 0,
++		&twl4030_dapm_hsol_control, headsetl_event,
++		SND_SOC_DAPM_POST_PMU|SND_SOC_DAPM_POST_PMD),
+ 	SND_SOC_DAPM_MUX("HeadsetR Mux", SND_SOC_NOPM, 0, 0,
+ 		&twl4030_dapm_hsor_control),
+ 	/* CarkitL/R */
+@@ -782,16 +1050,16 @@ static const struct snd_soc_dapm_widget twl4030_dapm_widgets[] = {
+ 		SND_SOC_DAPM_POST_PMU|SND_SOC_DAPM_POST_PMD|
+ 		SND_SOC_DAPM_POST_REG),
+ 
+-	/* Analog input muxes with power switch for the physical ADCL/R */
++	/* Analog input muxes with switch for the capture amplifiers */
+ 	SND_SOC_DAPM_VALUE_MUX("Analog Left Capture Route",
+-		TWL4030_REG_AVADC_CTL, 3, 0, &twl4030_dapm_analoglmic_control),
++		TWL4030_REG_ANAMICL, 4, 0, &twl4030_dapm_analoglmic_control),
+ 	SND_SOC_DAPM_VALUE_MUX("Analog Right Capture Route",
+-		TWL4030_REG_AVADC_CTL, 1, 0, &twl4030_dapm_analogrmic_control),
++		TWL4030_REG_ANAMICR, 4, 0, &twl4030_dapm_analogrmic_control),
+ 
+-	SND_SOC_DAPM_PGA("Analog Left Amplifier",
+-		TWL4030_REG_ANAMICL, 4, 0, NULL, 0),
+-	SND_SOC_DAPM_PGA("Analog Right Amplifier",
+-		TWL4030_REG_ANAMICR, 4, 0, NULL, 0),
++	SND_SOC_DAPM_PGA("ADC Physical Left",
++		TWL4030_REG_AVADC_CTL, 3, 0, NULL, 0),
++	SND_SOC_DAPM_PGA("ADC Physical Right",
++		TWL4030_REG_AVADC_CTL, 1, 0, NULL, 0),
+ 
+ 	SND_SOC_DAPM_PGA("Digimic0 Enable",
+ 		TWL4030_REG_ADCMICSEL, 1, 0, NULL, 0),
+@@ -801,13 +1069,19 @@ static const struct snd_soc_dapm_widget twl4030_dapm_widgets[] = {
+ 	SND_SOC_DAPM_MICBIAS("Mic Bias 1", TWL4030_REG_MICBIAS_CTL, 0, 0),
+ 	SND_SOC_DAPM_MICBIAS("Mic Bias 2", TWL4030_REG_MICBIAS_CTL, 1, 0),
+ 	SND_SOC_DAPM_MICBIAS("Headset Mic Bias", TWL4030_REG_MICBIAS_CTL, 2, 0),
++
+ };
+ 
+ static const struct snd_soc_dapm_route intercon[] = {
+-	{"ARXL1_APGA", NULL, "DAC Left1"},
+-	{"ARXR1_APGA", NULL, "DAC Right1"},
+-	{"ARXL2_APGA", NULL, "DAC Left2"},
+-	{"ARXR2_APGA", NULL, "DAC Right2"},
++	{"Analog L1 Playback Mixer", NULL, "DAC Left1"},
++	{"Analog R1 Playback Mixer", NULL, "DAC Right1"},
++	{"Analog L2 Playback Mixer", NULL, "DAC Left2"},
++	{"Analog R2 Playback Mixer", NULL, "DAC Right2"},
++
++	{"ARXL1_APGA", NULL, "Analog L1 Playback Mixer"},
++	{"ARXR1_APGA", NULL, "Analog R1 Playback Mixer"},
++	{"ARXL2_APGA", NULL, "Analog L2 Playback Mixer"},
++	{"ARXR2_APGA", NULL, "Analog R2 Playback Mixer"},
+ 
+ 	/* Internal playback routings */
+ 	/* Earpiece */
+@@ -865,23 +1139,23 @@ static const struct snd_soc_dapm_route intercon[] = {
+ 	{"Analog Right Capture Route", "Sub mic", "SUBMIC"},
+ 	{"Analog Right Capture Route", "AUXR", "AUXR"},
+ 
+-	{"Analog Left Amplifier", NULL, "Analog Left Capture Route"},
+-	{"Analog Right Amplifier", NULL, "Analog Right Capture Route"},
++	{"ADC Physical Left", NULL, "Analog Left Capture Route"},
++	{"ADC Physical Right", NULL, "Analog Right Capture Route"},
+ 
+ 	{"Digimic0 Enable", NULL, "DIGIMIC0"},
+ 	{"Digimic1 Enable", NULL, "DIGIMIC1"},
+ 
+ 	/* TX1 Left capture path */
+-	{"TX1 Capture Route", "Analog", "Analog Left Amplifier"},
++	{"TX1 Capture Route", "Analog", "ADC Physical Left"},
+ 	{"TX1 Capture Route", "Digimic0", "Digimic0 Enable"},
+ 	/* TX1 Right capture path */
+-	{"TX1 Capture Route", "Analog", "Analog Right Amplifier"},
++	{"TX1 Capture Route", "Analog", "ADC Physical Right"},
+ 	{"TX1 Capture Route", "Digimic0", "Digimic0 Enable"},
+ 	/* TX2 Left capture path */
+-	{"TX2 Capture Route", "Analog", "Analog Left Amplifier"},
++	{"TX2 Capture Route", "Analog", "ADC Physical Left"},
+ 	{"TX2 Capture Route", "Digimic1", "Digimic1 Enable"},
+ 	/* TX2 Right capture path */
+-	{"TX2 Capture Route", "Analog", "Analog Right Amplifier"},
++	{"TX2 Capture Route", "Analog", "ADC Physical Right"},
+ 	{"TX2 Capture Route", "Digimic1", "Digimic1 Enable"},
+ 
+ 	{"ADC Virtual Left1", NULL, "TX1 Capture Route"},
+@@ -889,6 +1163,24 @@ static const struct snd_soc_dapm_route intercon[] = {
+ 	{"ADC Virtual Left2", NULL, "TX2 Capture Route"},
+ 	{"ADC Virtual Right2", NULL, "TX2 Capture Route"},
+ 
++	/* Analog bypass routes */
++	{"Right1 Analog Loopback", "Switch", "Analog Right Capture Route"},
++	{"Left1 Analog Loopback", "Switch", "Analog Left Capture Route"},
++	{"Right2 Analog Loopback", "Switch", "Analog Right Capture Route"},
++	{"Left2 Analog Loopback", "Switch", "Analog Left Capture Route"},
++
++	{"Analog R1 Playback Mixer", NULL, "Right1 Analog Loopback"},
++	{"Analog L1 Playback Mixer", NULL, "Left1 Analog Loopback"},
++	{"Analog R2 Playback Mixer", NULL, "Right2 Analog Loopback"},
++	{"Analog L2 Playback Mixer", NULL, "Left2 Analog Loopback"},
++
++	/* Digital bypass routes */
++	{"Right Digital Loopback", "Volume", "TX1 Capture Route"},
++	{"Left Digital Loopback", "Volume", "TX1 Capture Route"},
++
++	{"Analog R2 Playback Mixer", NULL, "Right Digital Loopback"},
++	{"Analog L2 Playback Mixer", NULL, "Left Digital Loopback"},
++
+ };
+ 
+ static int twl4030_add_widgets(struct snd_soc_codec *codec)
+@@ -902,82 +1194,28 @@ static int twl4030_add_widgets(struct snd_soc_codec *codec)
+ 	return 0;
+ }
+ 
+-static void twl4030_power_up(struct snd_soc_codec *codec)
+-{
+-	u8 anamicl, regmisc1, byte, popn;
+-	int i = 0;
+-
+-	/* set CODECPDZ to turn on codec */
+-	twl4030_set_codecpdz(codec);
+-
+-	/* initiate offset cancellation */
+-	anamicl = twl4030_read_reg_cache(codec, TWL4030_REG_ANAMICL);
+-	twl4030_write(codec, TWL4030_REG_ANAMICL,
+-		anamicl | TWL4030_CNCL_OFFSET_START);
+-
+-
+-	/* wait for offset cancellation to complete */
+-	do {
+-		/* this takes a little while, so don't slam i2c */
+-		udelay(2000);
+-		twl4030_i2c_read_u8(TWL4030_MODULE_AUDIO_VOICE, &byte,
+-				    TWL4030_REG_ANAMICL);
+-	} while ((i++ < 100) &&
+-		 ((byte & TWL4030_CNCL_OFFSET_START) ==
+-		  TWL4030_CNCL_OFFSET_START));
+-
+-	/* anti-pop when changing analog gain */
+-	regmisc1 = twl4030_read_reg_cache(codec, TWL4030_REG_MISC_SET_1);
+-	twl4030_write(codec, TWL4030_REG_MISC_SET_1,
+-		regmisc1 | TWL4030_SMOOTH_ANAVOL_EN);
+-
+-	/* toggle CODECPDZ as per TRM */
+-	twl4030_clear_codecpdz(codec);
+-	twl4030_set_codecpdz(codec);
+-
+-	/* program anti-pop with bias ramp delay */
+-	popn = twl4030_read_reg_cache(codec, TWL4030_REG_HS_POPN_SET);
+-	popn &= TWL4030_RAMP_DELAY;
+-	popn |=	TWL4030_RAMP_DELAY_645MS;
+-	twl4030_write(codec, TWL4030_REG_HS_POPN_SET, popn);
+-	popn |=	TWL4030_VMID_EN;
+-	twl4030_write(codec, TWL4030_REG_HS_POPN_SET, popn);
+-
+-	/* enable anti-pop ramp */
+-	popn |= TWL4030_RAMP_EN;
+-	twl4030_write(codec, TWL4030_REG_HS_POPN_SET, popn);
+-}
+-
+-static void twl4030_power_down(struct snd_soc_codec *codec)
+-{
+-	u8 popn;
+-
+-	/* disable anti-pop ramp */
+-	popn = twl4030_read_reg_cache(codec, TWL4030_REG_HS_POPN_SET);
+-	popn &= ~TWL4030_RAMP_EN;
+-	twl4030_write(codec, TWL4030_REG_HS_POPN_SET, popn);
+-
+-	/* disable bias out */
+-	popn &= ~TWL4030_VMID_EN;
+-	twl4030_write(codec, TWL4030_REG_HS_POPN_SET, popn);
+-
+-	/* power down */
+-	twl4030_clear_codecpdz(codec);
+-}
+-
+ static int twl4030_set_bias_level(struct snd_soc_codec *codec,
+ 				  enum snd_soc_bias_level level)
+ {
++	struct twl4030_priv *twl4030 = codec->private_data;
++
+ 	switch (level) {
+ 	case SND_SOC_BIAS_ON:
+-		twl4030_power_up(codec);
++		twl4030_codec_mute(codec, 0);
+ 		break;
+ 	case SND_SOC_BIAS_PREPARE:
+-		/* TODO: develop a twl4030_prepare function */
++		twl4030_power_up(codec);
++		if (twl4030->bypass_state)
++			twl4030_codec_mute(codec, 0);
++		else
++			twl4030_codec_mute(codec, 1);
+ 		break;
+ 	case SND_SOC_BIAS_STANDBY:
+-		/* TODO: develop a twl4030_standby function */
+-		twl4030_power_down(codec);
++		twl4030_power_up(codec);
++		if (twl4030->bypass_state)
++			twl4030_codec_mute(codec, 0);
++		else
++			twl4030_codec_mute(codec, 1);
+ 		break;
+ 	case SND_SOC_BIAS_OFF:
+ 		twl4030_power_down(codec);
+@@ -988,15 +1226,65 @@ static int twl4030_set_bias_level(struct snd_soc_codec *codec,
+ 	return 0;
+ }
+ 
++static int twl4030_startup(struct snd_pcm_substream *substream,
++			   struct snd_soc_dai *dai)
++{
++	struct snd_soc_pcm_runtime *rtd = substream->private_data;
++	struct snd_soc_device *socdev = rtd->socdev;
++	struct snd_soc_codec *codec = socdev->card->codec;
++	struct twl4030_priv *twl4030 = codec->private_data;
++
++	/* If we already have a playback or capture going then constrain
++	 * this substream to match it.
++	 */
++	if (twl4030->master_substream) {
++		struct snd_pcm_runtime *master_runtime;
++		master_runtime = twl4030->master_substream->runtime;
++
++		snd_pcm_hw_constraint_minmax(substream->runtime,
++					     SNDRV_PCM_HW_PARAM_RATE,
++					     master_runtime->rate,
++					     master_runtime->rate);
++
++		snd_pcm_hw_constraint_minmax(substream->runtime,
++					     SNDRV_PCM_HW_PARAM_SAMPLE_BITS,
++					     master_runtime->sample_bits,
++					     master_runtime->sample_bits);
++
++		twl4030->slave_substream = substream;
++	} else
++		twl4030->master_substream = substream;
++
++	return 0;
++}
++
++static void twl4030_shutdown(struct snd_pcm_substream *substream,
++			     struct snd_soc_dai *dai)
++{
++	struct snd_soc_pcm_runtime *rtd = substream->private_data;
++	struct snd_soc_device *socdev = rtd->socdev;
++	struct snd_soc_codec *codec = socdev->card->codec;
++	struct twl4030_priv *twl4030 = codec->private_data;
++
++	if (twl4030->master_substream == substream)
++		twl4030->master_substream = twl4030->slave_substream;
++
++	twl4030->slave_substream = NULL;
++}
++
+ static int twl4030_hw_params(struct snd_pcm_substream *substream,
+ 			   struct snd_pcm_hw_params *params,
+ 			   struct snd_soc_dai *dai)
+ {
+ 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+ 	struct snd_soc_device *socdev = rtd->socdev;
+-	struct snd_soc_codec *codec = socdev->codec;
++	struct snd_soc_codec *codec = socdev->card->codec;
++	struct twl4030_priv *twl4030 = codec->private_data;
+ 	u8 mode, old_mode, format, old_format;
+ 
++	if (substream == twl4030->slave_substream)
++		/* Ignoring hw_params for slave substream */
++		return 0;
+ 
+ 	/* bit rate */
+ 	old_mode = twl4030_read_reg_cache(codec,
+@@ -1031,6 +1319,9 @@ static int twl4030_hw_params(struct snd_pcm_substream *substream,
+ 	case 48000:
+ 		mode |= TWL4030_APLL_RATE_48000;
+ 		break;
++	case 96000:
++		mode |= TWL4030_APLL_RATE_96000;
++		break;
+ 	default:
+ 		printk(KERN_ERR "TWL4030 hw params: unknown rate %d\n",
+ 			params_rate(params));
+@@ -1039,8 +1330,9 @@ static int twl4030_hw_params(struct snd_pcm_substream *substream,
+ 
+ 	if (mode != old_mode) {
+ 		/* change rate and set CODECPDZ */
++		twl4030_codec_enable(codec, 0);
+ 		twl4030_write(codec, TWL4030_REG_CODEC_MODE, mode);
+-		twl4030_set_codecpdz(codec);
++		twl4030_codec_enable(codec, 1);
+ 	}
+ 
+ 	/* sample size */
+@@ -1063,13 +1355,13 @@ static int twl4030_hw_params(struct snd_pcm_substream *substream,
+ 	if (format != old_format) {
+ 
+ 		/* clear CODECPDZ before changing format (codec requirement) */
+-		twl4030_clear_codecpdz(codec);
++		twl4030_codec_enable(codec, 0);
+ 
+ 		/* change format */
+ 		twl4030_write(codec, TWL4030_REG_AUDIO_IF, format);
+ 
+ 		/* set CODECPDZ afterwards */
+-		twl4030_set_codecpdz(codec);
++		twl4030_codec_enable(codec, 1);
+ 	}
+ 	return 0;
+ }
+@@ -1139,13 +1431,13 @@ static int twl4030_set_dai_fmt(struct snd_soc_dai *codec_dai,
+ 	if (format != old_format) {
+ 
+ 		/* clear CODECPDZ before changing format (codec requirement) */
+-		twl4030_clear_codecpdz(codec);
++		twl4030_codec_enable(codec, 0);
+ 
+ 		/* change format */
+ 		twl4030_write(codec, TWL4030_REG_AUDIO_IF, format);
+ 
+ 		/* set CODECPDZ afterwards */
+-		twl4030_set_codecpdz(codec);
++		twl4030_codec_enable(codec, 1);
+ 	}
+ 
+ 	return 0;
+@@ -1154,13 +1446,21 @@ static int twl4030_set_dai_fmt(struct snd_soc_dai *codec_dai,
+ #define TWL4030_RATES	 (SNDRV_PCM_RATE_8000_48000)
+ #define TWL4030_FORMATS	 (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FORMAT_S24_LE)
+ 
++static struct snd_soc_dai_ops twl4030_dai_ops = {
++	.startup	= twl4030_startup,
++	.shutdown	= twl4030_shutdown,
++	.hw_params	= twl4030_hw_params,
++	.set_sysclk	= twl4030_set_dai_sysclk,
++	.set_fmt	= twl4030_set_dai_fmt,
++};
++
+ struct snd_soc_dai twl4030_dai = {
+ 	.name = "twl4030",
+ 	.playback = {
+ 		.stream_name = "Playback",
+ 		.channels_min = 2,
+ 		.channels_max = 2,
+-		.rates = TWL4030_RATES,
++		.rates = TWL4030_RATES | SNDRV_PCM_RATE_96000,
+ 		.formats = TWL4030_FORMATS,},
+ 	.capture = {
+ 		.stream_name = "Capture",
+@@ -1168,18 +1468,14 @@ struct snd_soc_dai twl4030_dai = {
+ 		.channels_max = 2,
+ 		.rates = TWL4030_RATES,
+ 		.formats = TWL4030_FORMATS,},
+-	.ops = {
+-		.hw_params = twl4030_hw_params,
+-		.set_sysclk = twl4030_set_dai_sysclk,
+-		.set_fmt = twl4030_set_dai_fmt,
+-	}
++	.ops = &twl4030_dai_ops,
+ };
+ EXPORT_SYMBOL_GPL(twl4030_dai);
+ 
+ static int twl4030_suspend(struct platform_device *pdev, pm_message_t state)
+ {
+ 	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
+-	struct snd_soc_codec *codec = socdev->codec;
++	struct snd_soc_codec *codec = socdev->card->codec;
+ 
+ 	twl4030_set_bias_level(codec, SND_SOC_BIAS_OFF);
+ 
+@@ -1189,7 +1485,7 @@ static int twl4030_suspend(struct platform_device *pdev, pm_message_t state)
+ static int twl4030_resume(struct platform_device *pdev)
+ {
+ 	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
+-	struct snd_soc_codec *codec = socdev->codec;
++	struct snd_soc_codec *codec = socdev->card->codec;
+ 
+ 	twl4030_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+ 	twl4030_set_bias_level(codec, codec->suspend_bias_level);
+@@ -1203,7 +1499,7 @@ static int twl4030_resume(struct platform_device *pdev)
+ 
+ static int twl4030_init(struct snd_soc_device *socdev)
+ {
+-	struct snd_soc_codec *codec = socdev->codec;
++	struct snd_soc_codec *codec = socdev->card->codec;
+ 	int ret = 0;
+ 
+ 	printk(KERN_INFO "TWL4030 Audio Codec init \n");
+@@ -1233,7 +1529,8 @@ static int twl4030_init(struct snd_soc_device *socdev)
+ 	/* power on device */
+ 	twl4030_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+ 
+-	twl4030_add_controls(codec);
++	snd_soc_add_controls(codec, twl4030_snd_controls,
++				ARRAY_SIZE(twl4030_snd_controls));
+ 	twl4030_add_widgets(codec);
+ 
+ 	ret = snd_soc_init_card(socdev);
+@@ -1258,12 +1555,20 @@ static int twl4030_probe(struct platform_device *pdev)
+ {
+ 	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
+ 	struct snd_soc_codec *codec;
++	struct twl4030_priv *twl4030;
+ 
+ 	codec = kzalloc(sizeof(struct snd_soc_codec), GFP_KERNEL);
+ 	if (codec == NULL)
+ 		return -ENOMEM;
+ 
+-	socdev->codec = codec;
++	twl4030 = kzalloc(sizeof(struct twl4030_priv), GFP_KERNEL);
++	if (twl4030 == NULL) {
++		kfree(codec);
++		return -ENOMEM;
++	}
++
++	codec->private_data = twl4030;
++	socdev->card->codec = codec;
+ 	mutex_init(&codec->mutex);
+ 	INIT_LIST_HEAD(&codec->dapm_widgets);
+ 	INIT_LIST_HEAD(&codec->dapm_paths);
+@@ -1277,11 +1582,13 @@ static int twl4030_probe(struct platform_device *pdev)
+ static int twl4030_remove(struct platform_device *pdev)
+ {
+ 	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
+-	struct snd_soc_codec *codec = socdev->codec;
++	struct snd_soc_codec *codec = socdev->card->codec;
+ 
+ 	printk(KERN_INFO "TWL4030 Audio Codec remove\n");
++	twl4030_set_bias_level(codec, SND_SOC_BIAS_OFF);
+ 	snd_soc_free_pcms(socdev);
+ 	snd_soc_dapm_free(socdev);
++	kfree(codec->private_data);
+ 	kfree(codec);
+ 
+ 	return 0;
+diff --git a/sound/soc/codecs/twl4030.h b/sound/soc/codecs/twl4030.h
+index 442e5a8..cb63765 100644
+--- a/sound/soc/codecs/twl4030.h
++++ b/sound/soc/codecs/twl4030.h
+@@ -109,6 +109,7 @@
+ #define TWL4030_APLL_RATE_32000		0x80
+ #define TWL4030_APLL_RATE_44100		0x90
+ #define TWL4030_APLL_RATE_48000		0xA0
++#define TWL4030_APLL_RATE_96000		0xE0
+ #define TWL4030_SEL_16K			0x04
+ #define TWL4030_CODECPDZ		0x02
+ #define TWL4030_OPT_MODE		0x01
+@@ -170,6 +171,9 @@
+ #define TWL4030_CLK256FS_EN		0x02
+ #define TWL4030_AIF_EN			0x01
+ 
++/* EAR_CTL (0x21) */
++#define TWL4030_EAR_GAIN		0x30
++
+ /* HS_GAIN_SET (0x23) Fields */
+ 
+ #define TWL4030_HSR_GAIN		0x0C
+@@ -198,6 +202,18 @@
+ #define TWL4030_RAMP_DELAY_2581MS	0x1C
+ #define TWL4030_RAMP_EN			0x02
+ 
++/* PREDL_CTL (0x25) */
++#define TWL4030_PREDL_GAIN		0x30
++
++/* PREDR_CTL (0x26) */
++#define TWL4030_PREDR_GAIN		0x30
++
++/* PRECKL_CTL (0x27) */
++#define TWL4030_PRECKL_GAIN		0x30
++
++/* PRECKR_CTL (0x28) */
++#define TWL4030_PRECKR_GAIN		0x30
++
+ /* HFL_CTL (0x29, 0x2A) Fields */
+ #define TWL4030_HF_CTL_HB_EN		0x04
+ #define TWL4030_HF_CTL_LOOP_EN		0x08
+diff --git a/sound/soc/omap/Kconfig b/sound/soc/omap/Kconfig
+index d45c6dc..b771238 100644
+--- a/sound/soc/omap/Kconfig
++++ b/sound/soc/omap/Kconfig
+@@ -8,7 +8,7 @@ config SND_OMAP_SOC_MCBSP
+ 
+ config SND_OMAP_SOC_N810
+ 	tristate "SoC Audio support for Nokia N810"
+-	depends on SND_OMAP_SOC && MACH_NOKIA_N810
++	depends on SND_OMAP_SOC && MACH_NOKIA_N810 && I2C
+ 	select SND_OMAP_SOC_MCBSP
+ 	select OMAP_MUX
+ 	select SND_SOC_TLV320AIC3X
+@@ -17,7 +17,7 @@ config SND_OMAP_SOC_N810
+ 
+ config SND_OMAP_SOC_OSK5912
+ 	tristate "SoC Audio support for omap osk5912"
+-	depends on SND_OMAP_SOC && MACH_OMAP_OSK
++	depends on SND_OMAP_SOC && MACH_OMAP_OSK && I2C
+ 	select SND_OMAP_SOC_MCBSP
+ 	select SND_SOC_TLV320AIC23
+ 	help
+@@ -63,3 +63,13 @@ config SND_OMAP_SOC_OMAP3_PANDORA
+ 	select SND_SOC_TWL4030
+ 	help
+ 	  Say Y if you want to add support for SoC audio on the OMAP3 Pandora.
++
++config SND_OMAP_SOC_OMAP3_BEAGLE
++	tristate "SoC Audio support for OMAP3 Beagle"
++	depends on TWL4030_CORE && SND_OMAP_SOC && MACH_OMAP3_BEAGLE
++	select SND_OMAP_SOC_MCBSP
++	select SND_SOC_TWL4030
++	help
++	  Say Y if you want to add support for SoC audio on the Beagleboard.
++
++
+diff --git a/sound/soc/omap/n810.c b/sound/soc/omap/n810.c
+index 25593fe..91ef179 100644
+--- a/sound/soc/omap/n810.c
++++ b/sound/soc/omap/n810.c
+@@ -3,7 +3,7 @@
+  *
+  * Copyright (C) 2008 Nokia Corporation
+  *
+- * Contact: Jarkko Nikula <jarkko.nikula@nokia.com>
++ * Contact: Jarkko Nikula <jhnikula@gmail.com>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+@@ -40,6 +40,13 @@
+ #define N810_HEADSET_AMP_GPIO	10
+ #define N810_SPEAKER_AMP_GPIO	101
+ 
++enum {
++	N810_JACK_DISABLED,
++	N810_JACK_HP,
++	N810_JACK_HS,
++	N810_JACK_MIC,
++};
++
+ static struct clk *sys_clkout2;
+ static struct clk *sys_clkout2_src;
+ static struct clk *func96m_clk;
+@@ -50,15 +57,32 @@ static int n810_dmic_func;
+ 
+ static void n810_ext_control(struct snd_soc_codec *codec)
+ {
++	int hp = 0, line1l = 0;
++
++	switch (n810_jack_func) {
++	case N810_JACK_HS:
++		line1l = 1;
++	case N810_JACK_HP:
++		hp = 1;
++		break;
++	case N810_JACK_MIC:
++		line1l = 1;
++		break;
++	}
++
+ 	if (n810_spk_func)
+ 		snd_soc_dapm_enable_pin(codec, "Ext Spk");
+ 	else
+ 		snd_soc_dapm_disable_pin(codec, "Ext Spk");
+ 
+-	if (n810_jack_func)
++	if (hp)
+ 		snd_soc_dapm_enable_pin(codec, "Headphone Jack");
+ 	else
+ 		snd_soc_dapm_disable_pin(codec, "Headphone Jack");
++	if (line1l)
++		snd_soc_dapm_enable_pin(codec, "LINE1L");
++	else
++		snd_soc_dapm_disable_pin(codec, "LINE1L");
+ 
+ 	if (n810_dmic_func)
+ 		snd_soc_dapm_enable_pin(codec, "DMic");
+@@ -72,7 +96,7 @@ static int n810_startup(struct snd_pcm_substream *substream)
+ {
+ 	struct snd_pcm_runtime *runtime = substream->runtime;
+ 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+-	struct snd_soc_codec *codec = rtd->socdev->codec;
++	struct snd_soc_codec *codec = rtd->socdev->card->codec;
+ 
+ 	snd_pcm_hw_constraint_minmax(runtime,
+ 				     SNDRV_PCM_HW_PARAM_CHANNELS, 2, 2);
+@@ -229,7 +253,7 @@ static const struct snd_soc_dapm_route audio_map[] = {
+ };
+ 
+ static const char *spk_function[] = {"Off", "On"};
+-static const char *jack_function[] = {"Off", "Headphone"};
++static const char *jack_function[] = {"Off", "Headphone", "Headset", "Mic"};
+ static const char *input_function[] = {"ADC", "Digital Mic"};
+ static const struct soc_enum n810_enum[] = {
+ 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(spk_function), spk_function),
+@@ -248,20 +272,23 @@ static const struct snd_kcontrol_new aic33_n810_controls[] = {
+ 
+ static int n810_aic33_init(struct snd_soc_codec *codec)
+ {
+-	int i, err;
++	int err;
+ 
+ 	/* Not connected */
+ 	snd_soc_dapm_nc_pin(codec, "MONO_LOUT");
+ 	snd_soc_dapm_nc_pin(codec, "HPLCOM");
+ 	snd_soc_dapm_nc_pin(codec, "HPRCOM");
++	snd_soc_dapm_nc_pin(codec, "MIC3L");
++	snd_soc_dapm_nc_pin(codec, "MIC3R");
++	snd_soc_dapm_nc_pin(codec, "LINE1R");
++	snd_soc_dapm_nc_pin(codec, "LINE2L");
++	snd_soc_dapm_nc_pin(codec, "LINE2R");
+ 
+ 	/* Add N810 specific controls */
+-	for (i = 0; i < ARRAY_SIZE(aic33_n810_controls); i++) {
+-		err = snd_ctl_add(codec->card,
+-			snd_soc_cnew(&aic33_n810_controls[i], codec, NULL));
+-		if (err < 0)
+-			return err;
+-	}
++	err = snd_soc_add_controls(codec, aic33_n810_controls,
++				ARRAY_SIZE(aic33_n810_controls));
++	if (err < 0)
++		return err;
+ 
+ 	/* Add N810 specific widgets */
+ 	snd_soc_dapm_new_controls(codec, aic33_dapm_widgets,
+@@ -390,6 +417,6 @@ static void __exit n810_soc_exit(void)
+ module_init(n810_soc_init);
+ module_exit(n810_soc_exit);
+ 
+-MODULE_AUTHOR("Jarkko Nikula <jarkko.nikula@nokia.com>");
++MODULE_AUTHOR("Jarkko Nikula <jhnikula@gmail.com>");
+ MODULE_DESCRIPTION("ALSA SoC Nokia N810");
+ MODULE_LICENSE("GPL");
+diff --git a/sound/soc/omap/omap-mcbsp.c b/sound/soc/omap/omap-mcbsp.c
+index 05dd5ab..9126142 100644
+--- a/sound/soc/omap/omap-mcbsp.c
++++ b/sound/soc/omap/omap-mcbsp.c
+@@ -3,7 +3,8 @@
+  *
+  * Copyright (C) 2008 Nokia Corporation
+  *
+- * Contact: Jarkko Nikula <jarkko.nikula@nokia.com>
++ * Contact: Jarkko Nikula <jhnikula@gmail.com>
++ *          Peter Ujfalusi <peter.ujfalusi@nokia.com>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+@@ -146,6 +147,17 @@ static int omap_mcbsp_dai_startup(struct snd_pcm_substream *substream,
+ 	struct omap_mcbsp_data *mcbsp_data = to_mcbsp(cpu_dai->private_data);
+ 	int err = 0;
+ 
++	if (cpu_is_omap343x() && mcbsp_data->bus_id == 1) {
++		/*
++		 * McBSP2 in OMAP3 has 1024 * 32-bit internal audio buffer.
++		 * Set constraint for minimum buffer size to the same than FIFO
++		 * size in order to avoid underruns in playback startup because
++		 * HW is keeping the DMA request active until FIFO is filled.
++		 */
++		snd_pcm_hw_constraint_minmax(substream->runtime,
++			SNDRV_PCM_HW_PARAM_BUFFER_BYTES, 4096, UINT_MAX);
++	}
++
+ 	if (!cpu_dai->active)
+ 		err = omap_mcbsp_request(mcbsp_data->bus_id);
+ 
+@@ -272,7 +284,7 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
+ 		break;
+ 	case SND_SOC_DAIFMT_DSP_B:
+ 		regs->srgr2	|= FPER(wlen * channels - 1);
+-		regs->srgr1	|= FWID(wlen * channels - 2);
++		regs->srgr1	|= FWID(0);
+ 		break;
+ 	}
+ 
+@@ -291,6 +303,7 @@ static int omap_mcbsp_dai_set_dai_fmt(struct snd_soc_dai *cpu_dai,
+ {
+ 	struct omap_mcbsp_data *mcbsp_data = to_mcbsp(cpu_dai->private_data);
+ 	struct omap_mcbsp_reg_cfg *regs = &mcbsp_data->regs;
++	unsigned int temp_fmt = fmt;
+ 
+ 	if (mcbsp_data->configured)
+ 		return 0;
+@@ -317,6 +330,8 @@ static int omap_mcbsp_dai_set_dai_fmt(struct snd_soc_dai *cpu_dai,
+ 		/* 0-bit data delay */
+ 		regs->rcr2      |= RDATDLY(0);
+ 		regs->xcr2      |= XDATDLY(0);
++		/* Invert FS polarity configuration */
++		temp_fmt ^= SND_SOC_DAIFMT_NB_IF;
+ 		break;
+ 	default:
+ 		/* Unsupported data format */
+@@ -340,7 +355,7 @@ static int omap_mcbsp_dai_set_dai_fmt(struct snd_soc_dai *cpu_dai,
+ 	}
+ 
+ 	/* Set bit clock (CLKX/CLKR) and FS polarities */
+-	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
++	switch (temp_fmt & SND_SOC_DAIFMT_INV_MASK) {
+ 	case SND_SOC_DAIFMT_NB_NF:
+ 		/*
+ 		 * Normal BCLK + FS.
+@@ -461,6 +476,16 @@ static int omap_mcbsp_dai_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
+ 	return err;
+ }
+ 
++static struct snd_soc_dai_ops omap_mcbsp_dai_ops = {
++	.startup	= omap_mcbsp_dai_startup,
++	.shutdown	= omap_mcbsp_dai_shutdown,
++	.trigger	= omap_mcbsp_dai_trigger,
++	.hw_params	= omap_mcbsp_dai_hw_params,
++	.set_fmt	= omap_mcbsp_dai_set_dai_fmt,
++	.set_clkdiv	= omap_mcbsp_dai_set_clkdiv,
++	.set_sysclk	= omap_mcbsp_dai_set_dai_sysclk,
++};
++
+ #define OMAP_MCBSP_DAI_BUILDER(link_id)				\
+ {								\
+ 	.name = "omap-mcbsp-dai-"#link_id,			\
+@@ -477,15 +502,7 @@ static int omap_mcbsp_dai_set_dai_sysclk(struct snd_soc_dai *cpu_dai,
+ 		.rates = OMAP_MCBSP_RATES,			\
+ 		.formats = SNDRV_PCM_FMTBIT_S16_LE,		\
+ 	},							\
+-	.ops = {						\
+-		.startup = omap_mcbsp_dai_startup,		\
+-		.shutdown = omap_mcbsp_dai_shutdown,		\
+-		.trigger = omap_mcbsp_dai_trigger,		\
+-		.hw_params = omap_mcbsp_dai_hw_params,		\
+-		.set_fmt = omap_mcbsp_dai_set_dai_fmt,		\
+-		.set_clkdiv = omap_mcbsp_dai_set_clkdiv,	\
+-		.set_sysclk = omap_mcbsp_dai_set_dai_sysclk,	\
+-	},							\
++	.ops = &omap_mcbsp_dai_ops,				\
+ 	.private_data = &mcbsp_data[(link_id)].bus_id,		\
+ }
+ 
+@@ -516,6 +533,6 @@ static void __exit snd_omap_mcbsp_exit(void)
+ }
+ module_exit(snd_omap_mcbsp_exit);
+ 
+-MODULE_AUTHOR("Jarkko Nikula <jarkko.nikula@nokia.com>");
++MODULE_AUTHOR("Jarkko Nikula <jhnikula@gmail.com>");
+ MODULE_DESCRIPTION("OMAP I2S SoC Interface");
+ MODULE_LICENSE("GPL");
+diff --git a/sound/soc/omap/omap-mcbsp.h b/sound/soc/omap/omap-mcbsp.h
+index df7ad13..c8147aa 100644
+--- a/sound/soc/omap/omap-mcbsp.h
++++ b/sound/soc/omap/omap-mcbsp.h
+@@ -3,7 +3,8 @@
+  *
+  * Copyright (C) 2008 Nokia Corporation
+  *
+- * Contact: Jarkko Nikula <jarkko.nikula@nokia.com>
++ * Contact: Jarkko Nikula <jhnikula@gmail.com>
++ *          Peter Ujfalusi <peter.ujfalusi@nokia.com>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+diff --git a/sound/soc/omap/omap-pcm.c b/sound/soc/omap/omap-pcm.c
+index f3d2c19..07cf7f4 100644
+--- a/sound/soc/omap/omap-pcm.c
++++ b/sound/soc/omap/omap-pcm.c
+@@ -3,7 +3,8 @@
+  *
+  * Copyright (C) 2008 Nokia Corporation
+  *
+- * Contact: Jarkko Nikula <jarkko.nikula@nokia.com>
++ * Contact: Jarkko Nikula <jhnikula@gmail.com>
++ *          Peter Ujfalusi <peter.ujfalusi@nokia.com>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+@@ -28,7 +29,6 @@
+ #include <sound/soc.h>
+ 
+ #include <mach/dma.h>
+-#include <mach/pm.h>
+ #include "omap-pcm.h"
+ 
+ static const struct snd_pcm_hardware omap_pcm_hardware = {
+@@ -176,15 +176,15 @@ static int omap_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+ {
+ 	struct snd_pcm_runtime *runtime = substream->runtime;
+ 	struct omap_runtime_data *prtd = runtime->private_data;
++	unsigned long flags;
+ 	int ret = 0;
+ 
+-	spin_lock_irq(&prtd->lock);
++	spin_lock_irqsave(&prtd->lock, flags);
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+ 	case SNDRV_PCM_TRIGGER_RESUME:
+ 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+ 		prtd->period_index = 0;
+-		omap2_block_sleep();
+ 		omap_start_dma(prtd->dma_ch);
+ 		break;
+ 
+@@ -193,12 +193,11 @@ static int omap_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+ 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+ 		prtd->period_index = -1;
+ 		omap_stop_dma(prtd->dma_ch);
+-		omap2_allow_sleep();
+ 		break;
+ 	default:
+ 		ret = -EINVAL;
+ 	}
+-	spin_unlock_irq(&prtd->lock);
++	spin_unlock_irqrestore(&prtd->lock, flags);
+ 
+ 	return ret;
+ }
+@@ -267,7 +266,7 @@ static int omap_pcm_mmap(struct snd_pcm_substream *substream,
+ 				     runtime->dma_bytes);
+ }
+ 
+-struct snd_pcm_ops omap_pcm_ops = {
++static struct snd_pcm_ops omap_pcm_ops = {
+ 	.open		= omap_pcm_open,
+ 	.close		= omap_pcm_close,
+ 	.ioctl		= snd_pcm_lib_ioctl,
+@@ -329,7 +328,7 @@ int omap_pcm_new(struct snd_card *card, struct snd_soc_dai *dai,
+ 	if (!card->dev->dma_mask)
+ 		card->dev->dma_mask = &omap_pcm_dmamask;
+ 	if (!card->dev->coherent_dma_mask)
+-		card->dev->coherent_dma_mask = DMA_32BIT_MASK;
++		card->dev->coherent_dma_mask = DMA_BIT_MASK(32);
+ 
+ 	if (dai->playback.channels_min) {
+ 		ret = omap_pcm_preallocate_dma_buffer(pcm,
+@@ -369,6 +368,6 @@ static void __exit omap_soc_platform_exit(void)
+ }
+ module_exit(omap_soc_platform_exit);
+ 
+-MODULE_AUTHOR("Jarkko Nikula <jarkko.nikula@nokia.com>");
++MODULE_AUTHOR("Jarkko Nikula <jhnikula@gmail.com>");
+ MODULE_DESCRIPTION("OMAP PCM DMA module");
+ MODULE_LICENSE("GPL");
+diff --git a/sound/soc/omap/omap-pcm.h b/sound/soc/omap/omap-pcm.h
+index e4369bd..8d9d269 100644
+--- a/sound/soc/omap/omap-pcm.h
++++ b/sound/soc/omap/omap-pcm.h
+@@ -3,7 +3,8 @@
+  *
+  * Copyright (C) 2008 Nokia Corporation
+  *
+- * Contact: Jarkko Nikula <jarkko.nikula@nokia.com>
++ * Contact: Jarkko Nikula <jhnikula@gmail.com>
++ *          Peter Ujfalusi <peter.ujfalusi@nokia.com>
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+diff --git a/sound/soc/omap/omap3pandora.c b/sound/soc/omap/omap3pandora.c
+index fcc2f5d..fe282d4 100644
+--- a/sound/soc/omap/omap3pandora.c
++++ b/sound/soc/omap/omap3pandora.c
+@@ -143,7 +143,7 @@ static const struct snd_soc_dapm_widget omap3pandora_out_dapm_widgets[] = {
+ };
+ 
+ static const struct snd_soc_dapm_widget omap3pandora_in_dapm_widgets[] = {
+-	SND_SOC_DAPM_MIC("Mic (Internal)", NULL),
++	SND_SOC_DAPM_MIC("Mic (internal)", NULL),
+ 	SND_SOC_DAPM_MIC("Mic (external)", NULL),
+ 	SND_SOC_DAPM_LINE("Line In", NULL),
+ };
+@@ -155,16 +155,33 @@ static const struct snd_soc_dapm_route omap3pandora_out_map[] = {
+ };
+ 
+ static const struct snd_soc_dapm_route omap3pandora_in_map[] = {
+-	{"INL", NULL, "Line In"},
+-	{"INR", NULL, "Line In"},
+-	{"INL", NULL, "Mic (Internal)"},
+-	{"INR", NULL, "Mic (external)"},
++	{"AUXL", NULL, "Line In"},
++	{"AUXR", NULL, "Line In"},
++
++	{"MAINMIC", NULL, "Mic Bias 1"},
++	{"Mic Bias 1", NULL, "Mic (internal)"},
++
++	{"SUBMIC", NULL, "Mic Bias 2"},
++	{"Mic Bias 2", NULL, "Mic (external)"},
+ };
+ 
+ static int omap3pandora_out_init(struct snd_soc_codec *codec)
+ {
+ 	int ret;
+ 
++	/* All TWL4030 output pins are floating */
++	snd_soc_dapm_nc_pin(codec, "OUTL");
++	snd_soc_dapm_nc_pin(codec, "OUTR");
++	snd_soc_dapm_nc_pin(codec, "EARPIECE");
++	snd_soc_dapm_nc_pin(codec, "PREDRIVEL");
++	snd_soc_dapm_nc_pin(codec, "PREDRIVER");
++	snd_soc_dapm_nc_pin(codec, "HSOL");
++	snd_soc_dapm_nc_pin(codec, "HSOR");
++	snd_soc_dapm_nc_pin(codec, "CARKITL");
++	snd_soc_dapm_nc_pin(codec, "CARKITR");
++	snd_soc_dapm_nc_pin(codec, "HFL");
++	snd_soc_dapm_nc_pin(codec, "HFR");
++
+ 	ret = snd_soc_dapm_new_controls(codec, omap3pandora_out_dapm_widgets,
+ 				ARRAY_SIZE(omap3pandora_out_dapm_widgets));
+ 	if (ret < 0)
+@@ -180,18 +197,11 @@ static int omap3pandora_in_init(struct snd_soc_codec *codec)
+ {
+ 	int ret;
+ 
+-	/* All TWL4030 output pins are floating */
+-	snd_soc_dapm_nc_pin(codec, "OUTL"),
+-	snd_soc_dapm_nc_pin(codec, "OUTR"),
+-	snd_soc_dapm_nc_pin(codec, "EARPIECE"),
+-	snd_soc_dapm_nc_pin(codec, "PREDRIVEL"),
+-	snd_soc_dapm_nc_pin(codec, "PREDRIVER"),
+-	snd_soc_dapm_nc_pin(codec, "HSOL"),
+-	snd_soc_dapm_nc_pin(codec, "HSOR"),
+-	snd_soc_dapm_nc_pin(codec, "CARKITL"),
+-	snd_soc_dapm_nc_pin(codec, "CARKITR"),
+-	snd_soc_dapm_nc_pin(codec, "HFL"),
+-	snd_soc_dapm_nc_pin(codec, "HFR"),
++	/* Not comnnected */
++	snd_soc_dapm_nc_pin(codec, "HSMIC");
++	snd_soc_dapm_nc_pin(codec, "CARKITMIC");
++	snd_soc_dapm_nc_pin(codec, "DIGIMIC0");
++	snd_soc_dapm_nc_pin(codec, "DIGIMIC1");
+ 
+ 	ret = snd_soc_dapm_new_controls(codec, omap3pandora_in_dapm_widgets,
+ 				ARRAY_SIZE(omap3pandora_in_dapm_widgets));
+@@ -251,10 +261,9 @@ static int __init omap3pandora_soc_init(void)
+ {
+ 	int ret;
+ 
+-	if (!machine_is_omap3_pandora()) {
+-		pr_debug(PREFIX "Not OMAP3 Pandora\n");
++	if (!machine_is_omap3_pandora())
+ 		return -ENODEV;
+-	}
++
+ 	pr_info("OMAP3 Pandora SoC init\n");
+ 
+ 	ret = gpio_request(OMAP3_PANDORA_DAC_POWER_GPIO, "dac_power");
+diff --git a/sound/soc/omap/osk5912.c b/sound/soc/omap/osk5912.c
+index cd41a94..a4e149b 100644
+--- a/sound/soc/omap/osk5912.c
++++ b/sound/soc/omap/osk5912.c
+@@ -62,7 +62,7 @@ static int osk_hw_params(struct snd_pcm_substream *substream,
+ 	/* Set codec DAI configuration */
+ 	err = snd_soc_dai_set_fmt(codec_dai,
+ 				  SND_SOC_DAIFMT_DSP_B |
+-				  SND_SOC_DAIFMT_NB_IF |
++				  SND_SOC_DAIFMT_NB_NF |
+ 				  SND_SOC_DAIFMT_CBM_CFM);
+ 	if (err < 0) {
+ 		printk(KERN_ERR "can't set codec DAI configuration\n");
+@@ -72,7 +72,7 @@ static int osk_hw_params(struct snd_pcm_substream *substream,
+ 	/* Set cpu DAI configuration */
+ 	err = snd_soc_dai_set_fmt(cpu_dai,
+ 				  SND_SOC_DAIFMT_DSP_B |
+-				  SND_SOC_DAIFMT_NB_IF |
++				  SND_SOC_DAIFMT_NB_NF |
+ 				  SND_SOC_DAIFMT_CBM_CFM);
+ 	if (err < 0) {
+ 		printk(KERN_ERR "can't set cpu DAI configuration\n");
+@@ -186,13 +186,6 @@ static int __init osk_soc_init(void)
+ 		return -ENODEV;
+ 	}
+ 
+-	if (clk_get_usecount(tlv320aic23_mclk) > 0) {
+-		/* MCLK is already in use */
+-		printk(KERN_WARNING
+-		       "MCLK in use at %d Hz. We change it to %d Hz\n",
+-		       (uint) clk_get_rate(tlv320aic23_mclk), CODEC_CLOCK);
+-	}
+-
+ 	/*
+ 	 * Configure 12 MHz output on MCLK.
+ 	 */
+@@ -205,9 +198,8 @@ static int __init osk_soc_init(void)
+ 		}
+ 	}
+ 
+-	printk(KERN_INFO "MCLK = %d [%d], usecount = %d\n",
+-	       (uint) clk_get_rate(tlv320aic23_mclk), CODEC_CLOCK,
+-	       clk_get_usecount(tlv320aic23_mclk));
++	printk(KERN_INFO "MCLK = %d [%d]\n",
++	       (uint) clk_get_rate(tlv320aic23_mclk), CODEC_CLOCK);
+ 
+ 	return 0;
+ err1:
+diff --git a/sound/soc/omap/sdp3430.c b/sound/soc/omap/sdp3430.c
+index ad97836..10f1c86 100644
+--- a/sound/soc/omap/sdp3430.c
++++ b/sound/soc/omap/sdp3430.c
+@@ -28,6 +28,7 @@
+ #include <sound/pcm.h>
+ #include <sound/soc.h>
+ #include <sound/soc-dapm.h>
++#include <sound/jack.h>
+ 
+ #include <asm/mach-types.h>
+ #include <mach/hardware.h>
+@@ -38,6 +39,8 @@
+ #include "omap-pcm.h"
+ #include "../codecs/twl4030.h"
+ 
++static struct snd_soc_card snd_soc_sdp3430;
++
+ static int sdp3430_hw_params(struct snd_pcm_substream *substream,
+ 	struct snd_pcm_hw_params *params)
+ {
+@@ -81,17 +84,126 @@ static struct snd_soc_ops sdp3430_ops = {
+ 	.hw_params = sdp3430_hw_params,
+ };
+ 
++/* Headset jack */
++static struct snd_soc_jack hs_jack;
++
++/* Headset jack detection DAPM pins */
++static struct snd_soc_jack_pin hs_jack_pins[] = {
++	{
++		.pin = "Headset Mic",
++		.mask = SND_JACK_MICROPHONE,
++	},
++	{
++		.pin = "Headset Stereophone",
++		.mask = SND_JACK_HEADPHONE,
++	},
++};
++
++/* Headset jack detection gpios */
++static struct snd_soc_jack_gpio hs_jack_gpios[] = {
++	{
++		.gpio = (OMAP_MAX_GPIO_LINES + 2),
++		.name = "hsdet-gpio",
++		.report = SND_JACK_HEADSET,
++		.debounce_time = 200,
++	},
++};
++
++/* SDP3430 machine DAPM */
++static const struct snd_soc_dapm_widget sdp3430_twl4030_dapm_widgets[] = {
++	SND_SOC_DAPM_MIC("Ext Mic", NULL),
++	SND_SOC_DAPM_SPK("Ext Spk", NULL),
++	SND_SOC_DAPM_MIC("Headset Mic", NULL),
++	SND_SOC_DAPM_HP("Headset Stereophone", NULL),
++};
++
++static const struct snd_soc_dapm_route audio_map[] = {
++	/* External Mics: MAINMIC, SUBMIC with bias*/
++	{"MAINMIC", NULL, "Mic Bias 1"},
++	{"SUBMIC", NULL, "Mic Bias 2"},
++	{"Mic Bias 1", NULL, "Ext Mic"},
++	{"Mic Bias 2", NULL, "Ext Mic"},
++
++	/* External Speakers: HFL, HFR */
++	{"Ext Spk", NULL, "HFL"},
++	{"Ext Spk", NULL, "HFR"},
++
++	/* Headset Mic: HSMIC with bias */
++	{"HSMIC", NULL, "Headset Mic Bias"},
++	{"Headset Mic Bias", NULL, "Headset Mic"},
++
++	/* Headset Stereophone (Headphone): HSOL, HSOR */
++	{"Headset Stereophone", NULL, "HSOL"},
++	{"Headset Stereophone", NULL, "HSOR"},
++};
++
++static int sdp3430_twl4030_init(struct snd_soc_codec *codec)
++{
++	int ret;
++
++	/* Add SDP3430 specific widgets */
++	ret = snd_soc_dapm_new_controls(codec, sdp3430_twl4030_dapm_widgets,
++				ARRAY_SIZE(sdp3430_twl4030_dapm_widgets));
++	if (ret)
++		return ret;
++
++	/* Set up SDP3430 specific audio path audio_map */
++	snd_soc_dapm_add_routes(codec, audio_map, ARRAY_SIZE(audio_map));
++
++	/* SDP3430 connected pins */
++	snd_soc_dapm_enable_pin(codec, "Ext Mic");
++	snd_soc_dapm_enable_pin(codec, "Ext Spk");
++	snd_soc_dapm_disable_pin(codec, "Headset Mic");
++	snd_soc_dapm_disable_pin(codec, "Headset Stereophone");
++
++	/* TWL4030 not connected pins */
++	snd_soc_dapm_nc_pin(codec, "AUXL");
++	snd_soc_dapm_nc_pin(codec, "AUXR");
++	snd_soc_dapm_nc_pin(codec, "CARKITMIC");
++	snd_soc_dapm_nc_pin(codec, "DIGIMIC0");
++	snd_soc_dapm_nc_pin(codec, "DIGIMIC1");
++
++	snd_soc_dapm_nc_pin(codec, "OUTL");
++	snd_soc_dapm_nc_pin(codec, "OUTR");
++	snd_soc_dapm_nc_pin(codec, "EARPIECE");
++	snd_soc_dapm_nc_pin(codec, "PREDRIVEL");
++	snd_soc_dapm_nc_pin(codec, "PREDRIVER");
++	snd_soc_dapm_nc_pin(codec, "CARKITL");
++	snd_soc_dapm_nc_pin(codec, "CARKITR");
++
++	ret = snd_soc_dapm_sync(codec);
++	if (ret)
++		return ret;
++
++	/* Headset jack detection */
++	ret = snd_soc_jack_new(&snd_soc_sdp3430, "Headset Jack",
++				SND_JACK_HEADSET, &hs_jack);
++	if (ret)
++		return ret;
++
++	ret = snd_soc_jack_add_pins(&hs_jack, ARRAY_SIZE(hs_jack_pins),
++				hs_jack_pins);
++	if (ret)
++		return ret;
++
++	ret = snd_soc_jack_add_gpios(&hs_jack, ARRAY_SIZE(hs_jack_gpios),
++				hs_jack_gpios);
++
++	return ret;
++}
++
+ /* Digital audio interface glue - connects codec <--> CPU */
+ static struct snd_soc_dai_link sdp3430_dai = {
+ 	.name = "TWL4030",
+ 	.stream_name = "TWL4030",
+ 	.cpu_dai = &omap_mcbsp_dai[0],
+ 	.codec_dai = &twl4030_dai,
++	.init = sdp3430_twl4030_init,
+ 	.ops = &sdp3430_ops,
+ };
+ 
+ /* Audio machine driver */
+-static struct snd_soc_machine snd_soc_machine_sdp3430 = {
++static struct snd_soc_card snd_soc_sdp3430 = {
+ 	.name = "SDP3430",
+ 	.platform = &omap_soc_platform,
+ 	.dai_link = &sdp3430_dai,
+@@ -100,7 +212,7 @@ static struct snd_soc_machine snd_soc_machine_sdp3430 = {
+ 
+ /* Audio subsystem */
+ static struct snd_soc_device sdp3430_snd_devdata = {
+-	.machine = &snd_soc_machine_sdp3430,
++	.card = &snd_soc_sdp3430,
+ 	.codec_dev = &soc_codec_dev_twl4030,
+ };
+ 
+@@ -142,6 +254,9 @@ module_init(sdp3430_soc_init);
+ 
+ static void __exit sdp3430_soc_exit(void)
+ {
++	snd_soc_jack_free_gpios(&hs_jack, ARRAY_SIZE(hs_jack_gpios),
++				hs_jack_gpios);
++
+ 	platform_device_unregister(sdp3430_snd_device);
+ }
+ module_exit(sdp3430_soc_exit);
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 55fdb4a..99712f6 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -98,7 +98,7 @@ static int soc_ac97_dev_register(struct snd_soc_codec *codec)
+ 	int err;
+ 
+ 	codec->ac97->dev.bus = &ac97_bus_type;
+-	codec->ac97->dev.parent = NULL;
++	codec->ac97->dev.parent = codec->card->dev;
+ 	codec->ac97->dev.release = soc_ac97_device_release;
+ 
+ 	dev_set_name(&codec->ac97->dev, "%d-%d:%s",
+@@ -133,8 +133,8 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
+ 	mutex_lock(&pcm_mutex);
+ 
+ 	/* startup the audio subsystem */
+-	if (cpu_dai->ops.startup) {
+-		ret = cpu_dai->ops.startup(substream, cpu_dai);
++	if (cpu_dai->ops->startup) {
++		ret = cpu_dai->ops->startup(substream, cpu_dai);
+ 		if (ret < 0) {
+ 			printk(KERN_ERR "asoc: can't open interface %s\n",
+ 				cpu_dai->name);
+@@ -150,8 +150,8 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
+ 		}
+ 	}
+ 
+-	if (codec_dai->ops.startup) {
+-		ret = codec_dai->ops.startup(substream, codec_dai);
++	if (codec_dai->ops->startup) {
++		ret = codec_dai->ops->startup(substream, codec_dai);
+ 		if (ret < 0) {
+ 			printk(KERN_ERR "asoc: can't open codec %s\n",
+ 				codec_dai->name);
+@@ -234,7 +234,7 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
+ 		cpu_dai->capture.active = codec_dai->capture.active = 1;
+ 	cpu_dai->active = codec_dai->active = 1;
+ 	cpu_dai->runtime = runtime;
+-	socdev->codec->active++;
++	card->codec->active++;
+ 	mutex_unlock(&pcm_mutex);
+ 	return 0;
+ 
+@@ -247,8 +247,8 @@ codec_dai_err:
+ 		platform->pcm_ops->close(substream);
+ 
+ platform_err:
+-	if (cpu_dai->ops.shutdown)
+-		cpu_dai->ops.shutdown(substream, cpu_dai);
++	if (cpu_dai->ops->shutdown)
++		cpu_dai->ops->shutdown(substream, cpu_dai);
+ out:
+ 	mutex_unlock(&pcm_mutex);
+ 	return ret;
+@@ -264,7 +264,7 @@ static void close_delayed_work(struct work_struct *work)
+ 	struct snd_soc_card *card = container_of(work, struct snd_soc_card,
+ 						 delayed_work.work);
+ 	struct snd_soc_device *socdev = card->socdev;
+-	struct snd_soc_codec *codec = socdev->codec;
++	struct snd_soc_codec *codec = card->codec;
+ 	struct snd_soc_dai *codec_dai;
+ 	int i;
+ 
+@@ -319,7 +319,7 @@ static int soc_codec_close(struct snd_pcm_substream *substream)
+ 	struct snd_soc_platform *platform = card->platform;
+ 	struct snd_soc_dai *cpu_dai = machine->cpu_dai;
+ 	struct snd_soc_dai *codec_dai = machine->codec_dai;
+-	struct snd_soc_codec *codec = socdev->codec;
++	struct snd_soc_codec *codec = card->codec;
+ 
+ 	mutex_lock(&pcm_mutex);
+ 
+@@ -340,11 +340,11 @@ static int soc_codec_close(struct snd_pcm_substream *substream)
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+ 		snd_soc_dai_digital_mute(codec_dai, 1);
+ 
+-	if (cpu_dai->ops.shutdown)
+-		cpu_dai->ops.shutdown(substream, cpu_dai);
++	if (cpu_dai->ops->shutdown)
++		cpu_dai->ops->shutdown(substream, cpu_dai);
+ 
+-	if (codec_dai->ops.shutdown)
+-		codec_dai->ops.shutdown(substream, codec_dai);
++	if (codec_dai->ops->shutdown)
++		codec_dai->ops->shutdown(substream, codec_dai);
+ 
+ 	if (machine->ops && machine->ops->shutdown)
+ 		machine->ops->shutdown(substream);
+@@ -387,7 +387,7 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
+ 	struct snd_soc_platform *platform = card->platform;
+ 	struct snd_soc_dai *cpu_dai = machine->cpu_dai;
+ 	struct snd_soc_dai *codec_dai = machine->codec_dai;
+-	struct snd_soc_codec *codec = socdev->codec;
++	struct snd_soc_codec *codec = card->codec;
+ 	int ret = 0;
+ 
+ 	mutex_lock(&pcm_mutex);
+@@ -408,16 +408,16 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
+ 		}
+ 	}
+ 
+-	if (codec_dai->ops.prepare) {
+-		ret = codec_dai->ops.prepare(substream, codec_dai);
++	if (codec_dai->ops->prepare) {
++		ret = codec_dai->ops->prepare(substream, codec_dai);
+ 		if (ret < 0) {
+ 			printk(KERN_ERR "asoc: codec DAI prepare error\n");
+ 			goto out;
+ 		}
+ 	}
+ 
+-	if (cpu_dai->ops.prepare) {
+-		ret = cpu_dai->ops.prepare(substream, cpu_dai);
++	if (cpu_dai->ops->prepare) {
++		ret = cpu_dai->ops->prepare(substream, cpu_dai);
+ 		if (ret < 0) {
+ 			printk(KERN_ERR "asoc: cpu DAI prepare error\n");
+ 			goto out;
+@@ -494,8 +494,8 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
+ 		}
+ 	}
+ 
+-	if (codec_dai->ops.hw_params) {
+-		ret = codec_dai->ops.hw_params(substream, params, codec_dai);
++	if (codec_dai->ops->hw_params) {
++		ret = codec_dai->ops->hw_params(substream, params, codec_dai);
+ 		if (ret < 0) {
+ 			printk(KERN_ERR "asoc: can't set codec %s hw params\n",
+ 				codec_dai->name);
+@@ -503,8 +503,8 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
+ 		}
+ 	}
+ 
+-	if (cpu_dai->ops.hw_params) {
+-		ret = cpu_dai->ops.hw_params(substream, params, cpu_dai);
++	if (cpu_dai->ops->hw_params) {
++		ret = cpu_dai->ops->hw_params(substream, params, cpu_dai);
+ 		if (ret < 0) {
+ 			printk(KERN_ERR "asoc: interface %s hw params failed\n",
+ 				cpu_dai->name);
+@@ -526,12 +526,12 @@ out:
+ 	return ret;
+ 
+ platform_err:
+-	if (cpu_dai->ops.hw_free)
+-		cpu_dai->ops.hw_free(substream, cpu_dai);
++	if (cpu_dai->ops->hw_free)
++		cpu_dai->ops->hw_free(substream, cpu_dai);
+ 
+ interface_err:
+-	if (codec_dai->ops.hw_free)
+-		codec_dai->ops.hw_free(substream, codec_dai);
++	if (codec_dai->ops->hw_free)
++		codec_dai->ops->hw_free(substream, codec_dai);
+ 
+ codec_err:
+ 	if (machine->ops && machine->ops->hw_free)
+@@ -553,7 +553,7 @@ static int soc_pcm_hw_free(struct snd_pcm_substream *substream)
+ 	struct snd_soc_platform *platform = card->platform;
+ 	struct snd_soc_dai *cpu_dai = machine->cpu_dai;
+ 	struct snd_soc_dai *codec_dai = machine->codec_dai;
+-	struct snd_soc_codec *codec = socdev->codec;
++	struct snd_soc_codec *codec = card->codec;
+ 
+ 	mutex_lock(&pcm_mutex);
+ 
+@@ -570,11 +570,11 @@ static int soc_pcm_hw_free(struct snd_pcm_substream *substream)
+ 		platform->pcm_ops->hw_free(substream);
+ 
+ 	/* now free hw params for the DAI's  */
+-	if (codec_dai->ops.hw_free)
+-		codec_dai->ops.hw_free(substream, codec_dai);
++	if (codec_dai->ops->hw_free)
++		codec_dai->ops->hw_free(substream, codec_dai);
+ 
+-	if (cpu_dai->ops.hw_free)
+-		cpu_dai->ops.hw_free(substream, cpu_dai);
++	if (cpu_dai->ops->hw_free)
++		cpu_dai->ops->hw_free(substream, cpu_dai);
+ 
+ 	mutex_unlock(&pcm_mutex);
+ 	return 0;
+@@ -591,8 +591,8 @@ static int soc_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+ 	struct snd_soc_dai *codec_dai = machine->codec_dai;
+ 	int ret;
+ 
+-	if (codec_dai->ops.trigger) {
+-		ret = codec_dai->ops.trigger(substream, cmd, codec_dai);
++	if (codec_dai->ops->trigger) {
++		ret = codec_dai->ops->trigger(substream, cmd, codec_dai);
+ 		if (ret < 0)
+ 			return ret;
+ 	}
+@@ -603,8 +603,8 @@ static int soc_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
+ 			return ret;
+ 	}
+ 
+-	if (cpu_dai->ops.trigger) {
+-		ret = cpu_dai->ops.trigger(substream, cmd, cpu_dai);
++	if (cpu_dai->ops->trigger) {
++		ret = cpu_dai->ops->trigger(substream, cmd, cpu_dai);
+ 		if (ret < 0)
+ 			return ret;
+ 	}
+@@ -629,7 +629,7 @@ static int soc_suspend(struct platform_device *pdev, pm_message_t state)
+ 	struct snd_soc_card *card = socdev->card;
+ 	struct snd_soc_platform *platform = card->platform;
+ 	struct snd_soc_codec_device *codec_dev = socdev->codec_dev;
+-	struct snd_soc_codec *codec = socdev->codec;
++	struct snd_soc_codec *codec = card->codec;
+ 	int i;
+ 
+ 	/* Due to the resume being scheduled into a workqueue we could
+@@ -645,8 +645,8 @@ static int soc_suspend(struct platform_device *pdev, pm_message_t state)
+ 	/* mute any active DAC's */
+ 	for (i = 0; i < card->num_links; i++) {
+ 		struct snd_soc_dai *dai = card->dai_link[i].codec_dai;
+-		if (dai->ops.digital_mute && dai->playback.active)
+-			dai->ops.digital_mute(dai, 1);
++		if (dai->ops->digital_mute && dai->playback.active)
++			dai->ops->digital_mute(dai, 1);
+ 	}
+ 
+ 	/* suspend all pcms */
+@@ -705,7 +705,7 @@ static void soc_resume_deferred(struct work_struct *work)
+ 	struct snd_soc_device *socdev = card->socdev;
+ 	struct snd_soc_platform *platform = card->platform;
+ 	struct snd_soc_codec_device *codec_dev = socdev->codec_dev;
+-	struct snd_soc_codec *codec = socdev->codec;
++	struct snd_soc_codec *codec = card->codec;
+ 	struct platform_device *pdev = to_platform_device(socdev->dev);
+ 	int i;
+ 
+@@ -741,8 +741,8 @@ static void soc_resume_deferred(struct work_struct *work)
+ 	/* unmute any active DACs */
+ 	for (i = 0; i < card->num_links; i++) {
+ 		struct snd_soc_dai *dai = card->dai_link[i].codec_dai;
+-		if (dai->ops.digital_mute && dai->playback.active)
+-			dai->ops.digital_mute(dai, 0);
++		if (dai->ops->digital_mute && dai->playback.active)
++			dai->ops->digital_mute(dai, 0);
+ 	}
+ 
+ 	for (i = 0; i < card->num_links; i++) {
+@@ -767,11 +767,21 @@ static int soc_resume(struct platform_device *pdev)
+ {
+ 	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
+ 	struct snd_soc_card *card = socdev->card;
++	struct snd_soc_dai *cpu_dai = card->dai_link[0].cpu_dai;
+ 
+-	dev_dbg(socdev->dev, "scheduling resume work\n");
+-
+-	if (!schedule_work(&card->deferred_resume_work))
+-		dev_err(socdev->dev, "resume work item may be lost\n");
++	/* AC97 devices might have other drivers hanging off them so
++	 * need to resume immediately.  Other drivers don't have that
++	 * problem and may take a substantial amount of time to resume
++	 * due to I/O costs and anti-pop so handle them out of line.
++	 */
++	if (cpu_dai->ac97_control) {
++		dev_dbg(socdev->dev, "Resuming AC97 immediately\n");
++		soc_resume_deferred(&card->deferred_resume_work);
++	} else {
++		dev_dbg(socdev->dev, "Scheduling resume work\n");
++		if (!schedule_work(&card->deferred_resume_work))
++			dev_err(socdev->dev, "resume work item may be lost\n");
++	}
+ 
+ 	return 0;
+ }
+@@ -982,8 +992,8 @@ static struct platform_driver soc_driver = {
+ static int soc_new_pcm(struct snd_soc_device *socdev,
+ 	struct snd_soc_dai_link *dai_link, int num)
+ {
+-	struct snd_soc_codec *codec = socdev->codec;
+ 	struct snd_soc_card *card = socdev->card;
++	struct snd_soc_codec *codec = card->codec;
+ 	struct snd_soc_platform *platform = card->platform;
+ 	struct snd_soc_dai *codec_dai = dai_link->codec_dai;
+ 	struct snd_soc_dai *cpu_dai = dai_link->cpu_dai;
+@@ -998,7 +1008,7 @@ static int soc_new_pcm(struct snd_soc_device *socdev,
+ 
+ 	rtd->dai = dai_link;
+ 	rtd->socdev = socdev;
+-	codec_dai->codec = socdev->codec;
++	codec_dai->codec = card->codec;
+ 
+ 	/* check client and interface hw capabilities */
+ 	sprintf(new_name, "%s %s-%d", dai_link->stream_name, codec_dai->name,
+@@ -1048,9 +1058,8 @@ static int soc_new_pcm(struct snd_soc_device *socdev,
+ }
+ 
+ /* codec register dump */
+-static ssize_t soc_codec_reg_show(struct snd_soc_device *devdata, char *buf)
++static ssize_t soc_codec_reg_show(struct snd_soc_codec *codec, char *buf)
+ {
+-	struct snd_soc_codec *codec = devdata->codec;
+ 	int i, step = 1, count = 0;
+ 
+ 	if (!codec->reg_cache_size)
+@@ -1090,7 +1099,7 @@ static ssize_t codec_reg_show(struct device *dev,
+ 	struct device_attribute *attr, char *buf)
+ {
+ 	struct snd_soc_device *devdata = dev_get_drvdata(dev);
+-	return soc_codec_reg_show(devdata, buf);
++	return soc_codec_reg_show(devdata->card->codec, buf);
+ }
+ 
+ static DEVICE_ATTR(codec_reg, 0444, codec_reg_show, NULL);
+@@ -1107,12 +1116,10 @@ static ssize_t codec_reg_read_file(struct file *file, char __user *user_buf,
+ {
+ 	ssize_t ret;
+ 	struct snd_soc_codec *codec = file->private_data;
+-	struct device *card_dev = codec->card->dev;
+-	struct snd_soc_device *devdata = card_dev->driver_data;
+ 	char *buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 	if (!buf)
+ 		return -ENOMEM;
+-	ret = soc_codec_reg_show(devdata, buf);
++	ret = soc_codec_reg_show(codec, buf);
+ 	if (ret >= 0)
+ 		ret = simple_read_from_buffer(user_buf, count, ppos, buf, ret);
+ 	kfree(buf);
+@@ -1309,19 +1316,19 @@ EXPORT_SYMBOL_GPL(snd_soc_test_bits);
+  */
+ int snd_soc_new_pcms(struct snd_soc_device *socdev, int idx, const char *xid)
+ {
+-	struct snd_soc_codec *codec = socdev->codec;
+ 	struct snd_soc_card *card = socdev->card;
+-	int ret = 0, i;
++	struct snd_soc_codec *codec = card->codec;
++	int ret, i;
+ 
+ 	mutex_lock(&codec->mutex);
+ 
+ 	/* register a sound card */
+-	codec->card = snd_card_new(idx, xid, codec->owner, 0);
+-	if (!codec->card) {
++	ret = snd_card_create(idx, xid, codec->owner, 0, &codec->card);
++	if (ret < 0) {
+ 		printk(KERN_ERR "asoc: can't create sound card for codec %s\n",
+ 			codec->name);
+ 		mutex_unlock(&codec->mutex);
+-		return -ENODEV;
++		return ret;
+ 	}
+ 
+ 	codec->card->dev = socdev->dev;
+@@ -1355,8 +1362,8 @@ EXPORT_SYMBOL_GPL(snd_soc_new_pcms);
+  */
+ int snd_soc_init_card(struct snd_soc_device *socdev)
+ {
+-	struct snd_soc_codec *codec = socdev->codec;
+ 	struct snd_soc_card *card = socdev->card;
++	struct snd_soc_codec *codec = card->codec;
+ 	int ret = 0, i, ac97 = 0, err = 0;
+ 
+ 	for (i = 0; i < card->num_links; i++) {
+@@ -1385,7 +1392,10 @@ int snd_soc_init_card(struct snd_soc_device *socdev)
+ 
+ 	mutex_lock(&codec->mutex);
+ #ifdef CONFIG_SND_SOC_AC97_BUS
+-	if (ac97) {
++	/* Only instantiate AC97 if not already done by the adaptor
++	 * for the generic AC97 subsystem.
++	 */
++	if (ac97 && strcmp(codec->name, "AC97") != 0) {
+ 		ret = soc_ac97_dev_register(codec);
+ 		if (ret < 0) {
+ 			printk(KERN_ERR "asoc: AC97 device register failed\n");
+@@ -1404,7 +1414,7 @@ int snd_soc_init_card(struct snd_soc_device *socdev)
+ 	if (err < 0)
+ 		printk(KERN_WARNING "asoc: failed to add codec sysfs files\n");
+ 
+-	soc_init_codec_debugfs(socdev->codec);
++	soc_init_codec_debugfs(codec);
+ 	mutex_unlock(&codec->mutex);
+ 
+ out:
+@@ -1421,18 +1431,19 @@ EXPORT_SYMBOL_GPL(snd_soc_init_card);
+  */
+ void snd_soc_free_pcms(struct snd_soc_device *socdev)
+ {
+-	struct snd_soc_codec *codec = socdev->codec;
++	struct snd_soc_codec *codec = socdev->card->codec;
+ #ifdef CONFIG_SND_SOC_AC97_BUS
+ 	struct snd_soc_dai *codec_dai;
+ 	int i;
+ #endif
+ 
+ 	mutex_lock(&codec->mutex);
+-	soc_cleanup_codec_debugfs(socdev->codec);
++	soc_cleanup_codec_debugfs(codec);
+ #ifdef CONFIG_SND_SOC_AC97_BUS
+ 	for (i = 0; i < codec->num_dai; i++) {
+ 		codec_dai = &codec->dai[i];
+-		if (codec_dai->ac97_control && codec->ac97) {
++		if (codec_dai->ac97_control && codec->ac97 &&
++		    strcmp(codec->name, "AC97") != 0) {
+ 			soc_ac97_dev_unregister(codec);
+ 			goto free_card;
+ 		}
+@@ -1495,6 +1506,37 @@ struct snd_kcontrol *snd_soc_cnew(const struct snd_kcontrol_new *_template,
+ EXPORT_SYMBOL_GPL(snd_soc_cnew);
+ 
+ /**
++ * snd_soc_add_controls - add an array of controls to a codec.
++ * Convienience function to add a list of controls. Many codecs were
++ * duplicating this code.
++ *
++ * @codec: codec to add controls to
++ * @controls: array of controls to add
++ * @num_controls: number of elements in the array
++ *
++ * Return 0 for success, else error.
++ */
++int snd_soc_add_controls(struct snd_soc_codec *codec,
++	const struct snd_kcontrol_new *controls, int num_controls)
++{
++	struct snd_card *card = codec->card;
++	int err, i;
++
++	for (i = 0; i < num_controls; i++) {
++		const struct snd_kcontrol_new *control = &controls[i];
++		err = snd_ctl_add(card, snd_soc_cnew(control, codec, NULL));
++		if (err < 0) {
++			dev_err(codec->dev, "%s: Failed to add %s\n",
++				codec->name, control->name);
++			return err;
++		}
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(snd_soc_add_controls);
++
++/**
+  * snd_soc_info_enum_double - enumerated double mixer info callback
+  * @kcontrol: mixer control
+  * @uinfo: control element information
+@@ -2020,8 +2062,8 @@ EXPORT_SYMBOL_GPL(snd_soc_put_volsw_s8);
+ int snd_soc_dai_set_sysclk(struct snd_soc_dai *dai, int clk_id,
+ 	unsigned int freq, int dir)
+ {
+-	if (dai->ops.set_sysclk)
+-		return dai->ops.set_sysclk(dai, clk_id, freq, dir);
++	if (dai->ops->set_sysclk)
++		return dai->ops->set_sysclk(dai, clk_id, freq, dir);
+ 	else
+ 		return -EINVAL;
+ }
+@@ -2040,8 +2082,8 @@ EXPORT_SYMBOL_GPL(snd_soc_dai_set_sysclk);
+ int snd_soc_dai_set_clkdiv(struct snd_soc_dai *dai,
+ 	int div_id, int div)
+ {
+-	if (dai->ops.set_clkdiv)
+-		return dai->ops.set_clkdiv(dai, div_id, div);
++	if (dai->ops->set_clkdiv)
++		return dai->ops->set_clkdiv(dai, div_id, div);
+ 	else
+ 		return -EINVAL;
+ }
+@@ -2059,8 +2101,8 @@ EXPORT_SYMBOL_GPL(snd_soc_dai_set_clkdiv);
+ int snd_soc_dai_set_pll(struct snd_soc_dai *dai,
+ 	int pll_id, unsigned int freq_in, unsigned int freq_out)
+ {
+-	if (dai->ops.set_pll)
+-		return dai->ops.set_pll(dai, pll_id, freq_in, freq_out);
++	if (dai->ops->set_pll)
++		return dai->ops->set_pll(dai, pll_id, freq_in, freq_out);
+ 	else
+ 		return -EINVAL;
+ }
+@@ -2075,8 +2117,8 @@ EXPORT_SYMBOL_GPL(snd_soc_dai_set_pll);
+  */
+ int snd_soc_dai_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
+ {
+-	if (dai->ops.set_fmt)
+-		return dai->ops.set_fmt(dai, fmt);
++	if (dai->ops->set_fmt)
++		return dai->ops->set_fmt(dai, fmt);
+ 	else
+ 		return -EINVAL;
+ }
+@@ -2094,8 +2136,8 @@ EXPORT_SYMBOL_GPL(snd_soc_dai_set_fmt);
+ int snd_soc_dai_set_tdm_slot(struct snd_soc_dai *dai,
+ 	unsigned int mask, int slots)
+ {
+-	if (dai->ops.set_sysclk)
+-		return dai->ops.set_tdm_slot(dai, mask, slots);
++	if (dai->ops->set_sysclk)
++		return dai->ops->set_tdm_slot(dai, mask, slots);
+ 	else
+ 		return -EINVAL;
+ }
+@@ -2110,8 +2152,8 @@ EXPORT_SYMBOL_GPL(snd_soc_dai_set_tdm_slot);
+  */
+ int snd_soc_dai_set_tristate(struct snd_soc_dai *dai, int tristate)
+ {
+-	if (dai->ops.set_sysclk)
+-		return dai->ops.set_tristate(dai, tristate);
++	if (dai->ops->set_sysclk)
++		return dai->ops->set_tristate(dai, tristate);
+ 	else
+ 		return -EINVAL;
+ }
+@@ -2126,8 +2168,8 @@ EXPORT_SYMBOL_GPL(snd_soc_dai_set_tristate);
+  */
+ int snd_soc_dai_digital_mute(struct snd_soc_dai *dai, int mute)
+ {
+-	if (dai->ops.digital_mute)
+-		return dai->ops.digital_mute(dai, mute);
++	if (dai->ops->digital_mute)
++		return dai->ops->digital_mute(dai, mute);
+ 	else
+ 		return -EINVAL;
+ }
+@@ -2180,6 +2222,9 @@ static int snd_soc_unregister_card(struct snd_soc_card *card)
+ 	return 0;
+ }
+ 
++static struct snd_soc_dai_ops null_dai_ops = {
++};
++
+ /**
+  * snd_soc_register_dai - Register a DAI with the ASoC core
+  *
+@@ -2194,6 +2239,9 @@ int snd_soc_register_dai(struct snd_soc_dai *dai)
+ 	if (!dai->dev)
+ 		printk(KERN_WARNING "No device for DAI %s\n", dai->name);
+ 
++	if (!dai->ops)
++		dai->ops = &null_dai_ops;
++
+ 	INIT_LIST_HEAD(&dai->list);
+ 
+ 	mutex_lock(&client_mutex);
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index a2f1da8..735903a 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -54,14 +54,15 @@
+ static int dapm_up_seq[] = {
+ 	snd_soc_dapm_pre, snd_soc_dapm_micbias, snd_soc_dapm_mic,
+ 	snd_soc_dapm_mux, snd_soc_dapm_value_mux, snd_soc_dapm_dac,
+-	snd_soc_dapm_mixer, snd_soc_dapm_pga, snd_soc_dapm_adc, snd_soc_dapm_hp,
+-	snd_soc_dapm_spk, snd_soc_dapm_post
++	snd_soc_dapm_mixer, snd_soc_dapm_mixer_named_ctl, snd_soc_dapm_pga,
++	snd_soc_dapm_adc, snd_soc_dapm_hp, snd_soc_dapm_spk, snd_soc_dapm_post
+ };
++
+ static int dapm_down_seq[] = {
+ 	snd_soc_dapm_pre, snd_soc_dapm_adc, snd_soc_dapm_hp, snd_soc_dapm_spk,
+-	snd_soc_dapm_pga, snd_soc_dapm_mixer, snd_soc_dapm_dac, snd_soc_dapm_mic,
+-	snd_soc_dapm_micbias, snd_soc_dapm_mux, snd_soc_dapm_value_mux,
+-	snd_soc_dapm_post
++	snd_soc_dapm_pga, snd_soc_dapm_mixer_named_ctl, snd_soc_dapm_mixer,
++	snd_soc_dapm_dac, snd_soc_dapm_mic, snd_soc_dapm_micbias,
++	snd_soc_dapm_mux, snd_soc_dapm_value_mux, snd_soc_dapm_post
+ };
+ 
+ static int dapm_status = 1;
+@@ -101,7 +102,8 @@ static void dapm_set_path_status(struct snd_soc_dapm_widget *w,
+ {
+ 	switch (w->id) {
+ 	case snd_soc_dapm_switch:
+-	case snd_soc_dapm_mixer: {
++	case snd_soc_dapm_mixer:
++	case snd_soc_dapm_mixer_named_ctl: {
+ 		int val;
+ 		struct soc_mixer_control *mc = (struct soc_mixer_control *)
+ 			w->kcontrols[i].private_value;
+@@ -323,15 +325,32 @@ static int dapm_new_mixer(struct snd_soc_codec *codec,
+ 			if (path->name != (char*)w->kcontrols[i].name)
+ 				continue;
+ 
+-			/* add dapm control with long name */
+-			name_len = 2 + strlen(w->name)
+-				+ strlen(w->kcontrols[i].name);
++			/* add dapm control with long name.
++			 * for dapm_mixer this is the concatenation of the
++			 * mixer and kcontrol name.
++			 * for dapm_mixer_named_ctl this is simply the
++			 * kcontrol name.
++			 */
++			name_len = strlen(w->kcontrols[i].name) + 1;
++			if (w->id != snd_soc_dapm_mixer_named_ctl)
++				name_len += 1 + strlen(w->name);
++
+ 			path->long_name = kmalloc(name_len, GFP_KERNEL);
++
+ 			if (path->long_name == NULL)
+ 				return -ENOMEM;
+ 
+-			snprintf(path->long_name, name_len, "%s %s",
+-				 w->name, w->kcontrols[i].name);
++			switch (w->id) {
++			default:
++				snprintf(path->long_name, name_len, "%s %s",
++					 w->name, w->kcontrols[i].name);
++				break;
++			case snd_soc_dapm_mixer_named_ctl:
++				snprintf(path->long_name, name_len, "%s",
++					 w->kcontrols[i].name);
++				break;
++			}
++
+ 			path->long_name[name_len - 1] = '\0';
+ 
+ 			path->kcontrol = snd_soc_cnew(&w->kcontrols[i], w,
+@@ -503,6 +522,137 @@ int dapm_reg_event(struct snd_soc_dapm_widget *w,
+ EXPORT_SYMBOL_GPL(dapm_reg_event);
+ 
+ /*
++ * Scan a single DAPM widget for a complete audio path and update the
++ * power status appropriately.
++ */
++static int dapm_power_widget(struct snd_soc_codec *codec, int event,
++			     struct snd_soc_dapm_widget *w)
++{
++	int in, out, power_change, power, ret;
++
++	/* vmid - no action */
++	if (w->id == snd_soc_dapm_vmid)
++		return 0;
++
++	/* active ADC */
++	if (w->id == snd_soc_dapm_adc && w->active) {
++		in = is_connected_input_ep(w);
++		dapm_clear_walk(w->codec);
++		w->power = (in != 0) ? 1 : 0;
++		dapm_update_bits(w);
++		return 0;
++	}
++
++	/* active DAC */
++	if (w->id == snd_soc_dapm_dac && w->active) {
++		out = is_connected_output_ep(w);
++		dapm_clear_walk(w->codec);
++		w->power = (out != 0) ? 1 : 0;
++		dapm_update_bits(w);
++		return 0;
++	}
++
++	/* pre and post event widgets */
++	if (w->id == snd_soc_dapm_pre) {
++		if (!w->event)
++			return 0;
++
++		if (event == SND_SOC_DAPM_STREAM_START) {
++			ret = w->event(w,
++				       NULL, SND_SOC_DAPM_PRE_PMU);
++			if (ret < 0)
++				return ret;
++		} else if (event == SND_SOC_DAPM_STREAM_STOP) {
++			ret = w->event(w,
++				       NULL, SND_SOC_DAPM_PRE_PMD);
++			if (ret < 0)
++				return ret;
++		}
++		return 0;
++	}
++	if (w->id == snd_soc_dapm_post) {
++		if (!w->event)
++			return 0;
++
++		if (event == SND_SOC_DAPM_STREAM_START) {
++			ret = w->event(w,
++				       NULL, SND_SOC_DAPM_POST_PMU);
++			if (ret < 0)
++				return ret;
++		} else if (event == SND_SOC_DAPM_STREAM_STOP) {
++			ret = w->event(w,
++				       NULL, SND_SOC_DAPM_POST_PMD);
++			if (ret < 0)
++				return ret;
++		}
++		return 0;
++	}
++
++	/* all other widgets */
++	in = is_connected_input_ep(w);
++	dapm_clear_walk(w->codec);
++	out = is_connected_output_ep(w);
++	dapm_clear_walk(w->codec);
++	power = (out != 0 && in != 0) ? 1 : 0;
++	power_change = (w->power == power) ? 0 : 1;
++	w->power = power;
++
++	if (!power_change)
++		return 0;
++
++	/* call any power change event handlers */
++	if (w->event)
++		pr_debug("power %s event for %s flags %x\n",
++			 w->power ? "on" : "off",
++			 w->name, w->event_flags);
++
++	/* power up pre event */
++	if (power && w->event &&
++	    (w->event_flags & SND_SOC_DAPM_PRE_PMU)) {
++		ret = w->event(w, NULL, SND_SOC_DAPM_PRE_PMU);
++		if (ret < 0)
++			return ret;
++	}
++
++	/* power down pre event */
++	if (!power && w->event &&
++	    (w->event_flags & SND_SOC_DAPM_PRE_PMD)) {
++		ret = w->event(w, NULL, SND_SOC_DAPM_PRE_PMD);
++		if (ret < 0)
++			return ret;
++	}
++
++	/* Lower PGA volume to reduce pops */
++	if (w->id == snd_soc_dapm_pga && !power)
++		dapm_set_pga(w, power);
++
++	dapm_update_bits(w);
++
++	/* Raise PGA volume to reduce pops */
++	if (w->id == snd_soc_dapm_pga && power)
++		dapm_set_pga(w, power);
++
++	/* power up post event */
++	if (power && w->event &&
++	    (w->event_flags & SND_SOC_DAPM_POST_PMU)) {
++		ret = w->event(w,
++			       NULL, SND_SOC_DAPM_POST_PMU);
++		if (ret < 0)
++			return ret;
++	}
++
++	/* power down post event */
++	if (!power && w->event &&
++	    (w->event_flags & SND_SOC_DAPM_POST_PMD)) {
++		ret = w->event(w, NULL, SND_SOC_DAPM_POST_PMD);
++		if (ret < 0)
++			return ret;
++	}
++
++	return 0;
++}
++
++/*
+  * Scan each dapm widget for complete audio path.
+  * A complete path is a route that has valid endpoints i.e.:-
+  *
+@@ -514,7 +664,7 @@ EXPORT_SYMBOL_GPL(dapm_reg_event);
+ static int dapm_power_widgets(struct snd_soc_codec *codec, int event)
+ {
+ 	struct snd_soc_dapm_widget *w;
+-	int in, out, i, c = 1, *seq = NULL, ret = 0, power_change, power;
++	int i, c = 1, *seq = NULL, ret = 0;
+ 
+ 	/* do we have a sequenced stream event */
+ 	if (event == SND_SOC_DAPM_STREAM_START) {
+@@ -525,135 +675,20 @@ static int dapm_power_widgets(struct snd_soc_codec *codec, int event)
+ 		seq = dapm_down_seq;
+ 	}
+ 
+-	for(i = 0; i < c; i++) {
++	for (i = 0; i < c; i++) {
+ 		list_for_each_entry(w, &codec->dapm_widgets, list) {
+ 
+ 			/* is widget in stream order */
+ 			if (seq && seq[i] && w->id != seq[i])
+ 				continue;
+ 
+-			/* vmid - no action */
+-			if (w->id == snd_soc_dapm_vmid)
+-				continue;
+-
+-			/* active ADC */
+-			if (w->id == snd_soc_dapm_adc && w->active) {
+-				in = is_connected_input_ep(w);
+-				dapm_clear_walk(w->codec);
+-				w->power = (in != 0) ? 1 : 0;
+-				dapm_update_bits(w);
+-				continue;
+-			}
+-
+-			/* active DAC */
+-			if (w->id == snd_soc_dapm_dac && w->active) {
+-				out = is_connected_output_ep(w);
+-				dapm_clear_walk(w->codec);
+-				w->power = (out != 0) ? 1 : 0;
+-				dapm_update_bits(w);
+-				continue;
+-			}
+-
+-			/* pre and post event widgets */
+-			if (w->id == snd_soc_dapm_pre) {
+-				if (!w->event)
+-					continue;
+-
+-				if (event == SND_SOC_DAPM_STREAM_START) {
+-					ret = w->event(w,
+-						NULL, SND_SOC_DAPM_PRE_PMU);
+-					if (ret < 0)
+-						return ret;
+-				} else if (event == SND_SOC_DAPM_STREAM_STOP) {
+-					ret = w->event(w,
+-						NULL, SND_SOC_DAPM_PRE_PMD);
+-					if (ret < 0)
+-						return ret;
+-				}
+-				continue;
+-			}
+-			if (w->id == snd_soc_dapm_post) {
+-				if (!w->event)
+-					continue;
+-
+-				if (event == SND_SOC_DAPM_STREAM_START) {
+-					ret = w->event(w,
+-						NULL, SND_SOC_DAPM_POST_PMU);
+-					if (ret < 0)
+-						return ret;
+-				} else if (event == SND_SOC_DAPM_STREAM_STOP) {
+-					ret = w->event(w,
+-						NULL, SND_SOC_DAPM_POST_PMD);
+-					if (ret < 0)
+-						return ret;
+-				}
+-				continue;
+-			}
+-
+-			/* all other widgets */
+-			in = is_connected_input_ep(w);
+-			dapm_clear_walk(w->codec);
+-			out = is_connected_output_ep(w);
+-			dapm_clear_walk(w->codec);
+-			power = (out != 0 && in != 0) ? 1 : 0;
+-			power_change = (w->power == power) ? 0: 1;
+-			w->power = power;
+-
+-			if (!power_change)
+-				continue;
+-
+-			/* call any power change event handlers */
+-			if (w->event)
+-				pr_debug("power %s event for %s flags %x\n",
+-					 w->power ? "on" : "off",
+-					 w->name, w->event_flags);
+-
+-			/* power up pre event */
+-			if (power && w->event &&
+-			    (w->event_flags & SND_SOC_DAPM_PRE_PMU)) {
+-				ret = w->event(w, NULL, SND_SOC_DAPM_PRE_PMU);
+-				if (ret < 0)
+-					return ret;
+-			}
+-
+-			/* power down pre event */
+-			if (!power && w->event &&
+-			    (w->event_flags & SND_SOC_DAPM_PRE_PMD)) {
+-				ret = w->event(w, NULL, SND_SOC_DAPM_PRE_PMD);
+-				if (ret < 0)
+-					return ret;
+-			}
+-
+-			/* Lower PGA volume to reduce pops */
+-			if (w->id == snd_soc_dapm_pga && !power)
+-				dapm_set_pga(w, power);
+-
+-			dapm_update_bits(w);
+-
+-			/* Raise PGA volume to reduce pops */
+-			if (w->id == snd_soc_dapm_pga && power)
+-				dapm_set_pga(w, power);
+-
+-			/* power up post event */
+-			if (power && w->event &&
+-			    (w->event_flags & SND_SOC_DAPM_POST_PMU)) {
+-				ret = w->event(w,
+-					       NULL, SND_SOC_DAPM_POST_PMU);
+-				if (ret < 0)
+-					return ret;
+-			}
+-
+-			/* power down post event */
+-			if (!power && w->event &&
+-			    (w->event_flags & SND_SOC_DAPM_POST_PMD)) {
+-				ret = w->event(w, NULL, SND_SOC_DAPM_POST_PMD);
+-				if (ret < 0)
+-					return ret;
+-			}
++			ret = dapm_power_widget(codec, event, w);
++			if (ret != 0)
++				return ret;
+ 		}
+ 	}
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ #ifdef DEBUG
+@@ -687,6 +722,7 @@ static void dbg_dump_dapm(struct snd_soc_codec* codec, const char *action)
+ 		case snd_soc_dapm_adc:
+ 		case snd_soc_dapm_pga:
+ 		case snd_soc_dapm_mixer:
++		case snd_soc_dapm_mixer_named_ctl:
+ 			if (w->name) {
+ 				in = is_connected_input_ep(w);
+ 				dapm_clear_walk(w->codec);
+@@ -760,6 +796,7 @@ static int dapm_mixer_update_power(struct snd_soc_dapm_widget *widget,
+ 	int found = 0;
+ 
+ 	if (widget->id != snd_soc_dapm_mixer &&
++	    widget->id != snd_soc_dapm_mixer_named_ctl &&
+ 	    widget->id != snd_soc_dapm_switch)
+ 		return -ENODEV;
+ 
+@@ -795,7 +832,7 @@ static ssize_t dapm_widget_show(struct device *dev,
+ 	struct device_attribute *attr, char *buf)
+ {
+ 	struct snd_soc_device *devdata = dev_get_drvdata(dev);
+-	struct snd_soc_codec *codec = devdata->codec;
++	struct snd_soc_codec *codec = devdata->card->codec;
+ 	struct snd_soc_dapm_widget *w;
+ 	int count = 0;
+ 	char *state = "not set";
+@@ -813,6 +850,7 @@ static ssize_t dapm_widget_show(struct device *dev,
+ 		case snd_soc_dapm_adc:
+ 		case snd_soc_dapm_pga:
+ 		case snd_soc_dapm_mixer:
++		case snd_soc_dapm_mixer_named_ctl:
+ 			if (w->name)
+ 				count += sprintf(buf + count, "%s: %s\n",
+ 					w->name, w->power ? "On":"Off");
+@@ -876,7 +914,7 @@ static void dapm_free_widgets(struct snd_soc_codec *codec)
+ }
+ 
+ static int snd_soc_dapm_set_pin(struct snd_soc_codec *codec,
+-	char *pin, int status)
++				const char *pin, int status)
+ {
+ 	struct snd_soc_dapm_widget *w;
+ 
+@@ -991,6 +1029,7 @@ static int snd_soc_dapm_add_route(struct snd_soc_codec *codec,
+ 		break;
+ 	case snd_soc_dapm_switch:
+ 	case snd_soc_dapm_mixer:
++	case snd_soc_dapm_mixer_named_ctl:
+ 		ret = dapm_connect_mixer(codec, wsource, wsink, path, control);
+ 		if (ret != 0)
+ 			goto err;
+@@ -1068,6 +1107,7 @@ int snd_soc_dapm_new_widgets(struct snd_soc_codec *codec)
+ 		switch(w->id) {
+ 		case snd_soc_dapm_switch:
+ 		case snd_soc_dapm_mixer:
++		case snd_soc_dapm_mixer_named_ctl:
+ 			dapm_new_mixer(codec, w);
+ 			break;
+ 		case snd_soc_dapm_mux:
+@@ -1396,6 +1436,76 @@ out:
+ EXPORT_SYMBOL_GPL(snd_soc_dapm_put_value_enum_double);
+ 
+ /**
++ * snd_soc_dapm_info_pin_switch - Info for a pin switch
++ *
++ * @kcontrol: mixer control
++ * @uinfo: control element information
++ *
++ * Callback to provide information about a pin switch control.
++ */
++int snd_soc_dapm_info_pin_switch(struct snd_kcontrol *kcontrol,
++				 struct snd_ctl_elem_info *uinfo)
++{
++	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
++	uinfo->count = 1;
++	uinfo->value.integer.min = 0;
++	uinfo->value.integer.max = 1;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(snd_soc_dapm_info_pin_switch);
++
++/**
++ * snd_soc_dapm_get_pin_switch - Get information for a pin switch
++ *
++ * @kcontrol: mixer control
++ * @ucontrol: Value
++ */
++int snd_soc_dapm_get_pin_switch(struct snd_kcontrol *kcontrol,
++				struct snd_ctl_elem_value *ucontrol)
++{
++	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
++	const char *pin = (const char *)kcontrol->private_value;
++
++	mutex_lock(&codec->mutex);
++
++	ucontrol->value.integer.value[0] =
++		snd_soc_dapm_get_pin_status(codec, pin);
++
++	mutex_unlock(&codec->mutex);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(snd_soc_dapm_get_pin_switch);
++
++/**
++ * snd_soc_dapm_put_pin_switch - Set information for a pin switch
++ *
++ * @kcontrol: mixer control
++ * @ucontrol: Value
++ */
++int snd_soc_dapm_put_pin_switch(struct snd_kcontrol *kcontrol,
++				struct snd_ctl_elem_value *ucontrol)
++{
++	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
++	const char *pin = (const char *)kcontrol->private_value;
++
++	mutex_lock(&codec->mutex);
++
++	if (ucontrol->value.integer.value[0])
++		snd_soc_dapm_enable_pin(codec, pin);
++	else
++		snd_soc_dapm_disable_pin(codec, pin);
++
++	snd_soc_dapm_sync(codec);
++
++	mutex_unlock(&codec->mutex);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(snd_soc_dapm_put_pin_switch);
++
++/**
+  * snd_soc_dapm_new_control - create new dapm control
+  * @codec: audio codec
+  * @widget: widget template
+@@ -1527,8 +1637,8 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_stream_event);
+ int snd_soc_dapm_set_bias_level(struct snd_soc_device *socdev,
+ 				enum snd_soc_bias_level level)
+ {
+-	struct snd_soc_codec *codec = socdev->codec;
+ 	struct snd_soc_card *card = socdev->card;
++	struct snd_soc_codec *codec = socdev->card->codec;
+ 	int ret = 0;
+ 
+ 	if (card->set_bias_level)
+@@ -1549,7 +1659,7 @@ int snd_soc_dapm_set_bias_level(struct snd_soc_device *socdev,
+  * NOTE: snd_soc_dapm_sync() needs to be called after this for DAPM to
+  * do any widget power switching.
+  */
+-int snd_soc_dapm_enable_pin(struct snd_soc_codec *codec, char *pin)
++int snd_soc_dapm_enable_pin(struct snd_soc_codec *codec, const char *pin)
+ {
+ 	return snd_soc_dapm_set_pin(codec, pin, 1);
+ }
+@@ -1564,7 +1674,7 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_enable_pin);
+  * NOTE: snd_soc_dapm_sync() needs to be called after this for DAPM to
+  * do any widget power switching.
+  */
+-int snd_soc_dapm_disable_pin(struct snd_soc_codec *codec, char *pin)
++int snd_soc_dapm_disable_pin(struct snd_soc_codec *codec, const char *pin)
+ {
+ 	return snd_soc_dapm_set_pin(codec, pin, 0);
+ }
+@@ -1584,7 +1694,7 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_disable_pin);
+  * NOTE: snd_soc_dapm_sync() needs to be called after this for DAPM to
+  * do any widget power switching.
+  */
+-int snd_soc_dapm_nc_pin(struct snd_soc_codec *codec, char *pin)
++int snd_soc_dapm_nc_pin(struct snd_soc_codec *codec, const char *pin)
+ {
+ 	return snd_soc_dapm_set_pin(codec, pin, 0);
+ }
+@@ -1599,7 +1709,7 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_nc_pin);
+  *
+  * Returns 1 for connected otherwise 0.
+  */
+-int snd_soc_dapm_get_pin_status(struct snd_soc_codec *codec, char *pin)
++int snd_soc_dapm_get_pin_status(struct snd_soc_codec *codec, const char *pin)
+ {
+ 	struct snd_soc_dapm_widget *w;
+ 
+@@ -1620,7 +1730,7 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_get_pin_status);
+  */
+ void snd_soc_dapm_free(struct snd_soc_device *socdev)
+ {
+-	struct snd_soc_codec *codec = socdev->codec;
++	struct snd_soc_codec *codec = socdev->card->codec;
+ 
+ 	snd_soc_dapm_sys_remove(socdev->dev);
+ 	dapm_free_widgets(codec);
+diff --git a/sound/soc/soc-jack.c b/sound/soc/soc-jack.c
+new file mode 100644
+index 0000000..28346fb
+--- /dev/null
++++ b/sound/soc/soc-jack.c
+@@ -0,0 +1,267 @@
++/*
++ * soc-jack.c  --  ALSA SoC jack handling
++ *
++ * Copyright 2008 Wolfson Microelectronics PLC.
++ *
++ * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ */
++
++#include <sound/jack.h>
++#include <sound/soc.h>
++#include <sound/soc-dapm.h>
++#include <linux/gpio.h>
++#include <linux/interrupt.h>
++#include <linux/workqueue.h>
++#include <linux/delay.h>
++
++/**
++ * snd_soc_jack_new - Create a new jack
++ * @card:  ASoC card
++ * @id:    an identifying string for this jack
++ * @type:  a bitmask of enum snd_jack_type values that can be detected by
++ *         this jack
++ * @jack:  structure to use for the jack
++ *
++ * Creates a new jack object.
++ *
++ * Returns zero if successful, or a negative error code on failure.
++ * On success jack will be initialised.
++ */
++int snd_soc_jack_new(struct snd_soc_card *card, const char *id, int type,
++		     struct snd_soc_jack *jack)
++{
++	jack->card = card;
++	INIT_LIST_HEAD(&jack->pins);
++
++	return snd_jack_new(card->codec->card, id, type, &jack->jack);
++}
++EXPORT_SYMBOL_GPL(snd_soc_jack_new);
++
++/**
++ * snd_soc_jack_report - Report the current status for a jack
++ *
++ * @jack:   the jack
++ * @status: a bitmask of enum snd_jack_type values that are currently detected.
++ * @mask:   a bitmask of enum snd_jack_type values that being reported.
++ *
++ * If configured using snd_soc_jack_add_pins() then the associated
++ * DAPM pins will be enabled or disabled as appropriate and DAPM
++ * synchronised.
++ *
++ * Note: This function uses mutexes and should be called from a
++ * context which can sleep (such as a workqueue).
++ */
++void snd_soc_jack_report(struct snd_soc_jack *jack, int status, int mask)
++{
++	struct snd_soc_codec *codec = jack->card->codec;
++	struct snd_soc_jack_pin *pin;
++	int enable;
++	int oldstatus;
++
++	if (!jack) {
++		WARN_ON_ONCE(!jack);
++		return;
++	}
++
++	mutex_lock(&codec->mutex);
++
++	oldstatus = jack->status;
++
++	jack->status &= ~mask;
++	jack->status |= status;
++
++	/* The DAPM sync is expensive enough to be worth skipping */
++	if (jack->status == oldstatus)
++		goto out;
++
++	list_for_each_entry(pin, &jack->pins, list) {
++		enable = pin->mask & status;
++
++		if (pin->invert)
++			enable = !enable;
++
++		if (enable)
++			snd_soc_dapm_enable_pin(codec, pin->pin);
++		else
++			snd_soc_dapm_disable_pin(codec, pin->pin);
++	}
++
++	snd_soc_dapm_sync(codec);
++
++	snd_jack_report(jack->jack, status);
++
++out:
++	mutex_unlock(&codec->mutex);
++}
++EXPORT_SYMBOL_GPL(snd_soc_jack_report);
++
++/**
++ * snd_soc_jack_add_pins - Associate DAPM pins with an ASoC jack
++ *
++ * @jack:  ASoC jack
++ * @count: Number of pins
++ * @pins:  Array of pins
++ *
++ * After this function has been called the DAPM pins specified in the
++ * pins array will have their status updated to reflect the current
++ * state of the jack whenever the jack status is updated.
++ */
++int snd_soc_jack_add_pins(struct snd_soc_jack *jack, int count,
++			  struct snd_soc_jack_pin *pins)
++{
++	int i;
++
++	for (i = 0; i < count; i++) {
++		if (!pins[i].pin) {
++			printk(KERN_ERR "No name for pin %d\n", i);
++			return -EINVAL;
++		}
++		if (!pins[i].mask) {
++			printk(KERN_ERR "No mask for pin %d (%s)\n", i,
++			       pins[i].pin);
++			return -EINVAL;
++		}
++
++		INIT_LIST_HEAD(&pins[i].list);
++		list_add(&(pins[i].list), &jack->pins);
++	}
++
++	/* Update to reflect the last reported status; canned jack
++	 * implementations are likely to set their state before the
++	 * card has an opportunity to associate pins.
++	 */
++	snd_soc_jack_report(jack, 0, 0);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(snd_soc_jack_add_pins);
++
++#ifdef CONFIG_GPIOLIB
++/* gpio detect */
++static void snd_soc_jack_gpio_detect(struct snd_soc_jack_gpio *gpio)
++{
++	struct snd_soc_jack *jack = gpio->jack;
++	int enable;
++	int report;
++
++	if (gpio->debounce_time > 0)
++		mdelay(gpio->debounce_time);
++
++	enable = gpio_get_value(gpio->gpio);
++	if (gpio->invert)
++		enable = !enable;
++
++	if (enable)
++		report = gpio->report;
++	else
++		report = 0;
++
++	snd_soc_jack_report(jack, report, gpio->report);
++}
++
++/* irq handler for gpio pin */
++static irqreturn_t gpio_handler(int irq, void *data)
++{
++	struct snd_soc_jack_gpio *gpio = data;
++
++	schedule_work(&gpio->work);
++
++	return IRQ_HANDLED;
++}
++
++/* gpio work */
++static void gpio_work(struct work_struct *work)
++{
++	struct snd_soc_jack_gpio *gpio;
++
++	gpio = container_of(work, struct snd_soc_jack_gpio, work);
++	snd_soc_jack_gpio_detect(gpio);
++}
++
++/**
++ * snd_soc_jack_add_gpios - Associate GPIO pins with an ASoC jack
++ *
++ * @jack:  ASoC jack
++ * @count: number of pins
++ * @gpios: array of gpio pins
++ *
++ * This function will request gpio, set data direction and request irq
++ * for each gpio in the array.
++ */
++int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
++			struct snd_soc_jack_gpio *gpios)
++{
++	int i, ret;
++
++	for (i = 0; i < count; i++) {
++		if (!gpio_is_valid(gpios[i].gpio)) {
++			printk(KERN_ERR "Invalid gpio %d\n",
++				gpios[i].gpio);
++			ret = -EINVAL;
++			goto undo;
++		}
++		if (!gpios[i].name) {
++			printk(KERN_ERR "No name for gpio %d\n",
++				gpios[i].gpio);
++			ret = -EINVAL;
++			goto undo;
++		}
++
++		ret = gpio_request(gpios[i].gpio, gpios[i].name);
++		if (ret)
++			goto undo;
++
++		ret = gpio_direction_input(gpios[i].gpio);
++		if (ret)
++			goto err;
++
++		ret = request_irq(gpio_to_irq(gpios[i].gpio),
++				gpio_handler,
++				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
++				jack->card->dev->driver->name,
++				&gpios[i]);
++		if (ret)
++			goto err;
++
++		INIT_WORK(&gpios[i].work, gpio_work);
++		gpios[i].jack = jack;
++	}
++
++	return 0;
++
++err:
++	gpio_free(gpios[i].gpio);
++undo:
++	snd_soc_jack_free_gpios(jack, i, gpios);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(snd_soc_jack_add_gpios);
++
++/**
++ * snd_soc_jack_free_gpios - Release GPIO pins' resources of an ASoC jack
++ *
++ * @jack:  ASoC jack
++ * @count: number of pins
++ * @gpios: array of gpio pins
++ *
++ * Release gpio and irq resources for gpio pins associated with an ASoC jack.
++ */
++void snd_soc_jack_free_gpios(struct snd_soc_jack *jack, int count,
++			struct snd_soc_jack_gpio *gpios)
++{
++	int i;
++
++	for (i = 0; i < count; i++) {
++		free_irq(gpio_to_irq(gpios[i].gpio), &gpios[i]);
++		gpio_free(gpios[i].gpio);
++		gpios[i].jack = NULL;
++	}
++}
++EXPORT_SYMBOL_GPL(snd_soc_jack_free_gpios);
++#endif	/* CONFIG_GPIOLIB */
+-- 
+1.6.2.4
+

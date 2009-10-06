@@ -1,0 +1,35 @@
+From 21b798e774c112aff1784db30e01c99a5a69d158 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:49 -0600
+Subject: [PATCH 216/426] OMAP3ISP: Frontend: Remaining Syncup with Nokia Code
+
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/isp/ispccdc.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/video/isp/ispccdc.c b/drivers/media/video/isp/ispccdc.c
+index 6bcb688..15dd12a 100644
+--- a/drivers/media/video/isp/ispccdc.c
++++ b/drivers/media/video/isp/ispccdc.c
+@@ -657,7 +657,7 @@ int ispccdc_config_datapath(enum ccdc_input input, enum ccdc_output output)
+ 		syncif.fldstat = 0;
+ 		syncif.hdpol = 0;
+ 		syncif.ipmod = YUV16;
+-		syncif.vdpol = 0;
++		syncif.vdpol = 1;
+ 		ispccdc_config_imgattr(0);
+ 		ispccdc_config_sync_if(syncif);
+ 		blkcfg.dcsubval = 0;
+@@ -1212,7 +1212,7 @@ int ispccdc_config_size(u32 input_w, u32 input_h, u32 output_w, u32 output_h)
+ 		isp_reg_writel((((ispccdc_obj.ccdcout_h - 2) &
+ 					ISPCCDC_VDINT_0_MASK) <<
+ 					ISPCCDC_VDINT_0_SHIFT) |
+-					((50 & ISPCCDC_VDINT_1_MASK) <<
++					((100 & ISPCCDC_VDINT_1_MASK) <<
+ 					ISPCCDC_VDINT_1_SHIFT),
+ 					OMAP3_ISP_IOMEM_CCDC,
+ 					ISPCCDC_VDINT);
+-- 
+1.6.2.4
+

@@ -1,0 +1,304 @@
+From cbdb9ca3e5c56d10f23dd22b5d953ee1ec41cee3 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Fri, 27 Feb 2009 15:19:16 +0530
+Subject: [PATCH 311/426] Color Keying added to V4L2 display driver
+
+---
+ arch/arm/plat-omap/dss/dispc.c            |   43 +++++++++++++
+ arch/arm/plat-omap/dss/dpi.c              |    6 ++
+ arch/arm/plat-omap/dss/dss.h              |    1 +
+ arch/arm/plat-omap/dss/venc.c             |    7 ++
+ arch/arm/plat-omap/include/mach/display.h |    2 +
+ drivers/media/video/omap/omap_vout.c      |   97 ++++++++++++++++++++---------
+ 6 files changed, 126 insertions(+), 30 deletions(-)
+
+diff --git a/arch/arm/plat-omap/dss/dispc.c b/arch/arm/plat-omap/dss/dispc.c
+index 342e8cc..adc2eb9 100644
+--- a/arch/arm/plat-omap/dss/dispc.c
++++ b/arch/arm/plat-omap/dss/dispc.c
+@@ -849,6 +849,49 @@ int dispc_get_alpha_blending(enum omap_channel ch)
+ 
+ }
+ 
++void dispc_get_color_keying(enum omap_channel ch, struct omap_color_key *key)
++{
++	u32 config;
++	const struct dispc_reg tr_reg[] = {
++		DISPC_TRANS_COLOR0, DISPC_TRANS_COLOR1 };
++
++	config = dispc_read_reg(DISPC_CONFIG);
++	key->type = 0;
++
++	if (ch == OMAP_DSS_CHANNEL_LCD) {
++		/* check color keying is enabled or not */
++		if (config & 0x400) {
++			/* Check whether it is src color keying
++			   or dst color keying */
++			if (config & 0x800)
++				key->type = OMAP_DSS_COLOR_KEY_VID_SRC;
++			else
++				key->type = OMAP_DSS_COLOR_KEY_GFX_DST;
++
++			key->enable = 1;
++		} else
++			key->enable = 0;
++
++		key->color = dispc_read_reg(tr_reg[ch]);
++	} else if (ch == OMAP_DSS_CHANNEL_DIGIT) {
++		/* check color keying is enabled or not */
++		if (config & 0x1000) {
++			/* Check whether it is src color keying
++			   or dst color keying */
++			if (config & 0x2000)
++				key->type = OMAP_DSS_COLOR_KEY_VID_SRC;
++			else
++				key->type = OMAP_DSS_COLOR_KEY_GFX_DST;
++
++			key->enable = 1;
++		} else
++			key->enable = 0;
++
++		key->color = dispc_read_reg(tr_reg[ch]);
++	}
++
++}
++
+ u32 dispc_get_plane_fifo_size(enum omap_plane plane)
+ {
+ 	const struct dispc_reg fsz_reg[] = { DISPC_GFX_FIFO_SIZE_STATUS,
+diff --git a/arch/arm/plat-omap/dss/dpi.c b/arch/arm/plat-omap/dss/dpi.c
+index fe957bb..ee2d49e 100644
+--- a/arch/arm/plat-omap/dss/dpi.c
++++ b/arch/arm/plat-omap/dss/dpi.c
+@@ -345,6 +345,11 @@ static int dpi_get_alpha_blending(struct omap_display *display)
+ {
+ 	return dispc_get_alpha_blending(OMAP_DSS_CHANNEL_LCD);
+ }
++static void dpi_display_get_color_keying(struct omap_display *display,
++	struct omap_color_key *key)
++{
++	dispc_get_color_keying(OMAP_DSS_CHANNEL_LCD, key);
++}
+ 
+ void dpi_init_display(struct omap_display *display)
+ {
+@@ -362,6 +367,7 @@ void dpi_init_display(struct omap_display *display)
+ 	display->set_bg_color = dpi_display_set_bg_color;
+ 	display->get_bg_color = dpi_display_get_bg_color;
+ 	display->set_color_keying = dpi_display_set_color_keying;
++	display->get_color_keying = dpi_display_get_color_keying;
+ 	display->enable_alpha_blending = dpi_enable_alpha_blending;
+ 	display->get_alpha_blending = dpi_get_alpha_blending;
+ }
+diff --git a/arch/arm/plat-omap/dss/dss.h b/arch/arm/plat-omap/dss/dss.h
+index 0cfb986..23ee24b 100644
+--- a/arch/arm/plat-omap/dss/dss.h
++++ b/arch/arm/plat-omap/dss/dss.h
+@@ -234,6 +234,7 @@ void omap_dispc_set_trans_key(enum omap_channel ch,
+ 		u32 trans_key);
+ void omap_dispc_enable_trans_key(enum omap_channel ch, int enable);
+ void dispc_enable_alpha_blending(enum omap_channel ch, int enable);
++void dispc_get_color_keying(enum omap_channel ch, struct omap_color_key *key);
+ 
+ void dispc_set_lcd_timings(struct omap_video_timings *timings);
+ unsigned long dispc_fclk_rate(void);
+diff --git a/arch/arm/plat-omap/dss/venc.c b/arch/arm/plat-omap/dss/venc.c
+index 4c8a6ae..b020bf5 100644
+--- a/arch/arm/plat-omap/dss/venc.c
++++ b/arch/arm/plat-omap/dss/venc.c
+@@ -533,6 +533,12 @@ static int venc_get_alpha_blending(struct omap_display *display)
+ 	return dispc_get_alpha_blending(OMAP_DSS_CHANNEL_DIGIT);
+ }
+ 
++static void venc_display_get_color_keying(struct omap_display *display,
++	struct omap_color_key *key)
++{
++	dispc_get_color_keying(OMAP_DSS_CHANNEL_DIGIT, key);
++}
++
+ void venc_init_display(struct omap_display *display)
+ {
+ 	display->panel = &venc_panel;
+@@ -542,6 +548,7 @@ void venc_init_display(struct omap_display *display)
+ 	display->set_bg_color = venc_display_set_bg_color;
+ 	display->get_bg_color = venc_display_get_bg_color;
+ 	display->set_color_keying = venc_display_set_color_keying;
++	display->get_color_keying = venc_display_get_color_keying;
+ 	display->enable_alpha_blending = venc_enable_alpha_blending;
+ 	display->get_alpha_blending = venc_get_alpha_blending;
+ }
+diff --git a/arch/arm/plat-omap/include/mach/display.h b/arch/arm/plat-omap/include/mach/display.h
+index e9d2528..318f082 100644
+--- a/arch/arm/plat-omap/include/mach/display.h
++++ b/arch/arm/plat-omap/include/mach/display.h
+@@ -450,6 +450,8 @@ struct omap_display {
+ 	void (*enable_alpha_blending)(struct omap_display *display,
+ 			unsigned int enable);
+ 	int (*get_alpha_blending)(struct omap_display *display);
++	void (*get_color_keying)(struct omap_display *display,
++			struct omap_color_key *key);
+ 	int (*update)(struct omap_display *display,
+ 			       int x, int y, int w, int h);
+ 	int (*sync)(struct omap_display *display);
+diff --git a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
+index 4c43899..f7f133e 100644
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -1187,6 +1187,8 @@ static int vidioc_s_fmt_vid_overlay(struct file *file, void *fh,
+ 	else
+ 		vout->win.global_alpha = f->fmt.win.global_alpha;
+ 
++	vout->win.chromakey = f->fmt.win.chromakey;
++
+ 	up(&vout->lock);
+ 	return 0;
+ }
+@@ -1215,22 +1217,32 @@ static int vidioc_g_fmt_vid_overlay(struct file *file, void *fh,
+ {
+ 	struct omap_vout_device *vout = ((struct omap_vout_fh *) fh)->vout;
+ 
++	struct omapvideo_info *ovid;
++	struct omap_overlay *ovl;
+ 	struct v4l2_window *win = &f->fmt.win;
++	struct omap_color_key key;
++
+ 	memset(win, 0, sizeof(*win));
+ 
+ 	/*
+-	 * The API has a bit of a problem here.
+-	 * We're returning a v4l2_window
+-	 * structure, but that structure
+-	 * contains pointers to variable-sized
+-	 * objects for clipping rectangles and
+-	 * clipping bitmaps.  We will just
++	 * The API has a bit of a problem here.  We're returning a v4l2_window
++	 * structure, but that structure contains pointers to variable-sized
++	 * objects for clipping rectangles and clipping bitmaps.  We will just
+ 	 * return NULLs for those pointers.
+ 	 */
+ 	win->w = vout->win.w;
+ 	win->field = vout->win.field;
+-	win->chromakey = vout->win.chromakey;
+ 	win->global_alpha = vout->win.global_alpha;
++
++	ovid = &(vout->vid_info);
++	ovl = ovid->overlays[0];
++
++	if (ovl->manager && ovl->manager->display &&
++				ovl->manager->display->set_color_keying)
++		ovl->manager->display->get_color_keying(ovl->manager->display,
++				&key);
++
++	win->chromakey = key.color;
+ 	return 0;
+ }
+ 
+@@ -1688,26 +1700,39 @@ static int vidioc_s_fbuf(struct file *file, void *fh,
+ 	ovid = &(vout->vid_info);
+ 	ovl = ovid->overlays[0];
+ 
++	if ((a->flags & V4L2_FBUF_FLAG_SRC_CHROMAKEY) &&
++			(a->flags & V4L2_FBUF_FLAG_CHROMAKEY))
++		return -EINVAL;
++	if (a->flags & V4L2_FBUF_FLAG_CHROMAKEY &&
++			(a->flags & V4L2_FBUF_FLAG_LOCAL_ALPHA))
++		return -EINVAL;
++
++	if ((a->flags & V4L2_FBUF_FLAG_SRC_CHROMAKEY)) {
++		vout->fbuf.flags |= V4L2_FBUF_FLAG_SRC_CHROMAKEY;
++		key.type =  OMAP_DSS_COLOR_KEY_VID_SRC;
++	} else
++		vout->fbuf.flags &= ~V4L2_FBUF_FLAG_SRC_CHROMAKEY;
++
+ 	if ((a->flags & V4L2_FBUF_FLAG_CHROMAKEY)) {
+-		vout->src_chroma_key_enable = 1;
++		vout->fbuf.flags |= V4L2_FBUF_FLAG_CHROMAKEY;
++		key.type =  OMAP_DSS_COLOR_KEY_GFX_DST;
++	} else
++		vout->fbuf.flags &=  ~V4L2_FBUF_FLAG_CHROMAKEY;
++
++	if (a->flags & (V4L2_FBUF_FLAG_CHROMAKEY |
++				V4L2_FBUF_FLAG_SRC_CHROMAKEY)) {
+ 		key.enable = 1;
+-		key.type =  OMAP_DSS_COLOR_KEY_VID_SRC;
+-		key.color = vout->src_chroma_key;
+-		if (ovl->manager && ovl->manager->display &&
+-				ovl->manager->display->set_color_keying)
+-			ovl->manager->display->set_color_keying(
+-				ovl->manager->display, &key);
+-	}
+-	if (!(a->flags & V4L2_FBUF_FLAG_CHROMAKEY)) {
+-		vout->src_chroma_key_enable = 0;
++		key.color = vout->win.chromakey;
++	} else {
+ 		key.enable = 0;
+ 		key.type = OMAP_DSS_COLOR_KEY_VID_SRC;
+-		key.color = vout->src_chroma_key;
+-		if (ovl->manager && ovl->manager->display
+-				&& ovl->manager->display->set_color_keying)
+-			ovl->manager->display->set_color_keying(
+-				ovl->manager->display, &key);
++		key.color = vout->win.chromakey;
+ 	}
++	if (ovl->manager && ovl->manager->display &&
++				ovl->manager->display->set_color_keying)
++		ovl->manager->display->set_color_keying(ovl->manager->display,
++				&key);
++
+ 	if (a->flags & V4L2_FBUF_FLAG_LOCAL_ALPHA) {
+ 		vout->fbuf.flags |= V4L2_FBUF_FLAG_LOCAL_ALPHA;
+ 		if (ovl->manager && ovl->manager->display
+@@ -1732,6 +1757,7 @@ static int vidioc_g_fbuf(struct file *file, void *fh,
+ 	struct omap_vout_device *vout = ofh->vout;
+ 	struct omapvideo_info *ovid;
+ 	struct omap_overlay *ovl;
++	struct omap_color_key key;
+ 
+ 	ovid = &(vout->vid_info);
+ 	ovl = ovid->overlays[0];
+@@ -1739,10 +1765,21 @@ static int vidioc_g_fbuf(struct file *file, void *fh,
+ 	a->flags = 0x0;
+ 	a->capability = 0x0;
+ 
+-	a->capability = V4L2_FBUF_CAP_LOCAL_ALPHA | V4L2_FBUF_CAP_CHROMAKEY;
++	a->capability = V4L2_FBUF_CAP_LOCAL_ALPHA | V4L2_FBUF_CAP_SRC_CHROMAKEY
++						| V4L2_FBUF_CAP_CHROMAKEY;
++
++	if (ovl->manager && ovl->manager->display
++		&& ovl->manager->display->get_color_keying)
++			ovl->manager->display->get_color_keying(
++					ovl->manager->display, &key);
++			if (key.enable) {
++				if (key.type == OMAP_DSS_COLOR_KEY_VID_SRC)
++					a->flags |=
++						V4L2_FBUF_FLAG_SRC_CHROMAKEY;
++				if (key.type == OMAP_DSS_COLOR_KEY_GFX_DST)
++					a->flags |= V4L2_FBUF_FLAG_CHROMAKEY;
++			}
+ 
+-	if (vout->src_chroma_key_enable == 1)
+-		a->flags |= V4L2_FBUF_FLAG_CHROMAKEY;
+ 	if (ovl->manager && ovl->manager->display
+ 			&& ovl->manager->display->get_alpha_blending)
+ 		if ((ovl->manager->display->get_alpha_blending(
+@@ -1971,12 +2008,12 @@ static int omap_vout_setup_video_data(struct omap_vout_device *vout)
+ 	vout->bpp = RGB565_BPP;
+ 	vout->fbuf.fmt.width  =  display->panel->timings.x_res;
+ 	vout->fbuf.fmt.height =  display->panel->timings.y_res;
++	vout->fbuf.flags = 0;
++	vout->fbuf.capability = V4L2_FBUF_CAP_LOCAL_ALPHA |
++				V4L2_FBUF_CAP_SRC_CHROMAKEY |
++				V4L2_FBUF_CAP_CHROMAKEY;
++	vout->win.chromakey = 0;
+ 
+-	/* Set the Color keying variable */
+-	vout->src_chroma_key_enable = 0;
+-	vout->dst_chroma_key_enable = 0;
+-	vout->src_chroma_key = 0;
+-	vout->dst_chroma_key = 0;
+ 	vout->win.global_alpha = 255;
+ 
+ 	omap_vout_new_format(pix, &vout->fbuf, &vout->crop, &vout->win);
+-- 
+1.6.2.4
+

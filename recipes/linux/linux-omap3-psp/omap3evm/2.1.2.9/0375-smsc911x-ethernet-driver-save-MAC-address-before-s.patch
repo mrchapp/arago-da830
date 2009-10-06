@@ -1,0 +1,47 @@
+From cfebe15468f6a67acdbeeb436fad030f21a25f24 Mon Sep 17 00:00:00 2001
+From: Sriram <srk@ti.com>
+Date: Fri, 5 Jun 2009 16:41:14 +0530
+Subject: [PATCH 375/426] smsc911x ethernet driver : save MAC address before soft reset.
+
+As part of the initialization sequence the smsc911x driver does
+soft reset of the module. In doing so, the MAC address already
+programmed can be lost. This patch saves and restores the MAC
+appropriately.
+---
+ drivers/net/smsc911x.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/smsc911x.c b/drivers/net/smsc911x.c
+index 3289234..ee7db39 100644
+--- a/drivers/net/smsc911x.c
++++ b/drivers/net/smsc911x.c
+@@ -1752,6 +1752,7 @@ static int __devinit smsc911x_init(struct net_device *dev)
+ {
+ 	struct smsc911x_data *pdata = netdev_priv(dev);
+ 	unsigned int byte_test;
++	u32 mac_high16,mac_low32;
+ 
+ 	SMSC_TRACE(PROBE, "Driver Parameters:");
+ 	SMSC_TRACE(PROBE, "LAN base: 0x%08lX",
+@@ -1834,10 +1835,18 @@ static int __devinit smsc911x_init(struct net_device *dev)
+ 		SMSC_WARNING(PROBE,
+ 			"This driver is not intended for this chip revision");
+ 
++        /* save MAC address */
++	 mac_high16 = smsc911x_mac_read(pdata, ADDRH);
++	 mac_low32 = smsc911x_mac_read(pdata, ADDRL);
++
+ 	/* Reset the LAN911x */
+ 	if (smsc911x_soft_reset(pdata))
+ 		return -ENODEV;
+ 
++	/*restore MAC address */
++	smsc911x_mac_write(pdata, ADDRH, mac_high16);
++	smsc911x_mac_write(pdata, ADDRL, mac_low32);
++
+ 	/* Disable all interrupt sources until we bring the device up */
+ 	smsc911x_reg_write(pdata, INT_EN, 0);
+ 
+-- 
+1.6.2.4
+

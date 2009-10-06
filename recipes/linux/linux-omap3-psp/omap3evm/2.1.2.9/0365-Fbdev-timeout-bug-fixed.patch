@@ -1,0 +1,31 @@
+From 47e0729841c5f3a9000440a74f0eb1738d593a3e Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Tue, 31 Mar 2009 14:48:39 +0530
+Subject: [PATCH 365/426] Fbdev timeout bug fixed.
+
+There was bug in sleep_timeout feature, when written 0 to sysfs entry
+it was getting refreshed on UART wakeup.
+
+Check added to see timeout value.
+---
+ drivers/video/omap2/omapfb-sysfs.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/video/omap2/omapfb-sysfs.c b/drivers/video/omap2/omapfb-sysfs.c
+index 7853140..8d7ecec 100755
+--- a/drivers/video/omap2/omapfb-sysfs.c
++++ b/drivers/video/omap2/omapfb-sysfs.c
+@@ -931,7 +931,9 @@ void omap2fb_resume_idle(void)
+ 		omap2fb_can_sleep = 3;
+ 		queue_work(irq_work_queues, &irq_work_queue);
+ 	} else if (omap2fb_can_sleep != -1)
+-	mod_timer(&omap2fb->timer, jiffies + omap2fb->sleep_timeout);
++
++	if (omap2fb->sleep_timeout)
++		mod_timer(&omap2fb->timer, jiffies + omap2fb->sleep_timeout);
+ }
+ EXPORT_SYMBOL(omap2fb_resume_idle);
+ /*
+-- 
+1.6.2.4
+

@@ -1,0 +1,37 @@
+From 38ad0f7f8acec252a5659b2b6bfac54e90824885 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:50 -0600
+Subject: [PATCH 214/426] OMAP3ISP: Frontend: Sensor pattern and VP fix for YUV capture
+
+Gjorgji came up with these values. :)
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+---
+ drivers/media/video/isp/ispccdc.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/video/isp/ispccdc.c b/drivers/media/video/isp/ispccdc.c
+index a08fcb9..598584e 100644
+--- a/drivers/media/video/isp/ispccdc.c
++++ b/drivers/media/video/isp/ispccdc.c
+@@ -508,7 +508,7 @@ EXPORT_SYMBOL(ispccdc_enable_lsc);
+  **/
+ void ispccdc_config_crop(u32 left, u32 top, u32 height, u32 width)
+ {
+-	ispccdc_obj.ccdcin_woffset = left + ((left + 1) % 2);
++	ispccdc_obj.ccdcin_woffset = left + (left % 2);
+ 	ispccdc_obj.ccdcin_hoffset = top + (top % 2);
+ 
+ 	ispccdc_obj.crop_w = width - (width % 16);
+@@ -1173,7 +1173,7 @@ int ispccdc_config_size(u32 input_w, u32 input_h, u32 output_w, u32 output_h)
+ 					ISPCCDC_FMT_VERT);
+ 		isp_reg_writel((ispccdc_obj.ccdcout_w <<
+ 					ISPCCDC_VP_OUT_HORZ_NUM_SHIFT) |
+-					(ispccdc_obj.ccdcout_h <<
++					(ispccdc_obj.ccdcout_h - 1 <<
+ 					ISPCCDC_VP_OUT_VERT_NUM_SHIFT),
+ 					OMAP3_ISP_IOMEM_CCDC,
+ 					ISPCCDC_VP_OUT);
+-- 
+1.6.2.4
+

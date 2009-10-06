@@ -1,0 +1,25 @@
+From bbc23d5a5b141d407450efe6c507085e0ae4fece Mon Sep 17 00:00:00 2001
+From: Anuj Aggarwal <anuj.aggarwal@ti.com>
+Date: Thu, 11 Jun 2009 14:10:41 +0530
+Subject: [PATCH 425/426] Update psp version string for release 02.01.02.09
+
+---
+ arch/arm/plat-omap/psp-version.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/plat-omap/psp-version.h b/arch/arm/plat-omap/psp-version.h
+index ce315bd..08a6245 100644
+--- a/arch/arm/plat-omap/psp-version.h
++++ b/arch/arm/plat-omap/psp-version.h
+@@ -23,7 +23,7 @@
+ #define __ARCH_ARM_PLAT_PSP_VERSION_H
+ 
+ #define TI_PSP_ENTRY		"ti-psp-version"
+-#define TI_PSP_VERSION		"02.01.01.08"
++#define TI_PSP_VERSION		"02.01.02.09"
+ 
+ #if defined (CONFIG_MACH_OMAP3EVM)
+ #define TI_PSP_DEVICE		"OMAP35x"
+-- 
+1.6.2.4
+

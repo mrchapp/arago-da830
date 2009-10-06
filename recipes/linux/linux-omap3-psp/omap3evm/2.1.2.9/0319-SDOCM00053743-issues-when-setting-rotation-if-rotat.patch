@@ -1,0 +1,62 @@
+From bc8158153834f2ccfc5f954717119512ca6f6993 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Wed, 25 Feb 2009 16:37:37 +0530
+Subject: [PATCH 319/426] SDOCM00053743: issues when setting rotation if rotation is not enabled fixed
+
+If rotation is not enabled through bootargs and if application
+tries to set the rotation angle, then FBDEV drivers was accepting
+the rotation value and was changing the xres and yres. There
+was no return path from this.
+
+Now driver checks for the rotation_type, and if changes/configures
+rotation angle only if it is enabled.
+---
+ drivers/video/omap2/omapfb-main.c |   18 ++++++++++++------
+ 1 files changed, 12 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/video/omap2/omapfb-main.c b/drivers/video/omap2/omapfb-main.c
+index 0e711f7..0572efb 100644
+--- a/drivers/video/omap2/omapfb-main.c
++++ b/drivers/video/omap2/omapfb-main.c
+@@ -37,7 +37,7 @@
+ 
+ static char *def_mode;
+ static char *def_vram;
+-static int def_rotate_type;
++static int def_rotate_type = -1;
+ static int def_rotate = -1;
+ 
+ #define VRFB_WIDTH 	(2048)
+@@ -48,6 +48,9 @@ static int def_rotate = -1;
+ 				(rotate == FB_ROTATE_UD) || \
+ 				(rotate == FB_ROTATE_CCW))
+ 
++#define IS_ROTATION_ENABLED(rotation_type) ((rotation_type == OMAPFB_ROT_DMA) \
++		|| (rotation_type == OMAPFB_ROT_VRFB))
++
+ #ifdef DEBUG
+ unsigned int omapfb_debug;
+ module_param_named(debug, omapfb_debug, bool, 0644);
+@@ -405,11 +408,14 @@ int check_fb_var(struct fb_info *fbi, struct fb_var_screeninfo *var)
+ 			DBG("invalid rotation parameter\n");
+ 			return -EINVAL;
+ 		}
+-		/*TODO: If this function returns error after this
+-		 *	then we are setting wrong rotation value
+-		 *	to "ofbi"
+-		 */
+-		ofbi->rotation = var->rotate;
++		if (!IS_ROTATION_ENABLED(ofbi->rotation_type))
++			var->rotate = ofbi->rotation = -1;
++		else
++			/*TODO: If this function returns error after this
++			 *	then we are setting wrong rotation value
++			 *	to "ofbi"
++			 */
++			ofbi->rotation = var->rotate;
+ 	}
+ 	xres_min = OMAPFB_PLANE_XRES_MIN;
+ 	yres_min = OMAPFB_PLANE_YRES_MIN;
+-- 
+1.6.2.4
+

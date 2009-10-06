@@ -1,0 +1,121 @@
+From a71c8033d83e84a2e54ff1668fa6652d155dfbfd Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Mon, 9 Feb 2009 11:11:07 +0530
+Subject: [PATCH 188/426] Bug Solved: VRFB rotation not working on DVI output.
+
+---
+ arch/arm/plat-omap/dss/dispc.c      |    2 --
+ arch/arm/plat-omap/dss/dpi.c        |   27 ++++++++++++---------------
+ drivers/video/omap2/panel-generic.c |    9 +++++++--
+ 3 files changed, 19 insertions(+), 19 deletions(-)
+
+diff --git a/arch/arm/plat-omap/dss/dispc.c b/arch/arm/plat-omap/dss/dispc.c
+index eb25ef7..ae4a966 100644
+--- a/arch/arm/plat-omap/dss/dispc.c
++++ b/arch/arm/plat-omap/dss/dispc.c
+@@ -986,8 +986,6 @@ static void _dispc_set_scaling(enum omap_plane plane,
+ static int _dispc_set_rotation_mirroring(enum omap_plane plane,
+ 	int rotation, int mirroring, enum omap_color_mode color_mode)
+ {
+-	u32 attr_value;
+-
+ 	if (color_mode == OMAP_DSS_COLOR_YUV2 ||
+ 			color_mode == OMAP_DSS_COLOR_UYVY) {
+ 		if (mirroring == 1) {
+diff --git a/arch/arm/plat-omap/dss/dpi.c b/arch/arm/plat-omap/dss/dpi.c
+index 2dd8a3b..8b680ed 100644
+--- a/arch/arm/plat-omap/dss/dpi.c
++++ b/arch/arm/plat-omap/dss/dpi.c
+@@ -29,6 +29,12 @@
+ #include <mach/display.h>
+ #include "dss.h"
+ 
++/* TODO find the exact value of the fifo threshold.
++ * With previously configured threshold under run
++ * errors were coming
++ */
++#define OMAP_DSS_FIFO_LOW_THRESHOLD	0x03bc
++#define OMAP_DSS_FIFO_HIGH_THRESHOLD	0x03fc
+ 
+ static struct {
+ 	int update_enabled;
+@@ -98,13 +104,11 @@ static void dpi_set_mode(struct omap_display *display)
+ 	dss_clk_disable(DSS_CLK_ICK | DSS_CLK_FCK1);
+ }
+ 
+-
+ static int dpi_display_enable(struct omap_display *display)
+ {
+ 	struct omap_panel *panel = display->panel;
+ 	int r;
+ 	int is_tft;
+-	unsigned high, low, burst;
+ 
+ 	if (display->state != OMAP_DSS_DISPLAY_DISABLED) {
+ 		DSSERR("display already enabled\n");
+@@ -134,19 +138,12 @@ static int dpi_display_enable(struct omap_display *display)
+ 	dispc_set_burst_size(OMAP_DSS_VIDEO1, OMAP_DSS_BURST_16x32);
+ 	dispc_set_burst_size(OMAP_DSS_VIDEO2, OMAP_DSS_BURST_16x32);
+ 
+-	burst = 16 * 32 / 8;
+-
+-	high = dispc_get_plane_fifo_size(OMAP_DSS_GFX) - burst;
+-	low = dispc_get_plane_fifo_size(OMAP_DSS_GFX) / 4;
+-	dispc_setup_plane_fifo(OMAP_DSS_GFX, low, high);
+-
+-	high = dispc_get_plane_fifo_size(OMAP_DSS_VIDEO1) - burst;
+-	low = dispc_get_plane_fifo_size(OMAP_DSS_VIDEO1) / 4;
+-	dispc_setup_plane_fifo(OMAP_DSS_VIDEO1, low, high);
+-
+-	high = dispc_get_plane_fifo_size(OMAP_DSS_VIDEO2) - burst;
+-	low = dispc_get_plane_fifo_size(OMAP_DSS_VIDEO2) / 4;
+-	dispc_setup_plane_fifo(OMAP_DSS_VIDEO2, low, high);
++	dispc_setup_plane_fifo(OMAP_DSS_GFX, OMAP_DSS_FIFO_LOW_THRESHOLD,
++			OMAP_DSS_FIFO_HIGH_THRESHOLD);
++	dispc_setup_plane_fifo(OMAP_DSS_VIDEO1, OMAP_DSS_FIFO_LOW_THRESHOLD,
++			OMAP_DSS_FIFO_HIGH_THRESHOLD);
++	dispc_setup_plane_fifo(OMAP_DSS_VIDEO1, OMAP_DSS_FIFO_LOW_THRESHOLD,
++			OMAP_DSS_FIFO_HIGH_THRESHOLD);
+ 
+ 	dpi_set_mode(display);
+ 
+diff --git a/drivers/video/omap2/panel-generic.c b/drivers/video/omap2/panel-generic.c
+index 2fdb47e..55d5850 100644
+--- a/drivers/video/omap2/panel-generic.c
++++ b/drivers/video/omap2/panel-generic.c
+@@ -69,25 +69,30 @@ static struct omap_panel generic_panel = {
+ 		.x_res		= 1280,
+ 		.y_res		= 720,
+ 		.pixel_clock	= 74250,
++		.hfp		= 0x3F,
++		.hsw		= 0x31,
++		.hbp		= 0xFF,
++		.vfp		= 0x5,
++		.vsw		= 0x4,
++		.vbp		= 0x14,
+ #elif defined (CONFIG_RES_480P)
+ 		/* 720 x 480 @ 60 Hz  Reduced blanking VESA CVT 0.31M3-R */
+ 		.x_res		= 720,
+ 		.y_res		= 480,
+ 		.pixel_clock	= 30000,
+-#endif
+ 		.hfp		= 48,
+ 		.hsw		= 32,
+ 		.hbp		= 80,
+ 		.vfp		= 3,
+ 		.vsw		= 4,
+ 		.vbp		= 7,
++#endif
+ 	},
+ 
+ 	.bpp		= 24,
+ 	.config		= OMAP_DSS_LCD_TFT,
+ };
+ 
+-
+ static int __init generic_panel_drv_init(void)
+ {
+ 	omap_dss_register_panel(&generic_panel);
+-- 
+1.6.2.4
+

@@ -1,0 +1,106 @@
+From d016f73a0597be97aae2a0c55b6d79bb61b8616c Mon Sep 17 00:00:00 2001
+From: Sakari Ailus <sakari.ailus@nokia.com>
+Date: Mon, 26 Jan 2009 15:19:39 -0600
+Subject: [PATCH 238/426] OMAP3ISP: Core: Remove isp_request_interface and dummy fields in struct isp
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/isp/isp.c |   51 -----------------------------------------
+ drivers/media/video/isp/isp.h |    4 ---
+ 2 files changed, 0 insertions(+), 55 deletions(-)
+
+diff --git a/drivers/media/video/isp/isp.c b/drivers/media/video/isp/isp.c
+index 7c0e449..d06289d 100644
+--- a/drivers/media/video/isp/isp.c
++++ b/drivers/media/video/isp/isp.c
+@@ -208,8 +208,6 @@ static struct ispirq {
+  * struct isp - Structure for storing ISP Control module information
+  * @lock: Spinlock to sync between isr and processes.
+  * @isp_mutex: Semaphore used to get access to the ISP.
+- * @if_status: Type of interface used in ISP.
+- * @interfacetype: (Not used).
+  * @ref_count: Reference counter.
+  * @cam_ick: Pointer to ISP Interface clock.
+  * @cam_fck: Pointer to ISP Functional clock.
+@@ -219,8 +217,6 @@ static struct ispirq {
+ static struct isp {
+ 	spinlock_t lock;	/* For handling registered ISP callbacks */
+ 	struct mutex isp_mutex;	/* For handling ref_count field */
+-	u8 if_status;
+-	u8 interfacetype;
+ 	int ref_count;
+ 	struct clk *cam_ick;
+ 	struct clk *cam_mclk;
+@@ -594,53 +590,6 @@ int isp_unset_callback(enum isp_callback_type type)
+ EXPORT_SYMBOL(isp_unset_callback);
+ 
+ /**
+- * isp_request_interface - Requests an ISP interface type (parallel or serial).
+- * @if_t: Type of requested ISP interface (parallel or serial).
+- *
+- * This function requests for allocation of an ISP interface type.
+- **/
+-int isp_request_interface(enum isp_interface_type if_t)
+-{
+-	if (isp_obj.if_status & if_t) {
+-		DPRINTK_ISPCTRL("ISP_ERR : Requested Interface already \
+-			allocated\n");
+-		return -EBUSY;
+-	}
+-	if ((isp_obj.if_status == (ISP_PARLL | ISP_CSIA))
+-			|| isp_obj.if_status == (ISP_CSIA | ISP_CSIB)) {
+-		DPRINTK_ISPCTRL("ISP_ERR : No Free interface now\n");
+-		return -EBUSY;
+-	}
+-
+-	if ((isp_obj.if_status == ISP_PARLL && if_t == ISP_CSIA) ||
+-			(isp_obj.if_status == ISP_CSIA && if_t == ISP_PARLL) ||
+-			(isp_obj.if_status == ISP_CSIA && if_t == ISP_CSIB) ||
+-			(isp_obj.if_status == ISP_CSIB && if_t == ISP_CSIA) ||
+-			(isp_obj.if_status == 0)) {
+-		isp_obj.if_status |= if_t;
+-		return 0;
+-	} else {
+-		DPRINTK_ISPCTRL("ISP_ERR : Invalid Combination Serial- \
+-			Parallel interface\n");
+-		return -EINVAL;
+-	}
+-}
+-EXPORT_SYMBOL(isp_request_interface);
+-
+-/**
+- * isp_free_interface - Frees an ISP interface type (parallel or serial).
+- * @if_t: Type of ISP interface to be freed (parallel or serial).
+- *
+- * This function frees the allocation of an ISP interface type.
+- **/
+-int isp_free_interface(enum isp_interface_type if_t)
+-{
+-	isp_obj.if_status &= ~if_t;
+-	return 0;
+-}
+-EXPORT_SYMBOL(isp_free_interface);
+-
+-/**
+  * isp_set_xclk - Configures the specified cam_xclk to the desired frequency.
+  * @xclk: Desired frequency of the clock in Hz.
+  * @xclksel: XCLK to configure (0 = A, 1 = B).
+diff --git a/drivers/media/video/isp/isp.h b/drivers/media/video/isp/isp.h
+index 69c83fe..fd75c7d 100644
+--- a/drivers/media/video/isp/isp.h
++++ b/drivers/media/video/isp/isp.h
+@@ -270,10 +270,6 @@ u32 isp_set_xclk(u32 xclk, u8 xclksel);
+ 
+ u32 isp_get_xclk(u8 xclksel);
+ 
+-int isp_request_interface(enum isp_interface_type if_t);
+-
+-int isp_free_interface(enum isp_interface_type if_t);
+-
+ int isp_configure_interface(struct isp_interface_config *config);
+ 
+ int isp_get(void);
+-- 
+1.6.2.4
+

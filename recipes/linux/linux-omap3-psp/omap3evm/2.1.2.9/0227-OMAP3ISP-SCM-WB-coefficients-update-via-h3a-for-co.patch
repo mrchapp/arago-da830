@@ -1,0 +1,32 @@
+From 43dab38217343e8db2b4accf2c85d85939429e7a Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:44 -0600
+Subject: [PATCH 227/426] OMAP3ISP: SCM: WB coefficients update via h3a for color pattern(Gr-R B-Gb)
+
+Signed-off-by: Gjorgji Rosikopulos <grosikopulos@mm-sol.com>
+---
+ drivers/media/video/isp/isph3a.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/media/video/isp/isph3a.c b/drivers/media/video/isp/isph3a.c
+index bb053d7..9553f2d 100644
+--- a/drivers/media/video/isp/isph3a.c
++++ b/drivers/media/video/isp/isph3a.c
+@@ -706,10 +706,10 @@ int isph3a_aewb_request_statistics(struct isph3a_aewb_data *aewbdata)
+ 	if (aewbdata->update & SET_DIGITAL_GAIN)
+ 		h3awb_update.dgain = (u16)aewbdata->dgain;
+ 	if (aewbdata->update & SET_COLOR_GAINS) {
+-		h3awb_update.coef3 = (u8)aewbdata->wb_gain_b;
+-		h3awb_update.coef2 = (u8)aewbdata->wb_gain_gr;
+-		h3awb_update.coef1 = (u8)aewbdata->wb_gain_gb;
+-		h3awb_update.coef0 = (u8)aewbdata->wb_gain_r;
++		h3awb_update.coef0 = (u8)aewbdata->wb_gain_gr;
++		h3awb_update.coef1 = (u8)aewbdata->wb_gain_r;
++		h3awb_update.coef2 = (u8)aewbdata->wb_gain_b;
++		h3awb_update.coef3 = (u8)aewbdata->wb_gain_gb;
+ 	}
+ 	if (aewbdata->update & (SET_COLOR_GAINS | SET_DIGITAL_GAIN))
+ 		wb_update = 1;
+-- 
+1.6.2.4
+

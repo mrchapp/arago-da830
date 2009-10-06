@@ -1,0 +1,57 @@
+From de9e39adb2ee1fcadbeea671c67e7e590906b19e Mon Sep 17 00:00:00 2001
+From: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+Date: Mon, 27 Oct 2008 17:06:31 +0200
+Subject: [PATCH 071/426] OMAP: PM: Implement get_last_off_on_transaction_id()
+
+Signed-off-by: Peter 'p2' De Schrijver <peter.de-schrijver@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/pm.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm.c b/arch/arm/mach-omap2/pm.c
+index 4c5aec2..c30f561 100644
+--- a/arch/arm/mach-omap2/pm.c
++++ b/arch/arm/mach-omap2/pm.c
+@@ -23,12 +23,16 @@
+ 
+ #include <linux/suspend.h>
+ #include <linux/time.h>
++#include <linux/platform_device.h>
+ 
+ #include <mach/cpu.h>
+ #include <asm/mach/time.h>
+ #include <asm/atomic.h>
+ 
+ #include <mach/pm.h>
++#include <mach/powerdomain.h>
++#include <mach/omapdev.h>
++
+ #include "prm-regbits-34xx.h"
+ #include "pm.h"
+ 
+@@ -115,6 +119,21 @@ void omap2_allow_sleep(void)
+ 	BUG_ON(i < 0);
+ }
+ 
++unsigned get_last_off_on_transaction_id(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct omapdev *odev = omapdev_find_pdev(pdev);
++	struct powerdomain *pwrdm;
++
++	if (odev) {
++		pwrdm = omapdev_get_pwrdm(odev);
++		if (pwrdm)
++			return pwrdm->state_counter[0];
++	}
++
++	return 0;
++}
++
+ static int __init omap_pm_init(void)
+ {
+ 	int error = -1;
+-- 
+1.6.2.4
+

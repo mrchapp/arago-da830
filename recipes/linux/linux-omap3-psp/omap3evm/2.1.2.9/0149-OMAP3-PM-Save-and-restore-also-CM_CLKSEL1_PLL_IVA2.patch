@@ -1,0 +1,47 @@
+From ef03c11ce1509a3d09a96a9d76bc5d067d464c8b Mon Sep 17 00:00:00 2001
+From: Jouni Hogander <jouni.hogander@nokia.com>
+Date: Thu, 5 Feb 2009 13:34:01 +0200
+Subject: [PATCH 149/426] OMAP3: PM: Save and restore also CM_CLKSEL1_PLL_IVA2
+
+CM_CLKSEL1_PLL_IVA2 is not saved/restored currently. This patch is
+adding save and restore for it.
+
+Signed-off-by: Jouni Hogander <jouni.hogander@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/prcm.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/prcm.c b/arch/arm/mach-omap2/prcm.c
+index c64b668..7ccaf7f 100644
+--- a/arch/arm/mach-omap2/prcm.c
++++ b/arch/arm/mach-omap2/prcm.c
+@@ -36,6 +36,7 @@ static void __iomem *cm_base;
+ 
+ struct omap3_prcm_regs {
+ 	u32 control_padconf_sys_nirq;
++	u32 iva2_cm_clksel1;
+ 	u32 iva2_cm_clksel2;
+ 	u32 cm_sysconfig;
+ 	u32 sgx_cm_clksel;
+@@ -218,6 +219,8 @@ void omap3_prcm_save_context(void)
+ {
+ 	prcm_context.control_padconf_sys_nirq =
+ 			 omap_ctrl_readl(OMAP343X_CONTROL_PADCONF_SYSNIRQ);
++	prcm_context.iva2_cm_clksel1 =
++			 cm_read_mod_reg(OMAP3430_IVA2_MOD, CM_CLKSEL1);
+ 	prcm_context.iva2_cm_clksel2 =
+ 			 cm_read_mod_reg(OMAP3430_IVA2_MOD, CM_CLKSEL2);
+ 	prcm_context.cm_sysconfig = __raw_readl(OMAP3430_CM_SYSCONFIG);
+@@ -371,6 +374,8 @@ void omap3_prcm_restore_context(void)
+ {
+ 	omap_ctrl_writel(prcm_context.control_padconf_sys_nirq,
+ 					 OMAP343X_CONTROL_PADCONF_SYSNIRQ);
++	cm_write_mod_reg(prcm_context.iva2_cm_clksel1, OMAP3430_IVA2_MOD,
++					 CM_CLKSEL1);
+ 	cm_write_mod_reg(prcm_context.iva2_cm_clksel2, OMAP3430_IVA2_MOD,
+ 					 CM_CLKSEL2);
+ 	__raw_writel(prcm_context.cm_sysconfig, OMAP3430_CM_SYSCONFIG);
+-- 
+1.6.2.4
+

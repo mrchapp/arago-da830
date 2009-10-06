@@ -1,0 +1,45 @@
+From a51c09cc2c045a0ef02726599c88ae4bf459588f Mon Sep 17 00:00:00 2001
+From: Joonyoung Shim <jy0922.shim@samsung.com>
+Date: Wed, 22 Apr 2009 10:56:50 +0900
+Subject: [PATCH 417/426] ASoC: OMAP: Add checking to detect bufferless pcms
+
+Add checking in hw_params and prepare to detect bufferless pcms(i.e. BT
+<--> codec).
+
+Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ sound/soc/omap/omap-pcm.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/sound/soc/omap/omap-pcm.c b/sound/soc/omap/omap-pcm.c
+index 07cf7f4..6454e15 100644
+--- a/sound/soc/omap/omap-pcm.c
++++ b/sound/soc/omap/omap-pcm.c
+@@ -87,8 +87,10 @@ static int omap_pcm_hw_params(struct snd_pcm_substream *substream,
+ 	struct omap_pcm_dma_data *dma_data = rtd->dai->cpu_dai->dma_data;
+ 	int err = 0;
+ 
++	/* return if this is a bufferless transfer e.g.
++	 * codec <--> BT codec or GSM modem -- lg FIXME */
+ 	if (!dma_data)
+-		return -ENODEV;
++		return 0;
+ 
+ 	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
+ 	runtime->dma_bytes = params_buffer_bytes(params);
+@@ -134,6 +136,11 @@ static int omap_pcm_prepare(struct snd_pcm_substream *substream)
+ 	struct omap_pcm_dma_data *dma_data = prtd->dma_data;
+ 	struct omap_dma_channel_params dma_params;
+ 
++	/* return if this is a bufferless transfer e.g.
++	 * codec <--> BT codec or GSM modem -- lg FIXME */
++	if (!prtd->dma_data)
++		return 0;
++
+ 	memset(&dma_params, 0, sizeof(dma_params));
+ 	/*
+ 	 * Note: Regardless of interface data formats supported by OMAP McBSP
+-- 
+1.6.2.4
+

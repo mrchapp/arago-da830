@@ -1,0 +1,33 @@
+From 983eceae3085f8181be5a8f3ad0e3c61adc0b6be Mon Sep 17 00:00:00 2001
+From: Tero Kristo <tero.kristo@nokia.com>
+Date: Fri, 9 Jan 2009 17:49:07 +0200
+Subject: [PATCH 130/426] PM: OMAP3: Removed a couple of unused variables from DVFS code
+
+- freqs_notify is only used by CPU_FREQ => added compiler flags
+- req_l3_freq was a copy paste bug and was never used by this function => rm
+
+Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/resource34xx.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/resource34xx.c b/arch/arm/mach-omap2/resource34xx.c
+index f862ee6..aec2bcb 100644
+--- a/arch/arm/mach-omap2/resource34xx.c
++++ b/arch/arm/mach-omap2/resource34xx.c
+@@ -183,8 +183,10 @@ int resource_access_opp_lock(int res, int delta)
+ 
+ int resource_set_opp_level(int res, u32 target_level, int flags)
+ {
+-	unsigned long mpu_freq, mpu_old_freq, l3_freq, req_l3_freq, t_opp;
++	unsigned long mpu_freq, mpu_old_freq, l3_freq, t_opp;
++#ifdef CONFIG_CPU_FREQ
+ 	struct cpufreq_freqs freqs_notify;
++#endif
+ 	struct shared_resource *resp;
+ 
+ 	if (res == VDD1_OPP)
+-- 
+1.6.2.4
+

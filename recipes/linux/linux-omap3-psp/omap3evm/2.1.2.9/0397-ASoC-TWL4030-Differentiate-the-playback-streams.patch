@@ -1,0 +1,57 @@
+From dfa2c34fb7bbb4c1ea2dd8e29cd583c7adff5886 Mon Sep 17 00:00:00 2001
+From: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+Date: Fri, 22 May 2009 15:12:15 +0300
+Subject: [PATCH 397/426] ASoC: TWL4030: Differentiate the playback streams
+
+Give unique stream names for the two playback streams so
+DAPM can figure out which codec_dai is in use.
+
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ sound/soc/codecs/twl4030.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/sound/soc/codecs/twl4030.c b/sound/soc/codecs/twl4030.c
+index 584507f..9197fdd 100644
+--- a/sound/soc/codecs/twl4030.c
++++ b/sound/soc/codecs/twl4030.c
+@@ -1092,13 +1092,13 @@ static const struct snd_soc_dapm_widget twl4030_dapm_widgets[] = {
+ 	SND_SOC_DAPM_OUTPUT("VIBRA"),
+ 
+ 	/* DACs */
+-	SND_SOC_DAPM_DAC("DAC Right1", "Right Front Playback",
++	SND_SOC_DAPM_DAC("DAC Right1", "Right Front HiFi Playback",
+ 			SND_SOC_NOPM, 0, 0),
+-	SND_SOC_DAPM_DAC("DAC Left1", "Left Front Playback",
++	SND_SOC_DAPM_DAC("DAC Left1", "Left Front HiFi Playback",
+ 			SND_SOC_NOPM, 0, 0),
+-	SND_SOC_DAPM_DAC("DAC Right2", "Right Rear Playback",
++	SND_SOC_DAPM_DAC("DAC Right2", "Right Rear HiFi Playback",
+ 			SND_SOC_NOPM, 0, 0),
+-	SND_SOC_DAPM_DAC("DAC Left2", "Left Rear Playback",
++	SND_SOC_DAPM_DAC("DAC Left2", "Left Rear HiFi Playback",
+ 			SND_SOC_NOPM, 0, 0),
+ 	SND_SOC_DAPM_DAC("DAC Voice", "Voice Playback",
+ 			SND_SOC_NOPM, 0, 0),
+@@ -1937,7 +1937,7 @@ struct snd_soc_dai twl4030_dai[] = {
+ {
+ 	.name = "twl4030",
+ 	.playback = {
+-		.stream_name = "Playback",
++		.stream_name = "HiFi Playback",
+ 		.channels_min = 2,
+ 		.channels_max = 4,
+ 		.rates = TWL4030_RATES | SNDRV_PCM_RATE_96000,
+@@ -1953,7 +1953,7 @@ struct snd_soc_dai twl4030_dai[] = {
+ {
+ 	.name = "twl4030 Voice",
+ 	.playback = {
+-		.stream_name = "Playback",
++		.stream_name = "Voice Playback",
+ 		.channels_min = 1,
+ 		.channels_max = 1,
+ 		.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000,
+-- 
+1.6.2.4
+

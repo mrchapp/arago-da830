@@ -1,0 +1,25 @@
+From 57ee66e89e764d08999ea374b794d97d78babacc Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Mon, 9 Mar 2009 16:02:58 +0530
+Subject: [PATCH 331/426] Isp section mismatch warning fixed
+
+Section mismatch warning fixed from isp.c file.
+---
+ drivers/media/video/isp/isp.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/video/isp/isp.c b/drivers/media/video/isp/isp.c
+index 09a1792..56d4ccc 100644
+--- a/drivers/media/video/isp/isp.c
++++ b/drivers/media/video/isp/isp.c
+@@ -2448,7 +2448,6 @@ static int __init isp_init(void)
+ 
+ 	return 0;
+ }
+-EXPORT_SYMBOL(isp_init);
+ 
+ /**
+  * isp_cleanup - ISP module cleanup.
+-- 
+1.6.2.4
+

@@ -1,0 +1,24 @@
+From 65a2f1c7c73f175320b2137e9f43d08e5c96b0ca Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Fri, 3 Apr 2009 18:22:29 +0530
+Subject: [PATCH 367/426] V4L2: Added support to pass the physicall address to application
+
+---
+ drivers/media/video/omap/omap_vout.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
+index d15af25..02ff7fa 100644
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -876,6 +876,7 @@ static int omap_vout_mmap(struct file *file, struct vm_area_struct *vma)
+ 	vma->vm_private_data = (void *) vout;
+ 	dmabuf = videobuf_to_dma(q->bufs[i]);
+ 	pos = dmabuf->vmalloc;
++	vma->vm_pgoff = virt_to_phys((void *)pos) >> PAGE_SHIFT;
+ 	while (size > 0) {
+ 		unsigned long pfn;
+ 		pfn = virt_to_phys((void *) pos) >> PAGE_SHIFT;
+-- 
+1.6.2.4
+

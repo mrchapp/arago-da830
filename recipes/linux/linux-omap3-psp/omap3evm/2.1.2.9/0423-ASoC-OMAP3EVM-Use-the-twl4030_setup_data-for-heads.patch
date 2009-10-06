@@ -1,0 +1,55 @@
+From 825108d113fd93ee6b9d19ecf47ea3a2c2e9a249 Mon Sep 17 00:00:00 2001
+From: Anuj Aggarwal <anuj.aggarwal@ti.com>
+Date: Tue, 9 Jun 2009 12:16:54 +0530
+Subject: [PATCH 423/426] ASoC: OMAP3EVM: Use the twl4030_setup_data for headset pop-removal
+
+With this patch, the initial headset pop-removal related values are
+configured for the twl4030 codec (ramp delay and sysclk) for OMAP3
+EVM.
+---
+ sound/soc/omap/omap3evm.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/sound/soc/omap/omap3evm.c b/sound/soc/omap/omap3evm.c
+index 00a3133..f34be87 100644
+--- a/sound/soc/omap/omap3evm.c
++++ b/sound/soc/omap/omap3evm.c
+@@ -81,7 +81,7 @@ static struct snd_soc_dai_link omap3evm_dai = {
+ 	.name = "TWL4030",
+ 	.stream_name = "TWL4030",
+ 	.cpu_dai = &omap_mcbsp_dai[0],
+-	.codec_dai = &twl4030_dai,
++	.codec_dai = &twl4030_dai[TWL4030_DAI_HIFI],
+ 	.ops = &omap3evm_ops,
+ };
+ 
+@@ -93,10 +93,17 @@ static struct snd_soc_card snd_soc_omap3evm = {
+ 	.num_links = 1,
+ };
+ 
++/* twl4030 setup */
++static struct twl4030_setup_data twl4030_setup = {
++	.ramp_delay_value = 4,
++	.sysclk = 26000,
++};
++
+ /* Audio subsystem */
+ static struct snd_soc_device omap3evm_snd_devdata = {
+ 	.card = &snd_soc_omap3evm,
+ 	.codec_dev = &soc_codec_dev_twl4030,
++	.codec_data = &twl4030_setup,
+ };
+ 
+ static struct platform_device *omap3evm_snd_device;
+@@ -106,7 +113,7 @@ static int __init omap3evm_soc_init(void)
+ 	int ret;
+ 
+ 	if (!machine_is_omap3evm()) {
+-		pr_debug("Not OMAP3 EVM!\n");
++		pr_err("Not OMAP3 EVM!\n");
+ 		return -ENODEV;
+ 	}
+ 	pr_info("OMAP3 EVM SoC init\n");
+-- 
+1.6.2.4
+

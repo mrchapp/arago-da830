@@ -1,0 +1,57 @@
+From e036be0cc517cf3b30ef8c8f985cede935aa05f3 Mon Sep 17 00:00:00 2001
+From: Sergio Aguirre <saaguirre@ti.com>
+Date: Mon, 26 Jan 2009 15:19:38 -0600
+Subject: [PATCH 239/426] OMAP3ISP: Core: Remove isp_configure_interface_bridge
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
+---
+ drivers/media/video/isp/isp.c |   17 -----------------
+ drivers/media/video/isp/isp.h |    3 ---
+ 2 files changed, 0 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/media/video/isp/isp.c b/drivers/media/video/isp/isp.c
+index d06289d..024058c 100644
+--- a/drivers/media/video/isp/isp.c
++++ b/drivers/media/video/isp/isp.c
+@@ -929,23 +929,6 @@ int isp_configure_interface(struct isp_interface_config *config)
+ }
+ EXPORT_SYMBOL(isp_configure_interface);
+ 
+-/**
+- * isp_configure_interface_bridge - Configure CCDC i/f bridge.
+- *
+- * Sets the bit field that controls the 8 to 16-bit bridge at
+- * the input to CCDC.
+- **/
+-int isp_configure_interface_bridge(u32 par_bridge)
+-{
+-	u32 ispctrl_val = isp_reg_readl(OMAP3_ISP_IOMEM_MAIN, ISP_CTRL);
+-
+-	ispctrl_val &= ~ISPCTRL_PAR_BRIDGE_BENDIAN;
+-	ispctrl_val |= (par_bridge << ISPCTRL_PAR_BRIDGE_SHIFT);
+-	isp_reg_writel(ispctrl_val, OMAP3_ISP_IOMEM_MAIN, ISP_CTRL);
+-	return 0;
+-}
+-EXPORT_SYMBOL(isp_configure_interface_bridge);
+-
+ int isp_buf_process(struct isp_bufs *bufs);
+ 
+ /**
+diff --git a/drivers/media/video/isp/isp.h b/drivers/media/video/isp/isp.h
+index fd75c7d..4d5b90c 100644
+--- a/drivers/media/video/isp/isp.h
++++ b/drivers/media/video/isp/isp.h
+@@ -321,9 +321,6 @@ void isp_save_ctx(void);
+ 
+ void isp_restore_ctx(void);
+ 
+-/* Configure CCDC interface bridge*/
+-int isp_configure_interface_bridge(u32 par_bridge);
+-
+ void isp_print_status(void);
+ 
+ dma_addr_t isp_buf_get(void);
+-- 
+1.6.2.4
+

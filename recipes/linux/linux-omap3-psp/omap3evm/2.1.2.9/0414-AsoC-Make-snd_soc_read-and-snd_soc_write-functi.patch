@@ -1,0 +1,51 @@
+From 3791261b553e52b5853fec01ba31068fc3b6f923 Mon Sep 17 00:00:00 2001
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Fri, 22 May 2009 09:41:30 +0100
+Subject: [PATCH 414/426] AsoC: Make snd_soc_read() and snd_soc_write() functions
+
+Should be no impact on the generated code but it helps the compiler
+print clearer messages.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ include/sound/soc.h |   17 +++++++++++++----
+ 1 files changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/include/sound/soc.h b/include/sound/soc.h
+index 2af3213..cf6111d 100644
+--- a/include/sound/soc.h
++++ b/include/sound/soc.h
+@@ -214,10 +214,6 @@ void snd_soc_jack_free_gpios(struct snd_soc_jack *jack, int count,
+ 			struct snd_soc_jack_gpio *gpios);
+ #endif
+ 
+-/* codec IO */
+-#define snd_soc_read(codec, reg) codec->read(codec, reg)
+-#define snd_soc_write(codec, reg, value) codec->write(codec, reg, value)
+-
+ /* codec register bit access */
+ int snd_soc_update_bits(struct snd_soc_codec *codec, unsigned short reg,
+ 				unsigned short mask, unsigned short value);
+@@ -507,6 +503,19 @@ struct soc_enum {
+ 	void *dapm;
+ };
+ 
++/* codec IO */
++static inline unsigned int snd_soc_read(struct snd_soc_codec *codec,
++					unsigned int reg)
++{
++	return codec->read(codec, reg);
++}
++
++static inline unsigned int snd_soc_write(struct snd_soc_codec *codec,
++					 unsigned int reg, unsigned int val)
++{
++	return codec->write(codec, reg, val);
++}
++
+ #include <sound/soc-dai.h>
+ 
+ #endif
+-- 
+1.6.2.4
+

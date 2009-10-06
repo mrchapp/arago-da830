@@ -1,0 +1,861 @@
+From 60db635d547d34444f6f8cf477ad291a5021ead5 Mon Sep 17 00:00:00 2001
+From: Anuj Aggarwal <anuj.aggarwal@ti.com>
+Date: Mon, 8 Jun 2009 10:57:35 +0530
+Subject: [PATCH 379/426] Audio: Rebasing the include/sound folder from l-o tip
+
+Since the ASoC framework has changed a lot with respect to the
+current kernel version, this commit pulls the required changes
+in the include/sound folder. This update is done to take the
+twl4030 audio codec patches from the community, which solve the
+beep noise issue.
+---
+ include/sound/asound.h    |  194 +++++++++++++++++++-------------------------
+ include/sound/control.h   |   52 ++++++++++++-
+ include/sound/core.h      |   36 +++++++--
+ include/sound/hdsp.h      |    2 +
+ include/sound/hwdep.h     |   38 ++++++---
+ include/sound/jack.h      |    7 ++
+ include/sound/pcm.h       |    6 +-
+ include/sound/rawmidi.h   |    1 -
+ include/sound/sb.h        |    4 +-
+ include/sound/sfnt_info.h |   14 ++--
+ include/sound/soc-dai.h   |    2 +-
+ include/sound/soc-dapm.h  |   31 ++++++-
+ include/sound/soc.h       |   69 ++++++++++++++++-
+ include/sound/version.h   |    2 +-
+ 14 files changed, 306 insertions(+), 152 deletions(-)
+
+diff --git a/include/sound/asound.h b/include/sound/asound.h
+index 1c02ed1..6add80f 100644
+--- a/include/sound/asound.h
++++ b/include/sound/asound.h
+@@ -23,9 +23,10 @@
+ #ifndef __SOUND_ASOUND_H
+ #define __SOUND_ASOUND_H
+ 
++#include <linux/types.h>
++
+ #ifdef __KERNEL__
+ #include <linux/ioctl.h>
+-#include <linux/types.h>
+ #include <linux/time.h>
+ #include <asm/byteorder.h>
+ 
+@@ -126,12 +127,10 @@ struct snd_hwdep_dsp_image {
+ 	unsigned long driver_data;	/* W: driver-specific data */
+ };
+ 
+-enum {
+-	SNDRV_HWDEP_IOCTL_PVERSION = _IOR ('H', 0x00, int),
+-	SNDRV_HWDEP_IOCTL_INFO = _IOR ('H', 0x01, struct snd_hwdep_info),
+-	SNDRV_HWDEP_IOCTL_DSP_STATUS = _IOR('H', 0x02, struct snd_hwdep_dsp_status),
+-	SNDRV_HWDEP_IOCTL_DSP_LOAD   = _IOW('H', 0x03, struct snd_hwdep_dsp_image)
+-};
++#define SNDRV_HWDEP_IOCTL_PVERSION	_IOR ('H', 0x00, int)
++#define SNDRV_HWDEP_IOCTL_INFO		_IOR ('H', 0x01, struct snd_hwdep_info)
++#define SNDRV_HWDEP_IOCTL_DSP_STATUS	_IOR('H', 0x02, struct snd_hwdep_dsp_status)
++#define SNDRV_HWDEP_IOCTL_DSP_LOAD	_IOW('H', 0x03, struct snd_hwdep_dsp_image)
+ 
+ /*****************************************************************************
+  *                                                                           *
+@@ -342,7 +341,7 @@ struct snd_interval {
+ #define SNDRV_MASK_MAX	256
+ 
+ struct snd_mask {
+-	u_int32_t bits[(SNDRV_MASK_MAX+31)/32];
++	__u32 bits[(SNDRV_MASK_MAX+31)/32];
+ };
+ 
+ struct snd_pcm_hw_params {
+@@ -385,7 +384,7 @@ struct snd_pcm_sw_params {
+ 
+ struct snd_pcm_channel_info {
+ 	unsigned int channel;
+-	off_t offset;			/* mmap offset */
++	__kernel_off_t offset;		/* mmap offset */
+ 	unsigned int first;		/* offset to first sample in bits */
+ 	unsigned int step;		/* samples distance in bits */
+ };
+@@ -451,40 +450,35 @@ enum {
+ 	SNDRV_PCM_TSTAMP_TYPE_LAST = SNDRV_PCM_TSTAMP_TYPE_MONOTONIC,
+ };
+ 
+-enum {
+-	SNDRV_PCM_IOCTL_PVERSION = _IOR('A', 0x00, int),
+-	SNDRV_PCM_IOCTL_INFO = _IOR('A', 0x01, struct snd_pcm_info),
+-	SNDRV_PCM_IOCTL_TSTAMP = _IOW('A', 0x02, int),
+-	SNDRV_PCM_IOCTL_TTSTAMP = _IOW('A', 0x03, int),
+-	SNDRV_PCM_IOCTL_HW_REFINE = _IOWR('A', 0x10, struct snd_pcm_hw_params),
+-	SNDRV_PCM_IOCTL_HW_PARAMS = _IOWR('A', 0x11, struct snd_pcm_hw_params),
+-	SNDRV_PCM_IOCTL_HW_FREE = _IO('A', 0x12),
+-	SNDRV_PCM_IOCTL_SW_PARAMS = _IOWR('A', 0x13, struct snd_pcm_sw_params),
+-	SNDRV_PCM_IOCTL_STATUS = _IOR('A', 0x20, struct snd_pcm_status),
+-	SNDRV_PCM_IOCTL_DELAY = _IOR('A', 0x21, snd_pcm_sframes_t),
+-	SNDRV_PCM_IOCTL_HWSYNC = _IO('A', 0x22),
+-	SNDRV_PCM_IOCTL_SYNC_PTR = _IOWR('A', 0x23, struct snd_pcm_sync_ptr),
+-	SNDRV_PCM_IOCTL_CHANNEL_INFO = _IOR('A', 0x32, struct snd_pcm_channel_info),
+-	SNDRV_PCM_IOCTL_PREPARE = _IO('A', 0x40),
+-	SNDRV_PCM_IOCTL_RESET = _IO('A', 0x41),
+-	SNDRV_PCM_IOCTL_START = _IO('A', 0x42),
+-	SNDRV_PCM_IOCTL_DROP = _IO('A', 0x43),
+-	SNDRV_PCM_IOCTL_DRAIN = _IO('A', 0x44),
+-	SNDRV_PCM_IOCTL_PAUSE = _IOW('A', 0x45, int),
+-	SNDRV_PCM_IOCTL_REWIND = _IOW('A', 0x46, snd_pcm_uframes_t),
+-	SNDRV_PCM_IOCTL_RESUME = _IO('A', 0x47),
+-	SNDRV_PCM_IOCTL_XRUN = _IO('A', 0x48),
+-	SNDRV_PCM_IOCTL_FORWARD = _IOW('A', 0x49, snd_pcm_uframes_t),
+-	SNDRV_PCM_IOCTL_WRITEI_FRAMES = _IOW('A', 0x50, struct snd_xferi),
+-	SNDRV_PCM_IOCTL_READI_FRAMES = _IOR('A', 0x51, struct snd_xferi),
+-	SNDRV_PCM_IOCTL_WRITEN_FRAMES = _IOW('A', 0x52, struct snd_xfern),
+-	SNDRV_PCM_IOCTL_READN_FRAMES = _IOR('A', 0x53, struct snd_xfern),
+-	SNDRV_PCM_IOCTL_LINK = _IOW('A', 0x60, int),
+-	SNDRV_PCM_IOCTL_UNLINK = _IO('A', 0x61),
+-};
+-
+-/* Trick to make alsa-lib/acinclude.m4 happy */
+-#define SNDRV_PCM_IOCTL_REWIND SNDRV_PCM_IOCTL_REWIND
++#define SNDRV_PCM_IOCTL_PVERSION	_IOR('A', 0x00, int)
++#define SNDRV_PCM_IOCTL_INFO		_IOR('A', 0x01, struct snd_pcm_info)
++#define SNDRV_PCM_IOCTL_TSTAMP		_IOW('A', 0x02, int)
++#define SNDRV_PCM_IOCTL_TTSTAMP		_IOW('A', 0x03, int)
++#define SNDRV_PCM_IOCTL_HW_REFINE	_IOWR('A', 0x10, struct snd_pcm_hw_params)
++#define SNDRV_PCM_IOCTL_HW_PARAMS	_IOWR('A', 0x11, struct snd_pcm_hw_params)
++#define SNDRV_PCM_IOCTL_HW_FREE		_IO('A', 0x12)
++#define SNDRV_PCM_IOCTL_SW_PARAMS	_IOWR('A', 0x13, struct snd_pcm_sw_params)
++#define SNDRV_PCM_IOCTL_STATUS		_IOR('A', 0x20, struct snd_pcm_status)
++#define SNDRV_PCM_IOCTL_DELAY		_IOR('A', 0x21, snd_pcm_sframes_t)
++#define SNDRV_PCM_IOCTL_HWSYNC		_IO('A', 0x22)
++#define SNDRV_PCM_IOCTL_SYNC_PTR	_IOWR('A', 0x23, struct snd_pcm_sync_ptr)
++#define SNDRV_PCM_IOCTL_CHANNEL_INFO	_IOR('A', 0x32, struct snd_pcm_channel_info)
++#define SNDRV_PCM_IOCTL_PREPARE		_IO('A', 0x40)
++#define SNDRV_PCM_IOCTL_RESET		_IO('A', 0x41)
++#define SNDRV_PCM_IOCTL_START		_IO('A', 0x42)
++#define SNDRV_PCM_IOCTL_DROP		_IO('A', 0x43)
++#define SNDRV_PCM_IOCTL_DRAIN		_IO('A', 0x44)
++#define SNDRV_PCM_IOCTL_PAUSE		_IOW('A', 0x45, int)
++#define SNDRV_PCM_IOCTL_REWIND		_IOW('A', 0x46, snd_pcm_uframes_t)
++#define SNDRV_PCM_IOCTL_RESUME		_IO('A', 0x47)
++#define SNDRV_PCM_IOCTL_XRUN		_IO('A', 0x48)
++#define SNDRV_PCM_IOCTL_FORWARD		_IOW('A', 0x49, snd_pcm_uframes_t)
++#define SNDRV_PCM_IOCTL_WRITEI_FRAMES	_IOW('A', 0x50, struct snd_xferi)
++#define SNDRV_PCM_IOCTL_READI_FRAMES	_IOR('A', 0x51, struct snd_xferi)
++#define SNDRV_PCM_IOCTL_WRITEN_FRAMES	_IOW('A', 0x52, struct snd_xfern)
++#define SNDRV_PCM_IOCTL_READN_FRAMES	_IOR('A', 0x53, struct snd_xfern)
++#define SNDRV_PCM_IOCTL_LINK		_IOW('A', 0x60, int)
++#define SNDRV_PCM_IOCTL_UNLINK		_IO('A', 0x61)
+ 
+ /*****************************************************************************
+  *                                                                           *
+@@ -538,14 +532,12 @@ struct snd_rawmidi_status {
+ 	unsigned char reserved[16];	/* reserved for future use */
+ };
+ 
+-enum {
+-	SNDRV_RAWMIDI_IOCTL_PVERSION = _IOR('W', 0x00, int),
+-	SNDRV_RAWMIDI_IOCTL_INFO = _IOR('W', 0x01, struct snd_rawmidi_info),
+-	SNDRV_RAWMIDI_IOCTL_PARAMS = _IOWR('W', 0x10, struct snd_rawmidi_params),
+-	SNDRV_RAWMIDI_IOCTL_STATUS = _IOWR('W', 0x20, struct snd_rawmidi_status),
+-	SNDRV_RAWMIDI_IOCTL_DROP = _IOW('W', 0x30, int),
+-	SNDRV_RAWMIDI_IOCTL_DRAIN = _IOW('W', 0x31, int),
+-};
++#define SNDRV_RAWMIDI_IOCTL_PVERSION	_IOR('W', 0x00, int)
++#define SNDRV_RAWMIDI_IOCTL_INFO	_IOR('W', 0x01, struct snd_rawmidi_info)
++#define SNDRV_RAWMIDI_IOCTL_PARAMS	_IOWR('W', 0x10, struct snd_rawmidi_params)
++#define SNDRV_RAWMIDI_IOCTL_STATUS	_IOWR('W', 0x20, struct snd_rawmidi_status)
++#define SNDRV_RAWMIDI_IOCTL_DROP	_IOW('W', 0x30, int)
++#define SNDRV_RAWMIDI_IOCTL_DRAIN	_IOW('W', 0x31, int)
+ 
+ /*
+  *  Timer section - /dev/snd/timer
+@@ -654,23 +646,21 @@ struct snd_timer_status {
+ 	unsigned char reserved[64];	/* reserved */
+ };
+ 
+-enum {
+-	SNDRV_TIMER_IOCTL_PVERSION = _IOR('T', 0x00, int),
+-	SNDRV_TIMER_IOCTL_NEXT_DEVICE = _IOWR('T', 0x01, struct snd_timer_id),
+-	SNDRV_TIMER_IOCTL_TREAD = _IOW('T', 0x02, int),
+-	SNDRV_TIMER_IOCTL_GINFO = _IOWR('T', 0x03, struct snd_timer_ginfo),
+-	SNDRV_TIMER_IOCTL_GPARAMS = _IOW('T', 0x04, struct snd_timer_gparams),
+-	SNDRV_TIMER_IOCTL_GSTATUS = _IOWR('T', 0x05, struct snd_timer_gstatus),
+-	SNDRV_TIMER_IOCTL_SELECT = _IOW('T', 0x10, struct snd_timer_select),
+-	SNDRV_TIMER_IOCTL_INFO = _IOR('T', 0x11, struct snd_timer_info),
+-	SNDRV_TIMER_IOCTL_PARAMS = _IOW('T', 0x12, struct snd_timer_params),
+-	SNDRV_TIMER_IOCTL_STATUS = _IOR('T', 0x14, struct snd_timer_status),
+-	/* The following four ioctls are changed since 1.0.9 due to confliction */
+-	SNDRV_TIMER_IOCTL_START = _IO('T', 0xa0),
+-	SNDRV_TIMER_IOCTL_STOP = _IO('T', 0xa1),
+-	SNDRV_TIMER_IOCTL_CONTINUE = _IO('T', 0xa2),
+-	SNDRV_TIMER_IOCTL_PAUSE = _IO('T', 0xa3),
+-};
++#define SNDRV_TIMER_IOCTL_PVERSION	_IOR('T', 0x00, int)
++#define SNDRV_TIMER_IOCTL_NEXT_DEVICE	_IOWR('T', 0x01, struct snd_timer_id)
++#define SNDRV_TIMER_IOCTL_TREAD		_IOW('T', 0x02, int)
++#define SNDRV_TIMER_IOCTL_GINFO		_IOWR('T', 0x03, struct snd_timer_ginfo)
++#define SNDRV_TIMER_IOCTL_GPARAMS	_IOW('T', 0x04, struct snd_timer_gparams)
++#define SNDRV_TIMER_IOCTL_GSTATUS	_IOWR('T', 0x05, struct snd_timer_gstatus)
++#define SNDRV_TIMER_IOCTL_SELECT	_IOW('T', 0x10, struct snd_timer_select)
++#define SNDRV_TIMER_IOCTL_INFO		_IOR('T', 0x11, struct snd_timer_info)
++#define SNDRV_TIMER_IOCTL_PARAMS	_IOW('T', 0x12, struct snd_timer_params)
++#define SNDRV_TIMER_IOCTL_STATUS	_IOR('T', 0x14, struct snd_timer_status)
++/* The following four ioctls are changed since 1.0.9 due to confliction */
++#define SNDRV_TIMER_IOCTL_START		_IO('T', 0xa0)
++#define SNDRV_TIMER_IOCTL_STOP		_IO('T', 0xa1)
++#define SNDRV_TIMER_IOCTL_CONTINUE	_IO('T', 0xa2)
++#define SNDRV_TIMER_IOCTL_PAUSE		_IO('T', 0xa3)
+ 
+ struct snd_timer_read {
+ 	unsigned int resolution;
+@@ -789,7 +779,7 @@ struct snd_ctl_elem_info {
+ 	snd_ctl_elem_type_t type;	/* R: value type - SNDRV_CTL_ELEM_TYPE_* */
+ 	unsigned int access;		/* R: value access (bitmask) - SNDRV_CTL_ELEM_ACCESS_* */
+ 	unsigned int count;		/* count of values */
+-	pid_t owner;			/* owner's PID of this control */
++	__kernel_pid_t owner;		/* owner's PID of this control */
+ 	union {
+ 		struct {
+ 			long min;		/* R: minimum value */
+@@ -847,33 +837,31 @@ struct snd_ctl_tlv {
+         unsigned int tlv[0];	/* first TLV */
+ };
+ 
+-enum {
+-	SNDRV_CTL_IOCTL_PVERSION = _IOR('U', 0x00, int),
+-	SNDRV_CTL_IOCTL_CARD_INFO = _IOR('U', 0x01, struct snd_ctl_card_info),
+-	SNDRV_CTL_IOCTL_ELEM_LIST = _IOWR('U', 0x10, struct snd_ctl_elem_list),
+-	SNDRV_CTL_IOCTL_ELEM_INFO = _IOWR('U', 0x11, struct snd_ctl_elem_info),
+-	SNDRV_CTL_IOCTL_ELEM_READ = _IOWR('U', 0x12, struct snd_ctl_elem_value),
+-	SNDRV_CTL_IOCTL_ELEM_WRITE = _IOWR('U', 0x13, struct snd_ctl_elem_value),
+-	SNDRV_CTL_IOCTL_ELEM_LOCK = _IOW('U', 0x14, struct snd_ctl_elem_id),
+-	SNDRV_CTL_IOCTL_ELEM_UNLOCK = _IOW('U', 0x15, struct snd_ctl_elem_id),
+-	SNDRV_CTL_IOCTL_SUBSCRIBE_EVENTS = _IOWR('U', 0x16, int),
+-	SNDRV_CTL_IOCTL_ELEM_ADD = _IOWR('U', 0x17, struct snd_ctl_elem_info),
+-	SNDRV_CTL_IOCTL_ELEM_REPLACE = _IOWR('U', 0x18, struct snd_ctl_elem_info),
+-	SNDRV_CTL_IOCTL_ELEM_REMOVE = _IOWR('U', 0x19, struct snd_ctl_elem_id),
+-	SNDRV_CTL_IOCTL_TLV_READ = _IOWR('U', 0x1a, struct snd_ctl_tlv),
+-	SNDRV_CTL_IOCTL_TLV_WRITE = _IOWR('U', 0x1b, struct snd_ctl_tlv),
+-	SNDRV_CTL_IOCTL_TLV_COMMAND = _IOWR('U', 0x1c, struct snd_ctl_tlv),
+-	SNDRV_CTL_IOCTL_HWDEP_NEXT_DEVICE = _IOWR('U', 0x20, int),
+-	SNDRV_CTL_IOCTL_HWDEP_INFO = _IOR('U', 0x21, struct snd_hwdep_info),
+-	SNDRV_CTL_IOCTL_PCM_NEXT_DEVICE = _IOR('U', 0x30, int),
+-	SNDRV_CTL_IOCTL_PCM_INFO = _IOWR('U', 0x31, struct snd_pcm_info),
+-	SNDRV_CTL_IOCTL_PCM_PREFER_SUBDEVICE = _IOW('U', 0x32, int),
+-	SNDRV_CTL_IOCTL_RAWMIDI_NEXT_DEVICE = _IOWR('U', 0x40, int),
+-	SNDRV_CTL_IOCTL_RAWMIDI_INFO = _IOWR('U', 0x41, struct snd_rawmidi_info),
+-	SNDRV_CTL_IOCTL_RAWMIDI_PREFER_SUBDEVICE = _IOW('U', 0x42, int),
+-	SNDRV_CTL_IOCTL_POWER = _IOWR('U', 0xd0, int),
+-	SNDRV_CTL_IOCTL_POWER_STATE = _IOR('U', 0xd1, int),
+-};
++#define SNDRV_CTL_IOCTL_PVERSION	_IOR('U', 0x00, int)
++#define SNDRV_CTL_IOCTL_CARD_INFO	_IOR('U', 0x01, struct snd_ctl_card_info)
++#define SNDRV_CTL_IOCTL_ELEM_LIST	_IOWR('U', 0x10, struct snd_ctl_elem_list)
++#define SNDRV_CTL_IOCTL_ELEM_INFO	_IOWR('U', 0x11, struct snd_ctl_elem_info)
++#define SNDRV_CTL_IOCTL_ELEM_READ	_IOWR('U', 0x12, struct snd_ctl_elem_value)
++#define SNDRV_CTL_IOCTL_ELEM_WRITE	_IOWR('U', 0x13, struct snd_ctl_elem_value)
++#define SNDRV_CTL_IOCTL_ELEM_LOCK	_IOW('U', 0x14, struct snd_ctl_elem_id)
++#define SNDRV_CTL_IOCTL_ELEM_UNLOCK	_IOW('U', 0x15, struct snd_ctl_elem_id)
++#define SNDRV_CTL_IOCTL_SUBSCRIBE_EVENTS _IOWR('U', 0x16, int)
++#define SNDRV_CTL_IOCTL_ELEM_ADD	_IOWR('U', 0x17, struct snd_ctl_elem_info)
++#define SNDRV_CTL_IOCTL_ELEM_REPLACE	_IOWR('U', 0x18, struct snd_ctl_elem_info)
++#define SNDRV_CTL_IOCTL_ELEM_REMOVE	_IOWR('U', 0x19, struct snd_ctl_elem_id)
++#define SNDRV_CTL_IOCTL_TLV_READ	_IOWR('U', 0x1a, struct snd_ctl_tlv)
++#define SNDRV_CTL_IOCTL_TLV_WRITE	_IOWR('U', 0x1b, struct snd_ctl_tlv)
++#define SNDRV_CTL_IOCTL_TLV_COMMAND	_IOWR('U', 0x1c, struct snd_ctl_tlv)
++#define SNDRV_CTL_IOCTL_HWDEP_NEXT_DEVICE _IOWR('U', 0x20, int)
++#define SNDRV_CTL_IOCTL_HWDEP_INFO	_IOR('U', 0x21, struct snd_hwdep_info)
++#define SNDRV_CTL_IOCTL_PCM_NEXT_DEVICE	_IOR('U', 0x30, int)
++#define SNDRV_CTL_IOCTL_PCM_INFO	_IOWR('U', 0x31, struct snd_pcm_info)
++#define SNDRV_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOW('U', 0x32, int)
++#define SNDRV_CTL_IOCTL_RAWMIDI_NEXT_DEVICE _IOWR('U', 0x40, int)
++#define SNDRV_CTL_IOCTL_RAWMIDI_INFO	_IOWR('U', 0x41, struct snd_rawmidi_info)
++#define SNDRV_CTL_IOCTL_RAWMIDI_PREFER_SUBDEVICE _IOW('U', 0x42, int)
++#define SNDRV_CTL_IOCTL_POWER		_IOWR('U', 0xd0, int)
++#define SNDRV_CTL_IOCTL_POWER_STATE	_IOR('U', 0xd1, int)
+ 
+ /*
+  *  Read interface.
+@@ -919,18 +907,4 @@ struct snd_ctl_event {
+ #define SNDRV_CTL_NAME_IEC958_PCM_STREAM		"PCM Stream"
+ #define SNDRV_CTL_NAME_IEC958(expl,direction,what)	"IEC958 " expl SNDRV_CTL_NAME_##direction SNDRV_CTL_NAME_IEC958_##what
+ 
+-/*
+- *
+- */
+-
+-struct snd_xferv {
+-	const struct iovec *vector;
+-	unsigned long count;
+-};
+-
+-enum {
+-	SNDRV_IOCTL_READV = _IOW('K', 0x00, struct snd_xferv),
+-	SNDRV_IOCTL_WRITEV = _IOW('K', 0x01, struct snd_xferv),
+-};
+-
+ #endif /* __SOUND_ASOUND_H */
+diff --git a/include/sound/control.h b/include/sound/control.h
+index 4721b4b..ef96f07 100644
+--- a/include/sound/control.h
++++ b/include/sound/control.h
+@@ -171,6 +171,54 @@ int snd_ctl_boolean_stereo_info(struct snd_kcontrol *kcontrol,
+  */
+ struct snd_kcontrol *snd_ctl_make_virtual_master(char *name,
+ 						 const unsigned int *tlv);
+-int snd_ctl_add_slave(struct snd_kcontrol *master, struct snd_kcontrol *slave);
+-		      
++int _snd_ctl_add_slave(struct snd_kcontrol *master, struct snd_kcontrol *slave,
++		       unsigned int flags);
++/* optional flags for slave */
++#define SND_CTL_SLAVE_NEED_UPDATE	(1 << 0)
++
++/**
++ * snd_ctl_add_slave - Add a virtual slave control
++ * @master: vmaster element
++ * @slave: slave element to add
++ *
++ * Add a virtual slave control to the given master element created via
++ * snd_ctl_create_virtual_master() beforehand.
++ * Returns zero if successful or a negative error code.
++ *
++ * All slaves must be the same type (returning the same information
++ * via info callback).  The fucntion doesn't check it, so it's your
++ * responsibility.
++ *
++ * Also, some additional limitations:
++ * at most two channels,
++ * logarithmic volume control (dB level) thus no linear volume,
++ * master can only attenuate the volume without gain
++ */
++static inline int
++snd_ctl_add_slave(struct snd_kcontrol *master, struct snd_kcontrol *slave)
++{
++	return _snd_ctl_add_slave(master, slave, 0);
++}
++
++/**
++ * snd_ctl_add_slave_uncached - Add a virtual slave control
++ * @master: vmaster element
++ * @slave: slave element to add
++ *
++ * Add a virtual slave control to the given master.
++ * Unlike snd_ctl_add_slave(), the element added via this function
++ * is supposed to have volatile values, and get callback is called
++ * at each time quried from the master.
++ *
++ * When the control peeks the hardware values directly and the value
++ * can be changed by other means than the put callback of the element,
++ * this function should be used to keep the value always up-to-date.
++ */
++static inline int
++snd_ctl_add_slave_uncached(struct snd_kcontrol *master,
++			   struct snd_kcontrol *slave)
++{
++	return _snd_ctl_add_slave(master, slave, SND_CTL_SLAVE_NEED_UPDATE);
++}
++
+ #endif	/* __SOUND_CONTROL_H */
+diff --git a/include/sound/core.h b/include/sound/core.h
+index f632484..3dea798 100644
+--- a/include/sound/core.h
++++ b/include/sound/core.h
+@@ -97,9 +97,9 @@ struct snd_device {
+ 
+ struct snd_monitor_file {
+ 	struct file *file;
+-	struct snd_monitor_file *next;
+ 	const struct file_operations *disconnected_f_op;
+-	struct list_head shutdown_list;
++	struct list_head shutdown_list;	/* still need to shutdown */
++	struct list_head list;	/* link of monitor files */
+ };
+ 
+ /* main structure for soundcard */
+@@ -134,7 +134,7 @@ struct snd_card {
+ 	struct snd_info_entry *proc_id;	/* the card id */
+ 	struct proc_dir_entry *proc_root_link;	/* number link to real id */
+ 
+-	struct snd_monitor_file *files; /* all files associated to this card */
++	struct list_head files_list;	/* all files associated to this card */
+ 	struct snd_shutdown_f_ops *s_f_ops; /* file operations in the shutdown
+ 								state */
+ 	spinlock_t files_lock;		/* lock the files for this card */
+@@ -296,8 +296,20 @@ int snd_card_locked(int card);
+ extern int (*snd_mixer_oss_notify_callback)(struct snd_card *card, int cmd);
+ #endif
+ 
++int snd_card_create(int idx, const char *id,
++		    struct module *module, int extra_size,
++		    struct snd_card **card_ret);
++
++static inline __deprecated
+ struct snd_card *snd_card_new(int idx, const char *id,
+-			 struct module *module, int extra_size);
++			      struct module *module, int extra_size)
++{
++	struct snd_card *card;
++	if (snd_card_create(idx, id, module, extra_size, &card) < 0)
++		return NULL;
++	return card;
++}
++
+ int snd_card_disconnect(struct snd_card *card);
+ int snd_card_free(struct snd_card *card);
+ int snd_card_free_when_closed(struct snd_card *card);
+@@ -446,21 +458,33 @@ static inline int __snd_bug_on(int cond)
+ struct snd_pci_quirk {
+ 	unsigned short subvendor;	/* PCI subvendor ID */
+ 	unsigned short subdevice;	/* PCI subdevice ID */
++	unsigned short subdevice_mask;	/* bitmask to match */
+ 	int value;			/* value */
+ #ifdef CONFIG_SND_DEBUG_VERBOSE
+ 	const char *name;		/* name of the device (optional) */
+ #endif
+ };
+ 
+-#define _SND_PCI_QUIRK_ID(vend,dev) \
+-	.subvendor = (vend), .subdevice = (dev)
++#define _SND_PCI_QUIRK_ID_MASK(vend, mask, dev)	\
++	.subvendor = (vend), .subdevice = (dev), .subdevice_mask = (mask)
++#define _SND_PCI_QUIRK_ID(vend, dev) \
++	_SND_PCI_QUIRK_ID_MASK(vend, 0xffff, dev)
+ #define SND_PCI_QUIRK_ID(vend,dev) {_SND_PCI_QUIRK_ID(vend, dev)}
+ #ifdef CONFIG_SND_DEBUG_VERBOSE
+ #define SND_PCI_QUIRK(vend,dev,xname,val) \
+ 	{_SND_PCI_QUIRK_ID(vend, dev), .value = (val), .name = (xname)}
++#define SND_PCI_QUIRK_VENDOR(vend, xname, val)			\
++	{_SND_PCI_QUIRK_ID_MASK(vend, 0, 0), .value = (val), .name = (xname)}
++#define SND_PCI_QUIRK_MASK(vend, mask, dev, xname, val)			\
++	{_SND_PCI_QUIRK_ID_MASK(vend, mask, dev),			\
++			.value = (val), .name = (xname)}
+ #else
+ #define SND_PCI_QUIRK(vend,dev,xname,val) \
+ 	{_SND_PCI_QUIRK_ID(vend, dev), .value = (val)}
++#define SND_PCI_QUIRK_MASK(vend, mask, dev, xname, val)			\
++	{_SND_PCI_QUIRK_ID_MASK(vend, mask, dev), .value = (val)}
++#define SND_PCI_QUIRK_VENDOR(vend, xname, val)			\
++	{_SND_PCI_QUIRK_ID_MASK(vend, 0, 0), .value = (val)}
+ #endif
+ 
+ const struct snd_pci_quirk *
+diff --git a/include/sound/hdsp.h b/include/sound/hdsp.h
+index dec6b1d..d98a78d 100644
+--- a/include/sound/hdsp.h
++++ b/include/sound/hdsp.h
+@@ -19,6 +19,8 @@
+  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  */
+ 
++#include <linux/types.h>
++
+ #define HDSP_MATRIX_MIXER_SIZE 2048
+ 
+ enum HDSP_IO_Type {
+diff --git a/include/sound/hwdep.h b/include/sound/hwdep.h
+index d9eea01..8c05e47 100644
+--- a/include/sound/hwdep.h
++++ b/include/sound/hwdep.h
+@@ -27,18 +27,28 @@
+ 
+ struct snd_hwdep;
+ 
++/* hwdep file ops; all ops can be NULL */
+ struct snd_hwdep_ops {
+-	long long (*llseek) (struct snd_hwdep *hw, struct file * file, long long offset, int orig);
+-	long (*read) (struct snd_hwdep *hw, char __user *buf, long count, loff_t *offset);
+-	long (*write) (struct snd_hwdep *hw, const char __user *buf, long count, loff_t *offset);
+-	int (*open) (struct snd_hwdep * hw, struct file * file);
+-	int (*release) (struct snd_hwdep *hw, struct file * file);
+-	unsigned int (*poll) (struct snd_hwdep *hw, struct file * file, poll_table * wait);
+-	int (*ioctl) (struct snd_hwdep *hw, struct file * file, unsigned int cmd, unsigned long arg);
+-	int (*ioctl_compat) (struct snd_hwdep *hw, struct file * file, unsigned int cmd, unsigned long arg);
+-	int (*mmap) (struct snd_hwdep *hw, struct file * file, struct vm_area_struct * vma);
+-	int (*dsp_status) (struct snd_hwdep *hw, struct snd_hwdep_dsp_status *status);
+-	int (*dsp_load) (struct snd_hwdep *hw, struct snd_hwdep_dsp_image *image);
++	long long (*llseek)(struct snd_hwdep *hw, struct file *file,
++			    long long offset, int orig);
++	long (*read)(struct snd_hwdep *hw, char __user *buf,
++		     long count, loff_t *offset);
++	long (*write)(struct snd_hwdep *hw, const char __user *buf,
++		      long count, loff_t *offset);
++	int (*open)(struct snd_hwdep *hw, struct file * file);
++	int (*release)(struct snd_hwdep *hw, struct file * file);
++	unsigned int (*poll)(struct snd_hwdep *hw, struct file *file,
++			     poll_table *wait);
++	int (*ioctl)(struct snd_hwdep *hw, struct file *file,
++		     unsigned int cmd, unsigned long arg);
++	int (*ioctl_compat)(struct snd_hwdep *hw, struct file *file,
++			    unsigned int cmd, unsigned long arg);
++	int (*mmap)(struct snd_hwdep *hw, struct file *file,
++		    struct vm_area_struct *vma);
++	int (*dsp_status)(struct snd_hwdep *hw,
++			  struct snd_hwdep_dsp_status *status);
++	int (*dsp_load)(struct snd_hwdep *hw,
++			struct snd_hwdep_dsp_image *image);
+ };
+ 
+ struct snd_hwdep {
+@@ -61,9 +71,9 @@ struct snd_hwdep {
+ 	void (*private_free) (struct snd_hwdep *hwdep);
+ 
+ 	struct mutex open_mutex;
+-	int used;
+-	unsigned int dsp_loaded;
+-	unsigned int exclusive: 1;
++	int used;			/* reference counter */
++	unsigned int dsp_loaded;	/* bit fields of loaded dsp indices */
++	unsigned int exclusive:1;	/* exclusive access mode */
+ };
+ 
+ extern int snd_hwdep_new(struct snd_card *card, char *id, int device,
+diff --git a/include/sound/jack.h b/include/sound/jack.h
+index 2e0315c..f236e42 100644
+--- a/include/sound/jack.h
++++ b/include/sound/jack.h
+@@ -30,6 +30,9 @@ struct input_dev;
+ /**
+  * Jack types which can be reported.  These values are used as a
+  * bitmask.
++ *
++ * Note that this must be kept in sync with the lookup table in
++ * sound/core/jack.c.
+  */
+ enum snd_jack_types {
+ 	SND_JACK_HEADPHONE	= 0x0001,
+@@ -37,6 +40,8 @@ enum snd_jack_types {
+ 	SND_JACK_HEADSET	= SND_JACK_HEADPHONE | SND_JACK_MICROPHONE,
+ 	SND_JACK_LINEOUT	= 0x0004,
+ 	SND_JACK_MECHANICAL	= 0x0008, /* If detected separately */
++	SND_JACK_VIDEOOUT	= 0x0010,
++	SND_JACK_AVOUT		= SND_JACK_LINEOUT | SND_JACK_VIDEOOUT,
+ };
+ 
+ struct snd_jack {
+@@ -45,6 +50,8 @@ struct snd_jack {
+ 	int type;
+ 	const char *id;
+ 	char name[100];
++	void *private_data;
++	void (*private_free)(struct snd_jack *);
+ };
+ 
+ #ifdef CONFIG_SND_JACK
+diff --git a/include/sound/pcm.h b/include/sound/pcm.h
+index 40c5a6f..c172968 100644
+--- a/include/sound/pcm.h
++++ b/include/sound/pcm.h
+@@ -268,7 +268,8 @@ struct snd_pcm_runtime {
+ 	int overrange;
+ 	snd_pcm_uframes_t avail_max;
+ 	snd_pcm_uframes_t hw_ptr_base;	/* Position at buffer restart */
+-	snd_pcm_uframes_t hw_ptr_interrupt; /* Position at interrupt time*/
++	snd_pcm_uframes_t hw_ptr_interrupt; /* Position at interrupt time */
++	unsigned long hw_ptr_jiffies;	/* Time when hw_ptr is updated */
+ 
+ 	/* -- HW params -- */
+ 	snd_pcm_access_t access;	/* access mode */
+@@ -364,7 +365,6 @@ struct snd_pcm_substream {
+         /* -- timer section -- */
+ 	struct snd_timer *timer;		/* timer */
+ 	unsigned timer_running: 1;	/* time is running */
+-	spinlock_t timer_lock;
+ 	/* -- next substream -- */
+ 	struct snd_pcm_substream *next;
+ 	/* -- linked substreams -- */
+@@ -451,7 +451,7 @@ struct snd_pcm_notify {
+ 
+ extern const struct file_operations snd_pcm_f_ops[2];
+ 
+-int snd_pcm_new(struct snd_card *card, char *id, int device,
++int snd_pcm_new(struct snd_card *card, const char *id, int device,
+ 		int playback_count, int capture_count,
+ 		struct snd_pcm **rpcm);
+ int snd_pcm_new_stream(struct snd_pcm *pcm, int stream, int substream_count);
+diff --git a/include/sound/rawmidi.h b/include/sound/rawmidi.h
+index b550a41..c23c265 100644
+--- a/include/sound/rawmidi.h
++++ b/include/sound/rawmidi.h
+@@ -42,7 +42,6 @@
+ #define SNDRV_RAWMIDI_LFLG_INPUT	(1<<1)
+ #define SNDRV_RAWMIDI_LFLG_OPEN		(3<<0)
+ #define SNDRV_RAWMIDI_LFLG_APPEND	(1<<2)
+-#define	SNDRV_RAWMIDI_LFLG_NOOPENLOCK	(1<<3)
+ 
+ struct snd_rawmidi;
+ struct snd_rawmidi_substream;
+diff --git a/include/sound/sb.h b/include/sound/sb.h
+index 85f93c5..4e62ee1 100644
+--- a/include/sound/sb.h
++++ b/include/sound/sb.h
+@@ -249,6 +249,7 @@ struct snd_sb {
+ #define SB_ALS4000_3D_AUTO_MUTE	0x52
+ #define SB_ALS4000_ANALOG_BLOCK_CTRL 0x53
+ #define SB_ALS4000_3D_DELAYLINE_PATTERN 0x54
++#define SB_ALS4000_CR3_CONFIGURATION	0xc3 /* bit 7 is Digital Loop Enable */
+ #define SB_ALS4000_QSOUND	0xdb
+ 
+ /* IRQ setting bitmap */
+@@ -330,7 +331,8 @@ enum {
+ 	SB_MIX_DOUBLE,
+ 	SB_MIX_INPUT_SW,
+ 	SB_MIX_CAPTURE_PRO,
+-	SB_MIX_CAPTURE_DT019X
++	SB_MIX_CAPTURE_DT019X,
++	SB_MIX_MONO_CAPTURE_ALS4K
+ };
+ 
+ #define SB_MIXVAL_DOUBLE(left_reg, right_reg, left_shift, right_shift, mask) \
+diff --git a/include/sound/sfnt_info.h b/include/sound/sfnt_info.h
+index 5d1ab9c..1bce7fd 100644
+--- a/include/sound/sfnt_info.h
++++ b/include/sound/sfnt_info.h
+@@ -202,13 +202,11 @@ struct snd_emux_misc_mode {
+ 	int value2;	/* reserved */
+ };
+ 
+-enum {
+-	SNDRV_EMUX_IOCTL_VERSION = _IOR('H', 0x80, unsigned int),
+-	SNDRV_EMUX_IOCTL_LOAD_PATCH = _IOWR('H', 0x81, struct soundfont_patch_info),
+-	SNDRV_EMUX_IOCTL_RESET_SAMPLES = _IO('H', 0x82),
+-	SNDRV_EMUX_IOCTL_REMOVE_LAST_SAMPLES = _IO('H', 0x83),
+-	SNDRV_EMUX_IOCTL_MEM_AVAIL = _IOW('H', 0x84, int),
+-	SNDRV_EMUX_IOCTL_MISC_MODE = _IOWR('H', 0x84, struct snd_emux_misc_mode),
+-};
++#define SNDRV_EMUX_IOCTL_VERSION	_IOR('H', 0x80, unsigned int)
++#define SNDRV_EMUX_IOCTL_LOAD_PATCH	_IOWR('H', 0x81, struct soundfont_patch_info)
++#define SNDRV_EMUX_IOCTL_RESET_SAMPLES	_IO('H', 0x82)
++#define SNDRV_EMUX_IOCTL_REMOVE_LAST_SAMPLES _IO('H', 0x83)
++#define SNDRV_EMUX_IOCTL_MEM_AVAIL	_IOW('H', 0x84, int)
++#define SNDRV_EMUX_IOCTL_MISC_MODE	_IOWR('H', 0x84, struct snd_emux_misc_mode)
+ 
+ #endif /* __SOUND_SFNT_INFO_H */
+diff --git a/include/sound/soc-dai.h b/include/sound/soc-dai.h
+index 24247f7..1367647 100644
+--- a/include/sound/soc-dai.h
++++ b/include/sound/soc-dai.h
+@@ -203,7 +203,7 @@ struct snd_soc_dai {
+ 	int (*resume)(struct snd_soc_dai *dai);
+ 
+ 	/* ops */
+-	struct snd_soc_dai_ops ops;
++	struct snd_soc_dai_ops *ops;
+ 
+ 	/* DAI capabilities */
+ 	struct snd_soc_pcm_stream capture;
+diff --git a/include/sound/soc-dapm.h b/include/sound/soc-dapm.h
+index dfa8049..a7def6a 100644
+--- a/include/sound/soc-dapm.h
++++ b/include/sound/soc-dapm.h
+@@ -76,6 +76,11 @@
+ 	 wcontrols, wncontrols)\
+ {	.id = snd_soc_dapm_mixer, .name = wname, .reg = wreg, .shift = wshift, \
+ 	.invert = winvert, .kcontrols = wcontrols, .num_kcontrols = wncontrols}
++#define SND_SOC_DAPM_MIXER_NAMED_CTL(wname, wreg, wshift, winvert, \
++	 wcontrols, wncontrols)\
++{       .id = snd_soc_dapm_mixer_named_ctl, .name = wname, .reg = wreg, \
++	.shift = wshift, .invert = winvert, .kcontrols = wcontrols, \
++	.num_kcontrols = wncontrols}
+ #define SND_SOC_DAPM_MICBIAS(wname, wreg, wshift, winvert) \
+ {	.id = snd_soc_dapm_micbias, .name = wname, .reg = wreg, .shift = wshift, \
+ 	.invert = winvert, .kcontrols = NULL, .num_kcontrols = 0}
+@@ -101,6 +106,11 @@
+ {	.id = snd_soc_dapm_mixer, .name = wname, .reg = wreg, .shift = wshift, \
+ 	.invert = winvert, .kcontrols = wcontrols, .num_kcontrols = wncontrols, \
+ 	.event = wevent, .event_flags = wflags}
++#define SND_SOC_DAPM_MIXER_NAMED_CTL_E(wname, wreg, wshift, winvert, \
++	wcontrols, wncontrols, wevent, wflags) \
++{       .id = snd_soc_dapm_mixer, .name = wname, .reg = wreg, .shift = wshift, \
++	.invert = winvert, .kcontrols = wcontrols, \
++	.num_kcontrols = wncontrols, .event = wevent, .event_flags = wflags}
+ #define SND_SOC_DAPM_MICBIAS_E(wname, wreg, wshift, winvert, wevent, wflags) \
+ {	.id = snd_soc_dapm_micbias, .name = wname, .reg = wreg, .shift = wshift, \
+ 	.invert = winvert, .kcontrols = NULL, .num_kcontrols = 0, \
+@@ -182,6 +192,12 @@
+ 	.get = snd_soc_dapm_get_value_enum_double, \
+ 	.put = snd_soc_dapm_put_value_enum_double, \
+ 	.private_value = (unsigned long)&xenum }
++#define SOC_DAPM_PIN_SWITCH(xname) \
++{	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname " Switch", \
++	.info = snd_soc_dapm_info_pin_switch, \
++	.get = snd_soc_dapm_get_pin_switch, \
++	.put = snd_soc_dapm_put_pin_switch, \
++	.private_value = (unsigned long)xname }
+ 
+ /* dapm stream operations */
+ #define SND_SOC_DAPM_STREAM_NOP			0x0
+@@ -228,6 +244,12 @@ int snd_soc_dapm_get_value_enum_double(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol);
+ int snd_soc_dapm_put_value_enum_double(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol);
++int snd_soc_dapm_info_pin_switch(struct snd_kcontrol *kcontrol,
++	struct snd_ctl_elem_info *uinfo);
++int snd_soc_dapm_get_pin_switch(struct snd_kcontrol *kcontrol,
++	struct snd_ctl_elem_value *uncontrol);
++int snd_soc_dapm_put_pin_switch(struct snd_kcontrol *kcontrol,
++	struct snd_ctl_elem_value *uncontrol);
+ int snd_soc_dapm_new_control(struct snd_soc_codec *codec,
+ 	const struct snd_soc_dapm_widget *widget);
+ int snd_soc_dapm_new_controls(struct snd_soc_codec *codec,
+@@ -250,10 +272,10 @@ int snd_soc_dapm_set_bias_level(struct snd_soc_device *socdev,
+ int snd_soc_dapm_sys_add(struct device *dev);
+ 
+ /* dapm audio pin control and status */
+-int snd_soc_dapm_enable_pin(struct snd_soc_codec *codec, char *pin);
+-int snd_soc_dapm_disable_pin(struct snd_soc_codec *codec, char *pin);
+-int snd_soc_dapm_nc_pin(struct snd_soc_codec *codec, char *pin);
+-int snd_soc_dapm_get_pin_status(struct snd_soc_codec *codec, char *pin);
++int snd_soc_dapm_enable_pin(struct snd_soc_codec *codec, const char *pin);
++int snd_soc_dapm_disable_pin(struct snd_soc_codec *codec, const char *pin);
++int snd_soc_dapm_nc_pin(struct snd_soc_codec *codec, const char *pin);
++int snd_soc_dapm_get_pin_status(struct snd_soc_codec *codec, const char *pin);
+ int snd_soc_dapm_sync(struct snd_soc_codec *codec);
+ 
+ /* dapm widget types */
+@@ -263,6 +285,7 @@ enum snd_soc_dapm_type {
+ 	snd_soc_dapm_mux,			/* selects 1 analog signal from many inputs */
+ 	snd_soc_dapm_value_mux,			/* selects 1 analog signal from many inputs */
+ 	snd_soc_dapm_mixer,			/* mixes several analog signals together */
++	snd_soc_dapm_mixer_named_ctl,		/* mixer with named controls */
+ 	snd_soc_dapm_pga,			/* programmable gain/attenuation (volume) */
+ 	snd_soc_dapm_adc,			/* analog to digital converter */
+ 	snd_soc_dapm_dac,			/* digital to analog converter */
+diff --git a/include/sound/soc.h b/include/sound/soc.h
+index 24593ac..a40bc6f 100644
+--- a/include/sound/soc.h
++++ b/include/sound/soc.h
+@@ -16,6 +16,8 @@
+ #include <linux/platform_device.h>
+ #include <linux/types.h>
+ #include <linux/workqueue.h>
++#include <linux/interrupt.h>
++#include <linux/kernel.h>
+ #include <sound/core.h>
+ #include <sound/pcm.h>
+ #include <sound/control.h>
+@@ -154,6 +156,8 @@ enum snd_soc_bias_level {
+ 	SND_SOC_BIAS_OFF,
+ };
+ 
++struct snd_jack;
++struct snd_soc_card;
+ struct snd_soc_device;
+ struct snd_soc_pcm_stream;
+ struct snd_soc_ops;
+@@ -164,6 +168,11 @@ struct snd_soc_platform;
+ struct snd_soc_codec;
+ struct soc_enum;
+ struct snd_soc_ac97_ops;
++struct snd_soc_jack;
++struct snd_soc_jack_pin;
++#ifdef CONFIG_GPIOLIB
++struct snd_soc_jack_gpio;
++#endif
+ 
+ typedef int (*hw_write_t)(void *,const char* ,int);
+ typedef int (*hw_read_t)(void *,char* ,int);
+@@ -184,6 +193,19 @@ int snd_soc_init_card(struct snd_soc_device *socdev);
+ int snd_soc_set_runtime_hwparams(struct snd_pcm_substream *substream,
+ 	const struct snd_pcm_hardware *hw);
+ 
++/* Jack reporting */
++int snd_soc_jack_new(struct snd_soc_card *card, const char *id, int type,
++		     struct snd_soc_jack *jack);
++void snd_soc_jack_report(struct snd_soc_jack *jack, int status, int mask);
++int snd_soc_jack_add_pins(struct snd_soc_jack *jack, int count,
++			  struct snd_soc_jack_pin *pins);
++#ifdef CONFIG_GPIOLIB
++int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
++			struct snd_soc_jack_gpio *gpios);
++void snd_soc_jack_free_gpios(struct snd_soc_jack *jack, int count,
++			struct snd_soc_jack_gpio *gpios);
++#endif
++
+ /* codec IO */
+ #define snd_soc_read(codec, reg) codec->read(codec, reg)
+ #define snd_soc_write(codec, reg, value) codec->write(codec, reg, value)
+@@ -203,6 +225,8 @@ void snd_soc_free_ac97_codec(struct snd_soc_codec *codec);
+  */
+ struct snd_kcontrol *snd_soc_cnew(const struct snd_kcontrol_new *_template,
+ 	void *data, char *long_name);
++int snd_soc_add_controls(struct snd_soc_codec *codec,
++	const struct snd_kcontrol_new *controls, int num_controls);
+ int snd_soc_info_enum_double(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_info *uinfo);
+ int snd_soc_info_enum_ext(struct snd_kcontrol *kcontrol,
+@@ -237,6 +261,48 @@ int snd_soc_get_volsw_s8(struct snd_kcontrol *kcontrol,
+ int snd_soc_put_volsw_s8(struct snd_kcontrol *kcontrol,
+ 	struct snd_ctl_elem_value *ucontrol);
+ 
++/**
++ * struct snd_soc_jack_pin - Describes a pin to update based on jack detection
++ *
++ * @pin:    name of the pin to update
++ * @mask:   bits to check for in reported jack status
++ * @invert: if non-zero then pin is enabled when status is not reported
++ */
++struct snd_soc_jack_pin {
++	struct list_head list;
++	const char *pin;
++	int mask;
++	bool invert;
++};
++
++/**
++ * struct snd_soc_jack_gpio - Describes a gpio pin for jack detection
++ *
++ * @gpio:         gpio number
++ * @name:         gpio name
++ * @report:       value to report when jack detected
++ * @invert:       report presence in low state
++ * @debouce_time: debouce time in ms
++ */
++#ifdef CONFIG_GPIOLIB
++struct snd_soc_jack_gpio {
++	unsigned int gpio;
++	const char *name;
++	int report;
++	int invert;
++	int debounce_time;
++	struct snd_soc_jack *jack;
++	struct work_struct work;
++};
++#endif
++
++struct snd_soc_jack {
++	struct snd_jack *jack;
++	struct snd_soc_card *card;
++	struct list_head pins;
++	int status;
++};
++
+ /* SoC PCM stream information */
+ struct snd_soc_pcm_stream {
+ 	char *stream_name;
+@@ -384,6 +450,8 @@ struct snd_soc_card {
+ 
+ 	struct snd_soc_device *socdev;
+ 
++	struct snd_soc_codec *codec;
++
+ 	struct snd_soc_platform *platform;
+ 	struct delayed_work delayed_work;
+ 	struct work_struct deferred_resume_work;
+@@ -393,7 +461,6 @@ struct snd_soc_card {
+ struct snd_soc_device {
+ 	struct device *dev;
+ 	struct snd_soc_card *card;
+-	struct snd_soc_codec *codec;
+ 	struct snd_soc_codec_device *codec_dev;
+ 	void *codec_data;
+ };
+diff --git a/include/sound/version.h b/include/sound/version.h
+index 2b48237..a7e74e2 100644
+--- a/include/sound/version.h
++++ b/include/sound/version.h
+@@ -1,3 +1,3 @@
+ /* include/version.h */
+-#define CONFIG_SND_VERSION "1.0.18a"
++#define CONFIG_SND_VERSION "1.0.19"
+ #define CONFIG_SND_DATE ""
+-- 
+1.6.2.4
+

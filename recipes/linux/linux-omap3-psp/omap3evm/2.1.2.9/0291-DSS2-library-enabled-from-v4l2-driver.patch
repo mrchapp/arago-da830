@@ -1,0 +1,24 @@
+From 1c5e802f4add4a8af8e8a611b856056b66a5ca78 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Fri, 13 Feb 2009 18:54:53 +0530
+Subject: [PATCH 291/426] DSS2 library enabled from v4l2 driver
+
+---
+ drivers/media/video/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
+index 7a4c011..5bb3acf 100644
+--- a/drivers/media/video/Kconfig
++++ b/drivers/media/video/Kconfig
+@@ -757,6 +757,7 @@ config VIDEO_OMAP3
+ 	bool "OMAP2/OMAP3 V4L2-DSS drivers"
+ 	select VIDEOBUF_GEN
+ 	select VIDEOBUF_DMA_SG
++	select OMAP2_DSS
+ 	depends on VIDEO_DEV && (ARCH_OMAP24XX || ARCH_OMAP34XX)
+ 	default y
+ 	---help---
+-- 
+1.6.2.4
+

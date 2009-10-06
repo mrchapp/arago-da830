@@ -1,0 +1,59 @@
+From 6fdb74247b215dd8280ad78142167b269f8a8aad Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Fri, 13 Mar 2009 11:40:14 +0530
+Subject: [PATCH 342/426] Fixed minor issue in FB timer resume path
+
+Actualy there was an issue in FB timer resume path which
+has been hooked upto UART resume (5 sec time-out). Display
+timer was not getting refreshed on every UART refresh.
+
+Fixed this, now every time FB timer will get refreshed.
+---
+ drivers/video/omap2/omapfb-sysfs.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/video/omap2/omapfb-sysfs.c b/drivers/video/omap2/omapfb-sysfs.c
+index 6214130..7853140 100755
+--- a/drivers/video/omap2/omapfb-sysfs.c
++++ b/drivers/video/omap2/omapfb-sysfs.c
+@@ -930,7 +930,8 @@ void omap2fb_resume_idle(void)
+ 	if (omap2fb_can_sleep == 2) {
+ 		omap2fb_can_sleep = 3;
+ 		queue_work(irq_work_queues, &irq_work_queue);
+-	}
++	} else if (omap2fb_can_sleep != -1)
++	mod_timer(&omap2fb->timer, jiffies + omap2fb->sleep_timeout);
+ }
+ EXPORT_SYMBOL(omap2fb_resume_idle);
+ /*
+@@ -938,8 +939,9 @@ EXPORT_SYMBOL(omap2fb_resume_idle);
+  */
+ static void omap2fb_timer_clbk(unsigned long data)
+ {
+-		omap2fb_can_sleep = 1;
+-		queue_work(irq_work_queues, &irq_work_queue);
++	omap2fb_can_sleep = 1;
++	queue_work(irq_work_queues, &irq_work_queue);
++	del_timer(&omap2fb->timer);
+ }
+ 
+ void omap2fb_workqueue_handler(struct work_struct *work)
+@@ -959,7 +961,6 @@ void omap2fb_workqueue_handler(struct work_struct *work)
+ 			}
+ 		}
+ 		omap2fb_can_sleep = 2;
+-		del_timer(&omap2fb->timer);
+ 	} else if (omap2fb_can_sleep == 3){
+ 		for (i = 0; i < omap2fb->num_fbs; i++) {
+ 			if (omap2fb->overlays[i]->manager &&
+@@ -969,7 +970,6 @@ void omap2fb_workqueue_handler(struct work_struct *work)
+ 			}
+ 		}
+ 		omap2fb_can_sleep = 0;
+-		mod_timer(&omap2fb->timer, jiffies + omap2fb->sleep_timeout);
+ 	}
+ }
+ /*
+-- 
+1.6.2.4
+

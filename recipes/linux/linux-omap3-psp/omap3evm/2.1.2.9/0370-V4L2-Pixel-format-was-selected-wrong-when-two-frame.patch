@@ -1,0 +1,39 @@
+From 9c38c956602f46c7c502f9b0b9e8dff48e6284f1 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Thu, 30 Apr 2009 12:00:35 +0530
+Subject: [PATCH 370/426] V4L2: Pixel format was selected wrong when two framebuffers were compiled.
+
+---
+ drivers/media/video/omap/omap_vout.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
+index f7e8641..8870f0a 100644
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -2532,7 +2532,13 @@ err:
+ static enum omap_color_mode video_mode_to_dss_mode(struct omap_vout_device
+ 			*vout)
+ {
++	struct omap_overlay *ovl;
++	struct omapvideo_info *ovid;
+ 	struct v4l2_pix_format *pix = &vout->pix;
++
++	ovid = &vout->vid_info;
++	ovl = ovid->overlays[0];
++
+ 	switch (pix->pixelformat) {
+ 
+ 	case 0:
+@@ -2551,7 +2557,7 @@ static enum omap_color_mode video_mode_to_dss_mode(struct omap_vout_device
+ 
+ 	case V4L2_PIX_FMT_RGB32:
+ 	{
+-		if (vout->vid == OMAP_VIDEO1)
++		if (ovl->id == OMAP_DSS_VIDEO1)
+ 			return OMAP_DSS_COLOR_RGB24U;
+ 		else
+ 			return OMAP_DSS_COLOR_ARGB32;
+-- 
+1.6.2.4
+

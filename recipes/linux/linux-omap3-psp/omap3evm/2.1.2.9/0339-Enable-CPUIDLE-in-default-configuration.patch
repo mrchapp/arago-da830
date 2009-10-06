@@ -1,0 +1,36 @@
+From f3f3cb82ba9ac4c1579d7eddb254610dbac1a02c Mon Sep 17 00:00:00 2001
+From: Sanjeev Premi <premi@ti.com>
+Date: Thu, 12 Mar 2009 22:12:04 +0530
+Subject: [PATCH 339/426] Enable CPUIDLE in default configuration
+
+---
+ arch/arm/configs/omap3_evm_defconfig |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/omap3_evm_defconfig b/arch/arm/configs/omap3_evm_defconfig
+index b426455..4f024a8 100644
+--- a/arch/arm/configs/omap3_evm_defconfig
++++ b/arch/arm/configs/omap3_evm_defconfig
+@@ -1,7 +1,7 @@
+ #
+ # Automatically generated make config: don't edit
+ # Linux kernel version: 2.6.29-rc3-omap1
+-# Fri Feb 13 17:36:09 2009
++# Thu Mar 12 22:09:26 2009
+ #
+ CONFIG_ARM=y
+ CONFIG_SYS_SUPPORTS_APM_EMULATION=y
+@@ -316,7 +316,9 @@ CONFIG_CMDLINE="root=/dev/nfs nfsroot=192.168.0.1:/home/user/buildroot ip=192.16
+ # CPU Power Management
+ #
+ # CONFIG_CPU_FREQ is not set
+-# CONFIG_CPU_IDLE is not set
++CONFIG_CPU_IDLE=y
++CONFIG_CPU_IDLE_GOV_LADDER=y
++CONFIG_CPU_IDLE_GOV_MENU=y
+ 
+ #
+ # Floating point emulation
+-- 
+1.6.2.4
+

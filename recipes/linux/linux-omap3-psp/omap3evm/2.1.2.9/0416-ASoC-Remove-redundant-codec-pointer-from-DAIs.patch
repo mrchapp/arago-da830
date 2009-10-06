@@ -1,0 +1,35 @@
+From 82a5a7a411f1a1eeea17ae6298e1c4b34a721bc3 Mon Sep 17 00:00:00 2001
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Tue, 5 May 2009 10:27:38 +0100
+Subject: [PATCH 416/426] ASoC: Remove redundant codec pointer from DAIs
+
+The DAI structure has two pointers to the codec, one in the body of the
+DAI and one in a union for a parent pointer.  Drop the parent pointer
+version.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ include/sound/soc-dai.h |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/include/sound/soc-dai.h b/include/sound/soc-dai.h
+index 2197178..a6a80a8 100644
+--- a/include/sound/soc-dai.h
++++ b/include/sound/soc-dai.h
+@@ -202,11 +202,8 @@ struct snd_soc_dai {
+ 	/* DAI private data */
+ 	void *private_data;
+ 
+-	/* parent codec/platform */
+-	union {
+-		struct snd_soc_codec *codec;
+-		struct snd_soc_platform *platform;
+-	};
++	/* parent platform */
++	struct snd_soc_platform *platform;
+ 
+ 	struct list_head list;
+ };
+-- 
+1.6.2.4
+

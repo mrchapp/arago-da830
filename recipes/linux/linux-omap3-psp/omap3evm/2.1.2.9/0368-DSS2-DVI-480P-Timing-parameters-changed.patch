@@ -1,0 +1,38 @@
+From 2f9e0d68eb5152b2e3eae1a52639cb8f9f732534 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Tue, 28 Apr 2009 17:59:12 +0530
+Subject: [PATCH 368/426] DSS2: DVI 480P Timing parameters changed.
+
+FPS for DVI 480P changed from 71 to 62.
+---
+ drivers/video/omap2/panel-generic.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/video/omap2/panel-generic.c b/drivers/video/omap2/panel-generic.c
+index 55d5850..fe38d70 100644
+--- a/drivers/video/omap2/panel-generic.c
++++ b/drivers/video/omap2/panel-generic.c
+@@ -79,13 +79,13 @@ static struct omap_panel generic_panel = {
+ 		/* 720 x 480 @ 60 Hz  Reduced blanking VESA CVT 0.31M3-R */
+ 		.x_res		= 720,
+ 		.y_res		= 480,
+-		.pixel_clock	= 30000,
+-		.hfp		= 48,
+-		.hsw		= 32,
+-		.hbp		= 80,
+-		.vfp		= 3,
+-		.vsw		= 4,
+-		.vbp		= 7,
++		.pixel_clock	= 27700,
++		.hfp		= 24,
++		.hsw		= 40,
++		.hbp		= 96,
++		.vfp		= 10,
++		.vsw		= 3,
++		.vbp		= 32,
+ #endif
+ 	},
+ 
+-- 
+1.6.2.4
+

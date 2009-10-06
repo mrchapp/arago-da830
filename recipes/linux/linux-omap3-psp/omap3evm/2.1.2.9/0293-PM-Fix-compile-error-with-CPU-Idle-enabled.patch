@@ -1,0 +1,33 @@
+From 6ba26e0b5378caecb136acfa626b664f5d67e615 Mon Sep 17 00:00:00 2001
+From: Sanjeev Premi <premi@ti.com>
+Date: Mon, 9 Feb 2009 20:15:40 +0530
+Subject: [PATCH 293/426] PM: Fix compile error with CPU Idle enabled
+
+Fixes this compile error:
+  CHK     include/linux/compile.h
+  CC      arch/arm/mach-omap2/cpuidle34xx.o
+arch/arm/mach-omap2/cpuidle34xx.c: In function 'omap3_enter_idle':
+arch/arm/mach-omap2/cpuidle34xx.c:99: error: implicit declaration of function 'omap_irq_pending'
+make[1]: *** [arch/arm/mach-omap2/cpuidle34xx.o] Error 1
+make: *** [arch/arm/mach-omap2] Error 2
+
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/cpuidle34xx.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
+index 62fbb2e..5e50c46 100644
+--- a/arch/arm/mach-omap2/cpuidle34xx.c
++++ b/arch/arm/mach-omap2/cpuidle34xx.c
+@@ -28,6 +28,7 @@
+ #include <mach/powerdomain.h>
+ #include <mach/control.h>
+ #include <mach/serial.h>
++#include <mach/irqs.h>
+ 
+ #include "pm.h"
+ 
+-- 
+1.6.2.4
+

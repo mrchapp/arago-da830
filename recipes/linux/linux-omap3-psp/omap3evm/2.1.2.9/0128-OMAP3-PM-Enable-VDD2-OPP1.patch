@@ -1,0 +1,31 @@
+From 6368c7d780cbb764326bcca319e0bb2597c7b8a2 Mon Sep 17 00:00:00 2001
+From: Tero Kristo <tero.kristo@nokia.com>
+Date: Fri, 9 Jan 2009 17:49:05 +0200
+Subject: [PATCH 128/426] OMAP3: PM: Enable VDD2 OPP1
+
+VDD2 OPP1 works at least with minimal kernel setup, there are some corner
+cases where it fails though, like when you use USB. Board setup should make
+sure and enable only working OPPs.
+
+Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/pm.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm.c b/arch/arm/mach-omap2/pm.c
+index 186a0f0..61c6dfb 100644
+--- a/arch/arm/mach-omap2/pm.c
++++ b/arch/arm/mach-omap2/pm.c
+@@ -186,7 +186,7 @@ static ssize_t vdd_opp_store(struct kobject *kobj, struct kobj_attribute *attr,
+ 		}
+ 		resource_set_opp_level(VDD1_OPP, value, flags);
+ 	} else if (attr == &vdd2_opp_attr) {
+-		if (value < 2 || value > 3) {
++		if (value < 1 || value > 3) {
+ 			printk(KERN_ERR "vdd_opp_store: Invalid value\n");
+ 			return -EINVAL;
+ 		}
+-- 
+1.6.2.4
+

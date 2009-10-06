@@ -1,0 +1,31 @@
+From bd5d3366685ebfecb34865491a56eba98df52755 Mon Sep 17 00:00:00 2001
+From: Hardik Shah <hardik.shah@ti.com>
+Date: Wed, 3 Jun 2009 15:50:29 +0530
+Subject: [PATCH 376/426] DSS2 FBDEV: Panning supported with rotation on Framebuffer
+
+---
+ drivers/video/omap2/omapfb-main.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/video/omap2/omapfb-main.c b/drivers/video/omap2/omapfb-main.c
+index 0ba70ca..e08bef0 100644
+--- a/drivers/video/omap2/omapfb-main.c
++++ b/drivers/video/omap2/omapfb-main.c
+@@ -644,6 +644,14 @@ int omapfb_setup_overlay(struct fb_info *fbi, struct omap_overlay *ovl,
+ 		/* setup DSS's view to always 0 degrees */
+ 		data_start_p = ofbi->region.vrfb.paddr[0];
+ 		data_start_v = ofbi->region.vrfb.vaddr[0];
++		if (ofbi->rotation == FB_ROTATE_CW ||
++				ofbi->rotation == FB_ROTATE_CCW) {
++			offset = ((var->xoffset * VRFB_WIDTH +
++				var->yoffset) * var->bits_per_pixel) >> 3;
++		} else {
++			offset = ((var->yoffset * VRFB_WIDTH +
++				var->xoffset) * var->bits_per_pixel) >> 3;
++		}
+ 	} else {
+ 		data_start_p = omapfb_get_region_paddr(ofbi);
+ 		data_start_v = omapfb_get_region_vaddr(ofbi);
+-- 
+1.6.2.4
+

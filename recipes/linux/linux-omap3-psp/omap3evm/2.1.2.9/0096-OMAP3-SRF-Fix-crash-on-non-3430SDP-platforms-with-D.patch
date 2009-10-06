@@ -1,0 +1,251 @@
+From c3983e6acb99a2a99d5d39ba9536b8ca870a2d5f Mon Sep 17 00:00:00 2001
+From: Rajendra Nayak <rnayak@ti.com>
+Date: Wed, 26 Nov 2008 18:31:43 +0530
+Subject: [PATCH 096/426] OMAP3 SRF: Fix crash on non-3430SDP platforms with DVFS/CPUFreq
+
+The SRF/DVFS + CPUFreq patches had issues booting on
+non-3430SDP platforms as reported by Kevin Hilman.
+This patch puts non-NULL checks in place for mpu_opps/dsp_opps
+/l3_opps before accessing them and fixes the issue.
+
+Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+---
+ arch/arm/mach-omap2/clock34xx.c            |   33 +++++++++++++++++++--------
+ arch/arm/mach-omap2/pm.h                   |   17 --------------
+ arch/arm/mach-omap2/resource34xx.c         |   21 +++++++++++++++++
+ arch/arm/plat-omap/cpu-omap.c              |    6 +---
+ arch/arm/plat-omap/include/mach/omap34xx.h |   18 +++++++++++++++
+ 5 files changed, 64 insertions(+), 31 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/clock34xx.c b/arch/arm/mach-omap2/clock34xx.c
+index a0bcabd..9c0840c 100644
+--- a/arch/arm/mach-omap2/clock34xx.c
++++ b/arch/arm/mach-omap2/clock34xx.c
+@@ -667,6 +667,9 @@ void omap2_clk_init_cpufreq_table(struct cpufreq_frequency_table **table)
+ 	struct omap_opp *prcm;
+ 	int i = 0;
+ 
++	if (!mpu_opps)
++		return;
++
+ 	/* Avoid registering the 120% Overdrive with CPUFreq */
+ 	prcm = mpu_opps + MAX_VDD1_OPP - 1;
+ 	for (; prcm->rate; prcm--) {
+@@ -822,20 +825,24 @@ int __init omap2_clk_init(void)
+ 	dpll3_clk = clk_get(NULL, "dpll3_m2_ck");
+ 
+ 	mpu_speed = dpll1_clk->rate;
+-	prcm_vdd = mpu_opps + MAX_VDD1_OPP;
+-	for (; prcm_vdd->rate; prcm_vdd--) {
+-		if (prcm_vdd->rate <= mpu_speed) {
+-			curr_vdd1_prcm_set = prcm_vdd;
+-			break;
++	if (mpu_opps) {
++		prcm_vdd = mpu_opps + MAX_VDD1_OPP;
++		for (; prcm_vdd->rate; prcm_vdd--) {
++			if (prcm_vdd->rate <= mpu_speed) {
++				curr_vdd1_prcm_set = prcm_vdd;
++				break;
++			}
+ 		}
+ 	}
+ 
+ 	core_speed = dpll3_clk->rate;
+-	prcm_vdd = l3_opps + MAX_VDD2_OPP;
+-	for (; prcm_vdd->rate; prcm_vdd--) {
+-		if (prcm_vdd->rate <= core_speed) {
+-			curr_vdd2_prcm_set = prcm_vdd;
+-			break;
++	if (l3_opps) {
++		prcm_vdd = l3_opps + MAX_VDD2_OPP;
++		for (; prcm_vdd->rate; prcm_vdd--) {
++			if (prcm_vdd->rate <= core_speed) {
++				curr_vdd2_prcm_set = prcm_vdd;
++				break;
++			}
+ 		}
+ 	}
+ 
+@@ -902,6 +909,9 @@ static long omap3_round_to_table_rate(struct clk *clk, unsigned long rate)
+ 	if ((clk != &virt_vdd1_prcm_set) && (clk != &virt_vdd2_prcm_set))
+ 		return -EINVAL;
+ 
++	if (!mpu_opps || !dsp_opps || !l3_opps)
++		return -EINVAL;
++
+ 	highest_rate = -EINVAL;
+ 
+ 	if (clk == &virt_vdd1_prcm_set)
+@@ -928,6 +938,9 @@ static int omap3_select_table_rate(struct clk *clk, unsigned long rate)
+ 	if ((clk != &virt_vdd1_prcm_set) && (clk != &virt_vdd2_prcm_set))
+ 		return -EINVAL;
+ 
++	if (!mpu_opps || !dsp_opps || !l3_opps)
++		return -EINVAL;
++
+ 	if (clk == &virt_vdd1_prcm_set) {
+ 		prcm_vdd = mpu_opps + MAX_VDD1_OPP;
+ 		index = MAX_VDD1_OPP;
+diff --git a/arch/arm/mach-omap2/pm.h b/arch/arm/mach-omap2/pm.h
+index d3d8274..1b7df18 100644
+--- a/arch/arm/mach-omap2/pm.h
++++ b/arch/arm/mach-omap2/pm.h
+@@ -39,23 +39,6 @@ extern void omap3_pm_off_mode_enable(int);
+ #endif
+ extern int set_pwrdm_state(struct powerdomain *pwrdm, u32 state);
+ 
+-/* VDD1 OPPS */
+-#define VDD1_OPP1	0x1
+-#define VDD1_OPP2	0x2
+-#define VDD1_OPP3	0x3
+-#define VDD1_OPP4	0x4
+-#define VDD1_OPP5	0x5
+-
+-/* VDD2 OPPS */
+-#define VDD2_OPP1	0x1
+-#define VDD2_OPP2	0x2
+-#define VDD2_OPP3	0x3
+-
+-#define MIN_VDD1_OPP	VDD1_OPP1
+-#define MAX_VDD1_OPP	VDD1_OPP5
+-#define MIN_VDD2_OPP	VDD2_OPP1
+-#define MAX_VDD2_OPP	VDD2_OPP3
+-
+ #ifdef CONFIG_PM_DEBUG
+ extern void omap2_pm_dump(int mode, int resume, unsigned int us);
+ extern int omap2_pm_debug;
+diff --git a/arch/arm/mach-omap2/resource34xx.c b/arch/arm/mach-omap2/resource34xx.c
+index 78ff2bf..034318b 100644
+--- a/arch/arm/mach-omap2/resource34xx.c
++++ b/arch/arm/mach-omap2/resource34xx.c
+@@ -144,6 +144,10 @@ static struct device dummy_dsp_dev;
+ void init_opp(struct shared_resource *resp)
+ {
+ 	resp->no_of_users = 0;
++
++	if (!mpu_opps || !dsp_opps || !l3_opps)
++		return 0;
++
+ 	/* Initialize the current level of the OPP resource
+ 	* to the  opp set by u-boot.
+ 	*/
+@@ -167,6 +171,9 @@ int set_opp(struct shared_resource *resp, u32 target_level)
+ 	if (resp->curr_level == target_level)
+ 		return 0;
+ 
++	if (!mpu_opps || !dsp_opps || !l3_opps)
++		return 0;
++
+ 	if (strcmp(resp->name, "vdd1_opp") == 0) {
+ 		mpu_old_freq = get_freq(mpu_opps + MAX_VDD1_OPP,
+ 					curr_vdd1_prcm_set->opp_id);
+@@ -184,12 +191,16 @@ int set_opp(struct shared_resource *resp, u32 target_level)
+ 		if (resp->curr_level > target_level) {
+ 			/* Scale Frequency and then voltage */
+ 			clk_set_rate(vdd1_clk, mpu_freq);
++#ifdef CONFIG_OMAP_SMARTREFLEX
+ 			sr_voltagescale_vcbypass(t_opp,
+ 					mpu_opps[target_level].vsel);
++#endif
+ 		} else {
++#ifdef CONFIG_OMAP_SMARTREFLEX
+ 			/* Scale Voltage and then frequency */
+ 			sr_voltagescale_vcbypass(t_opp,
+ 					mpu_opps[target_level].vsel);
++#endif
+ 			clk_set_rate(vdd1_clk, mpu_freq);
+ 		}
+ 		resp->curr_level = curr_vdd1_prcm_set->opp_id;
+@@ -221,12 +232,16 @@ int set_opp(struct shared_resource *resp, u32 target_level)
+ 		if (resp->curr_level > target_level) {
+ 			/* Scale Frequency and then voltage */
+ 			clk_set_rate(vdd2_clk, l3_freq);
++#ifdef CONFIG_OMAP_SMARTREFLEX
+ 			sr_voltagescale_vcbypass(t_opp,
+ 					l3_opps[target_level].vsel);
++#endif
+ 		} else {
++#ifdef CONFIG_OMAP_SMARTREFLEX
+ 			/* Scale Voltage and then frequency */
+ 			sr_voltagescale_vcbypass(t_opp,
+ 					l3_opps[target_level].vsel);
++#endif
+ 			clk_set_rate(vdd2_clk, l3_freq);
+ 		}
+ 		resp->curr_level = curr_vdd2_prcm_set->opp_id;
+@@ -253,6 +268,9 @@ void init_freq(struct shared_resource *resp)
+ 	char *linked_res_name;
+ 	resp->no_of_users = 0;
+ 
++	if (!mpu_opps || !dsp_opps)
++		return;
++
+ 	linked_res_name = (char *)resp->resource_data;
+ 	/* Initialize the current level of the Freq resource
+ 	* to the frequency set by u-boot.
+@@ -271,6 +289,9 @@ int set_freq(struct shared_resource *resp, u32 target_level)
+ {
+ 	unsigned int vdd1_opp;
+ 
++	if (!mpu_opps || !dsp_opps)
++		return 0;
++
+ 	if (strcmp(resp->name, "mpu_freq") == 0) {
+ 		vdd1_opp = get_opp(mpu_opps + MAX_VDD1_OPP, target_level);
+ 		resource_request("vdd1_opp", &dummy_mpu_dev, vdd1_opp);
+diff --git a/arch/arm/plat-omap/cpu-omap.c b/arch/arm/plat-omap/cpu-omap.c
+index eb77a0a..ae0817d 100644
+--- a/arch/arm/plat-omap/cpu-omap.c
++++ b/arch/arm/plat-omap/cpu-omap.c
+@@ -31,7 +31,6 @@
+ #include <mach/clock.h>
+ #if defined(CONFIG_ARCH_OMAP3) && !defined(CONFIG_OMAP_PM_NONE)
+ #include <mach/omap-pm.h>
+-#include "../mach-omap2/pm.h"
+ #endif
+ 
+ #define VERY_HI_RATE	900000000
+@@ -107,9 +106,8 @@ static int omap_target(struct cpufreq_policy *policy,
+ #endif
+ 	ret = clk_set_rate(mpu_clk, freqs.new * 1000);
+ 	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+-#elif defined(CONFIG_ARCH_OMAP3) && !defined(CONFIG_OMAP_PM_NONE)\
+-	&& defined(CONFIG_MACH_OMAP_3430SDP)
+-	{
++#elif defined(CONFIG_ARCH_OMAP3) && !defined(CONFIG_OMAP_PM_NONE)
++	if (mpu_opps) {
+ 		int ind;
+ 		for (ind = 1; ind <= MAX_VDD1_OPP; ind++) {
+ 			if (mpu_opps[ind].rate/1000 >= freqs.new) {
+diff --git a/arch/arm/plat-omap/include/mach/omap34xx.h b/arch/arm/plat-omap/include/mach/omap34xx.h
+index 27a1e45..2e4e4ed 100644
+--- a/arch/arm/plat-omap/include/mach/omap34xx.h
++++ b/arch/arm/plat-omap/include/mach/omap34xx.h
+@@ -73,5 +73,23 @@
+ #define OMAP34XX_DSP_MEM_BASE	(OMAP34XX_DSP_BASE + 0x0)
+ #define OMAP34XX_DSP_IPI_BASE	(OMAP34XX_DSP_BASE + 0x1000000)
+ #define OMAP34XX_DSP_MMU_BASE	(OMAP34XX_DSP_BASE + 0x2000000)
++
++/* VDD1 OPPS */
++#define VDD1_OPP1	0x1
++#define VDD1_OPP2	0x2
++#define VDD1_OPP3	0x3
++#define VDD1_OPP4	0x4
++#define VDD1_OPP5	0x5
++
++/* VDD2 OPPS */
++#define VDD2_OPP1	0x1
++#define VDD2_OPP2	0x2
++#define VDD2_OPP3	0x3
++
++#define MIN_VDD1_OPP	VDD1_OPP1
++#define MAX_VDD1_OPP	VDD1_OPP5
++#define MIN_VDD2_OPP	VDD2_OPP1
++#define MAX_VDD2_OPP	VDD2_OPP3
++
+ #endif /* __ASM_ARCH_OMAP34XX_H */
+ 
+-- 
+1.6.2.4
+

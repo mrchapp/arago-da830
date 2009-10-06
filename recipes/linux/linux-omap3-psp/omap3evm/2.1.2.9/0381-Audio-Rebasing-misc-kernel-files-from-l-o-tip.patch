@@ -1,0 +1,215 @@
+From 5f23050ea8ed8db2af865b2967face08c885f3db Mon Sep 17 00:00:00 2001
+From: Anuj Aggarwal <anuj.aggarwal@ti.com>
+Date: Mon, 8 Jun 2009 11:10:36 +0530
+Subject: [PATCH 381/426] Audio: Rebasing misc kernel files from l-o tip
+
+Since the ASoC framework has changed a lot with respect to the
+current kernel version, this commit pulls the desired changes
+in few kernel source/header files, which are required to compile
+the audio component. This update is done to take the twl4030
+audio codec patches from the community, which solve the beep
+noise issue.
+---
+ arch/arm/boot/compressed/misc.c |   20 +++++++++-
+ include/linux/string.h          |   17 ++++++++
+ mm/util.c                       |   82 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 118 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/boot/compressed/misc.c b/arch/arm/boot/compressed/misc.c
+index 3fc0841..9e6e512 100644
+--- a/arch/arm/boot/compressed/misc.c
++++ b/arch/arm/boot/compressed/misc.c
+@@ -18,7 +18,10 @@
+ 
+ unsigned int __machine_arch_type;
+ 
+-#include <linux/string.h>
++#include <linux/compiler.h>	/* for inline */
++#include <linux/types.h>	/* for size_t */
++#include <linux/stddef.h>	/* for NULL */
++#include <asm/string.h>
+ 
+ #ifdef STANDALONE_DEBUG
+ #define putstr printf
+@@ -46,6 +49,21 @@ static void icedcc_putc(int ch)
+ 
+ 	asm("mcr p14, 0, %0, c0, c5, 0" : : "r" (ch));
+ }
++#elif defined(CONFIG_CPU_XSCALE)
++
++static void icedcc_putc(int ch)
++{
++	int status, i = 0x4000000;
++
++	do {
++		if (--i < 0)
++			return;
++
++		asm volatile ("mrc p14, 0, %0, c14, c0, 0" : "=r" (status));
++	} while (status & (1 << 28));
++
++	asm("mcr p14, 0, %0, c8, c0, 0" : : "r" (ch));
++}
+ 
+ #else
+ 
+diff --git a/include/linux/string.h b/include/linux/string.h
+index d18fc19..489019e 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -10,8 +10,10 @@
+ #include <linux/compiler.h>	/* for inline */
+ #include <linux/types.h>	/* for size_t */
+ #include <linux/stddef.h>	/* for NULL */
++#include <stdarg.h>
+ 
+ extern char *strndup_user(const char __user *, long);
++extern void *memdup_user(const void __user *, size_t);
+ 
+ /*
+  * Include machine specific inline routines
+@@ -111,8 +113,23 @@ extern void argv_free(char **argv);
+ 
+ extern bool sysfs_streq(const char *s1, const char *s2);
+ 
++#ifdef CONFIG_BINARY_PRINTF
++int vbin_printf(u32 *bin_buf, size_t size, const char *fmt, va_list args);
++int bstr_printf(char *buf, size_t size, const char *fmt, const u32 *bin_buf);
++int bprintf(u32 *bin_buf, size_t size, const char *fmt, ...) __printf(3, 4);
++#endif
++
+ extern ssize_t memory_read_from_buffer(void *to, size_t count, loff_t *ppos,
+ 			const void *from, size_t available);
+ 
++/**
++ * strstarts - does @str start with @prefix?
++ * @str: string to examine
++ * @prefix: prefix to look for.
++ */
++static inline bool strstarts(const char *str, const char *prefix)
++{
++	return strncmp(str, prefix, strlen(prefix)) == 0;
++}
+ #endif
+ #endif /* _LINUX_STRING_H_ */
+diff --git a/mm/util.c b/mm/util.c
+index cb00b74..55bef16 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -4,6 +4,7 @@
+ #include <linux/module.h>
+ #include <linux/err.h>
+ #include <linux/sched.h>
++#include <linux/tracepoint.h>
+ #include <asm/uaccess.h>
+ 
+ /**
+@@ -70,6 +71,36 @@ void *kmemdup(const void *src, size_t len, gfp_t gfp)
+ EXPORT_SYMBOL(kmemdup);
+ 
+ /**
++ * memdup_user - duplicate memory region from user space
++ *
++ * @src: source address in user space
++ * @len: number of bytes to copy
++ *
++ * Returns an ERR_PTR() on failure.
++ */
++void *memdup_user(const void __user *src, size_t len)
++{
++	void *p;
++
++	/*
++	 * Always use GFP_KERNEL, since copy_from_user() can sleep and
++	 * cause pagefault, which makes it pointless to use GFP_NOFS
++	 * or GFP_ATOMIC.
++	 */
++	p = kmalloc_track_caller(len, GFP_KERNEL);
++	if (!p)
++		return ERR_PTR(-ENOMEM);
++
++	if (copy_from_user(p, src, len)) {
++		kfree(p);
++		return ERR_PTR(-EFAULT);
++	}
++
++	return p;
++}
++EXPORT_SYMBOL(memdup_user);
++
++/**
+  * __krealloc - like krealloc() but don't free @p.
+  * @p: object to reallocate memory for.
+  * @new_size: how many bytes of memory are required.
+@@ -129,6 +160,26 @@ void *krealloc(const void *p, size_t new_size, gfp_t flags)
+ }
+ EXPORT_SYMBOL(krealloc);
+ 
++/**
++ * kzfree - like kfree but zero memory
++ * @p: object to free memory of
++ *
++ * The memory of the object @p points to is zeroed before freed.
++ * If @p is %NULL, kzfree() does nothing.
++ */
++void kzfree(const void *p)
++{
++	size_t ks;
++	void *mem = (void *)p;
++
++	if (unlikely(ZERO_OR_NULL_PTR(mem)))
++		return;
++	ks = ksize(mem);
++	memset(mem, 0, ks);
++	kfree(mem);
++}
++EXPORT_SYMBOL(kzfree);
++
+ /*
+  * strndup_user - duplicate an existing string from user space
+  * @s: The string to duplicate
+@@ -172,6 +223,22 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ }
+ #endif
+ 
++/**
++ * get_user_pages_fast() - pin user pages in memory
++ * @start:	starting user address
++ * @nr_pages:	number of pages from start to pin
++ * @write:	whether pages will be written to
++ * @pages:	array that receives pointers to the pages pinned.
++ *		Should be at least nr_pages long.
++ *
++ * Attempt to pin user pages in memory without taking mm->mmap_sem.
++ * If not successful, it will fall back to taking the lock and
++ * calling get_user_pages().
++ *
++ * Returns number of pages pinned. This may be fewer than the number
++ * requested. If nr_pages is 0 or negative, returns 0. If no pages
++ * were pinned, returns -errno.
++ */
+ int __attribute__((weak)) get_user_pages_fast(unsigned long start,
+ 				int nr_pages, int write, struct page **pages)
+ {
+@@ -186,3 +253,18 @@ int __attribute__((weak)) get_user_pages_fast(unsigned long start,
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(get_user_pages_fast);
++
++/* Tracepoints definitions. */
++DEFINE_TRACE(kmalloc);
++DEFINE_TRACE(kmem_cache_alloc);
++DEFINE_TRACE(kmalloc_node);
++DEFINE_TRACE(kmem_cache_alloc_node);
++DEFINE_TRACE(kfree);
++DEFINE_TRACE(kmem_cache_free);
++
++EXPORT_TRACEPOINT_SYMBOL(kmalloc);
++EXPORT_TRACEPOINT_SYMBOL(kmem_cache_alloc);
++EXPORT_TRACEPOINT_SYMBOL(kmalloc_node);
++EXPORT_TRACEPOINT_SYMBOL(kmem_cache_alloc_node);
++EXPORT_TRACEPOINT_SYMBOL(kfree);
++EXPORT_TRACEPOINT_SYMBOL(kmem_cache_free);
+-- 
+1.6.2.4
+

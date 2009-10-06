@@ -1,0 +1,208 @@
+From c64d2cce6457fe7e8066a9247004d2e053768fe9 Mon Sep 17 00:00:00 2001
+From: Vaibhav Hiremath <hvaibhav@ti.com>
+Date: Fri, 6 Mar 2009 13:49:23 +0530
+Subject: [PATCH 326/426] Power Management working with V4L2 Display
+
+Following changes done here -
+
+	- display-enable will happen on stream-on
+	- display-disable will happen on stream-off
+	- board-omap3evm.c file changed to remove some
+	  twl calls since they were blanking LCD panel.
+	- serial.c, was not building since refering to Ffbdev
+	  calls.
+---
+ arch/arm/mach-omap2/board-omap3evm.c |    8 ----
+ arch/arm/mach-omap2/cpuidle34xx.c    |    2 +
+ arch/arm/mach-omap2/serial.c         |    5 ++-
+ drivers/media/video/omap/omap_vout.c |   61 +++++++++++++++++++++++++++++++--
+ 4 files changed, 63 insertions(+), 13 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index 46b4691..d06ef2c 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -350,8 +350,6 @@ static int omap3_evm_panel_enable_lcd(struct omap_display *display)
+ 			ENABLE_VPLL2_DEDICATED, TWL4030_PLL2_DEDICATED);
+ 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+ 			ENABLE_VPLL2_DEV_GRP, TWL4030_VPLL2_DEV_GRP);
+-		twl4030_i2c_write_u8(TWL4030_MODULE_LED, 0x10, TWL4030_LED_EN);
+-		twl4030_i2c_write_u8(TWL4030_MODULE_PWMA, 100, TWL_PWMA_PWMAOFF);
+ 	}
+ #endif
+ 	gpio_direction_output(LCD_PANEL_ENABLE_GPIO, 0);
+@@ -367,8 +365,6 @@ static void omap3_evm_panel_disable_lcd(struct omap_display *display)
+ 				TWL4030_PLL2_DEDICATED);
+ 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x0,
+ 				TWL4030_VPLL2_DEV_GRP);
+-		twl4030_i2c_write_u8(TWL4030_MODULE_LED, 0x11, TWL4030_LED_EN);
+-		twl4030_i2c_write_u8(TWL4030_MODULE_PWMA, 0, TWL_PWMA_PWMAOFF);
+ 	}
+ #endif
+ 	gpio_direction_output(LCD_PANEL_ENABLE_GPIO, 1);
+@@ -426,8 +422,6 @@ static int omap3_evm_panel_enable_dvi(struct omap_display *display)
+ 			ENABLE_VPLL2_DEDICATED, TWL4030_PLL2_DEDICATED);
+ 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
+ 			ENABLE_VPLL2_DEV_GRP, TWL4030_VPLL2_DEV_GRP);
+-		twl4030_i2c_write_u8(TWL4030_MODULE_LED, 0x10, TWL4030_LED_EN);
+-		twl4030_i2c_write_u8(TWL4030_MODULE_PWMA, 100, TWL_PWMA_PWMAOFF);
+ 	}
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_GPIO, 0x80,
+ 			REG_GPIODATADIR1);
+@@ -447,8 +441,6 @@ static void omap3_evm_panel_disable_dvi(struct omap_display *display)
+ 				TWL4030_PLL2_DEDICATED);
+ 		twl4030_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x0,
+ 				TWL4030_VPLL2_DEV_GRP);
+-		twl4030_i2c_write_u8(TWL4030_MODULE_LED, 0x11, TWL4030_LED_EN);
+-		twl4030_i2c_write_u8(TWL4030_MODULE_PWMA, 0, TWL_PWMA_PWMAOFF);
+ 	}
+ 
+ 	twl4030_i2c_write_u8(TWL4030_MODULE_GPIO, 0x00,
+diff --git a/arch/arm/mach-omap2/cpuidle34xx.c b/arch/arm/mach-omap2/cpuidle34xx.c
+index 5e50c46..3ce223d 100644
+--- a/arch/arm/mach-omap2/cpuidle34xx.c
++++ b/arch/arm/mach-omap2/cpuidle34xx.c
+@@ -100,6 +100,8 @@ static int omap3_enter_idle(struct cpuidle_device *dev,
+ 	if (omap_irq_pending())
+ 		goto return_sleep_time;
+ 
++	if (!omap3_can_sleep())
++		goto return_sleep_time;
+ 	/* Execute ARM wfi */
+ 	omap_sram_idle();
+ 
+diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
+index bdb98ab..ed03c7f 100644
+--- a/arch/arm/mach-omap2/serial.c
++++ b/arch/arm/mach-omap2/serial.c
+@@ -228,8 +228,9 @@ static inline void omap_uart_disable_clocks(struct omap_uart_state *uart)
+ 	clk_disable(uart->ick);
+ 	clk_disable(uart->fck);
+ }
+-
++#ifdef CONFIG_FB_OMAP2
+ extern void omap_dss_resume_idle();
++#endif
+ 
+ static void omap_uart_block_sleep(struct omap_uart_state *uart)
+ {
+@@ -242,7 +243,9 @@ static void omap_uart_block_sleep(struct omap_uart_state *uart)
+ 	 * Hook DSS resume functionlaity here, so that serial
+ 	 * interrupt will be wake-up event for DSS
+ 	 */
++#ifdef CONFIG_FB_OMAP2
+ 	omap_dss_resume_idle();
++#endif
+ }
+ 
+ static void omap_uart_allow_sleep(struct omap_uart_state *uart)
+diff --git a/drivers/media/video/omap/omap_vout.c b/drivers/media/video/omap/omap_vout.c
+index f7f133e..722cf2e 100644
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -154,6 +154,12 @@ static void omap_vout_cleanup_device(struct omap_vout_device *vout);
+ /* module parameters */
+ 
+ /*
++ * This is temperory implementation for supporing CPU Idle with
++ * V4L2 driver.
++ */
++extern atomic_t sleep_block;
++
++/*
+  * Maximum amount of memory to use for rendering buffers.
+  * Default is enough to four (RGB24) VGA buffers.
+  */
+@@ -916,10 +922,10 @@ static int omap_vout_release(struct file *file)
+ 
+ 	/* Disable all the overlay managers connected with this interface */
+ 	for (t = 0; t < ovid->num_overlays; t++) {
+-			struct omap_overlay *ovl = ovid->overlays[t];
+-			if (ovl->manager && ovl->manager->display)
+-				ovl->enable(ovl, 0);
+-		}
++		struct omap_overlay *ovl = ovid->overlays[t];
++		if (ovl->manager && ovl->manager->display)
++			ovl->enable(ovl, 0);
++	}
+ 
+ 	r = omapvid_apply_changes(vout, 0, 0);
+ 	if (r)
+@@ -951,6 +957,19 @@ static int omap_vout_release(struct file *file)
+ 
+ 	kfree(fh);
+ 
++	for (t = 0; t < ovid->vid_dev->num_displays; t++) {
++		struct omap_display *display =
++			ovid->vid_dev->displays[t];
++		display->disable(display);
++	}
++	/*
++	 * This is temperory implementation to support CPU Idle,
++	 * we are releasing sleep_block so PM code to go into any state.
++	 */
++	if (atomic_read(&sleep_block) > 0)
++		atomic_dec(&sleep_block);
++
++
+ 	return r;
+ }
+ 
+@@ -1642,6 +1661,23 @@ static int vidioc_streamon(struct file *file, void *fh,
+ 	else
+ 		return -EINVAL;
+ 
++	/*
++	 * This is temperory implementation to support CPU Idle,
++	 * we are blocking PM code to go into any state.
++	 */
++	atomic_inc(&sleep_block);
++
++	/*
++	 * Check for the right location of enabling the display,
++	 * temporory enabling here
++	 */
++	for (t = 0; t < ovid->vid_dev->num_displays; t++) {
++		struct omap_display *display = ovid->vid_dev->displays[t];
++		r = display->enable(display);
++		if (r < 0)
++			/*Must be enabled in FBDEV already*/
++			printk("Already enabled\n");
++	}
+ 	for (t = 0; t < ovid->num_overlays; t++) {
+ 		struct omap_overlay *ovl = ovid->overlays[t];
+ 		if (ovl->manager && ovl->manager->display)
+@@ -1678,6 +1714,20 @@ static int vidioc_streamoff(struct file *file, void *fh,
+ 			if (ovl->manager && ovl->manager->display)
+ 				ovl->enable(ovl, 0);
+ 		}
++		/*
++		 * Check for the right location of enabling
++		 * the display, temporory enabling here
++		 */
++		for (t = 0; t < ovid->vid_dev->num_displays; t++) {
++			struct omap_display *display =
++				ovid->vid_dev->displays[t];
++			display->disable(display);
++		}
++		/*
++		 * This is temperory implementation to support CPU Idle,
++		 * we are sleep_block, so that PM code to go into any state.
++		 */
++		atomic_dec(&sleep_block);
+ 
+ 		r = omapvid_apply_changes(vout, 0, 0);
+ 		if (r) {
+@@ -1943,6 +1993,9 @@ static int omap_vout_probe(struct platform_device *pdev)
+ 			display->panel->timings.y_res);
+ 	}
+ 	printk(KERN_INFO "display->updated\n");
++
++	def_display->disable(def_display);
++
+ 	return 0;
+ 
+ error0:
+-- 
+1.6.2.4
+

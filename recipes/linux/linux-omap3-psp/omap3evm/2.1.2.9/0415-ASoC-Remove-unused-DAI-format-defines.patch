@@ -1,0 +1,49 @@
+From 8b2bd4ac025c40a181fd4605422c2925e9c7c385 Mon Sep 17 00:00:00 2001
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Sat, 2 May 2009 12:28:25 +0100
+Subject: [PATCH 415/426] ASoC: Remove unused DAI format defines
+
+The defines for TDM and synchronous clocks are not used - they are
+mostly a legacy of the automatic clocking configuration.  TDM will
+require configuration of the number of timeslots and which ones to use
+so can't be fit into the DAI format and synchronous mode is handled by
+symmetric_rates (and needs to be done by constraints rather than when
+the DAI format is being configured).
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ include/sound/soc-dai.h |   18 ------------------
+ 1 files changed, 0 insertions(+), 18 deletions(-)
+
+diff --git a/include/sound/soc-dai.h b/include/sound/soc-dai.h
+index 22b729f..2197178 100644
+--- a/include/sound/soc-dai.h
++++ b/include/sound/soc-dai.h
+@@ -45,24 +45,6 @@ struct snd_pcm_substream;
+ #define SND_SOC_DAIFMT_GATED		(1 << 4) /* clock is gated */
+ 
+ /*
+- * DAI Left/Right Clocks.
+- *
+- * Specifies whether the DAI can support different samples for similtanious
+- * playback and capture. This usually requires a seperate physical frame
+- * clock for playback and capture.
+- */
+-#define SND_SOC_DAIFMT_SYNC		(0 << 5) /* Tx FRM = Rx FRM */
+-#define SND_SOC_DAIFMT_ASYNC		(1 << 5) /* Tx FRM ~ Rx FRM */
+-
+-/*
+- * TDM
+- *
+- * Time Division Multiplexing. Allows PCM data to be multplexed with other
+- * data on the DAI.
+- */
+-#define SND_SOC_DAIFMT_TDM		(1 << 6)
+-
+-/*
+  * DAI hardware signal inversions.
+  *
+  * Specifies whether the DAI can also support inverted clocks for the specified
+-- 
+1.6.2.4
+

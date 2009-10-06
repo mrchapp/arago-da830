@@ -1,0 +1,29 @@
+From 62ccbca0e17c3f1a0e4e375072df8b781e79daa4 Mon Sep 17 00:00:00 2001
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Mon, 6 Apr 2009 16:59:32 +0100
+Subject: [PATCH 399/426] ASoC: Display return code when failing to add a DAPM kcontrol
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ sound/soc/soc-dapm.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index 735903a..46485de 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -357,8 +357,9 @@ static int dapm_new_mixer(struct snd_soc_codec *codec,
+ 				path->long_name);
+ 			ret = snd_ctl_add(codec->card, path->kcontrol);
+ 			if (ret < 0) {
+-				printk(KERN_ERR "asoc: failed to add dapm kcontrol %s\n",
+-						path->long_name);
++				printk(KERN_ERR "asoc: failed to add dapm kcontrol %s: %d\n",
++				       path->long_name,
++				       ret);
+ 				kfree(path->long_name);
+ 				path->long_name = NULL;
+ 				return ret;
+-- 
+1.6.2.4
+

@@ -1,0 +1,68 @@
+From 4e039e47b6e1fc75158740b23ae02722bfb0dd74 Mon Sep 17 00:00:00 2001
+From: Sakari Ailus <sakari.ailus@nokia.com>
+Date: Mon, 26 Jan 2009 15:19:27 -0600
+Subject: [PATCH 247/426] omap3isp: Add interface type ISP_NONE for preview / resizer only operation
+
+Signed-off-by: Sakari Ailus <sakari.ailus@nokia.com>
+---
+ drivers/media/video/isp/isp.c |    8 +++++---
+ drivers/media/video/isp/isp.h |    3 ++-
+ 2 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/media/video/isp/isp.c b/drivers/media/video/isp/isp.c
+index e03ce39..4f1d86c 100644
+--- a/drivers/media/video/isp/isp.c
++++ b/drivers/media/video/isp/isp.c
+@@ -818,6 +818,8 @@ int isp_configure_interface(struct isp_interface_config *config)
+ 	u32 ispctrl_val = isp_reg_readl(OMAP3_ISP_IOMEM_MAIN, ISP_CTRL);
+ 	int r;
+ 
++	isp_obj.config = config;
++
+ 	ispctrl_val &= ISPCTRL_SHIFT_MASK;
+ 	ispctrl_val |= (config->dataline_shift << ISPCTRL_SHIFT_SHIFT);
+ 	ispctrl_val &= ~ISPCTRL_PAR_CLK_POL_INV;
+@@ -860,6 +862,8 @@ int isp_configure_interface(struct isp_interface_config *config)
+ 		if (r)
+ 			return r;
+ 		break;
++	case ISP_NONE:
++		return 0;
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -873,8 +877,6 @@ int isp_configure_interface(struct isp_interface_config *config)
+ 	isppreview_set_skip(config->prev_sph, config->prev_slv);
+ 	ispccdc_set_wenlog(config->wenlog);
+ 
+-	isp_obj.config = config;
+-
+ 	return 0;
+ }
+ EXPORT_SYMBOL(isp_configure_interface);
+@@ -1340,7 +1342,7 @@ int isp_buf_process(struct isp_bufs *bufs)
+ 		 * CCDC may trigger interrupts even if it's not
+ 		 * receiving a frame.
+ 		 */
+-		bufs->wait_hs_vs = 1;
++		bufs->wait_hs_vs = min(1, isp_obj.config->wait_hs_vs);
+ 	}
+ 	if ((RAW_CAPTURE(&isp_obj) && ispccdc_busy())
+ 	    || (!RAW_CAPTURE(&isp_obj) && ispresizer_busy())) {
+diff --git a/drivers/media/video/isp/isp.h b/drivers/media/video/isp/isp.h
+index d069c8b..44fc7f4 100644
+--- a/drivers/media/video/isp/isp.h
++++ b/drivers/media/video/isp/isp.h
+@@ -106,7 +106,8 @@ struct isp_device {
+ enum isp_interface_type {
+ 	ISP_PARLL = 1,
+ 	ISP_CSIA = 2,
+-	ISP_CSIB = 4
++	ISP_CSIB = 4,
++	ISP_NONE = 8 /* memory input to preview / resizer */
+ };
+ 
+ enum isp_irqevents {
+-- 
+1.6.2.4
+
