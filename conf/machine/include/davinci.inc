@@ -1,7 +1,7 @@
 require conf/machine/include/tune-arm926ejs.inc
 
 # Increase this everytime you change something in the kernel
-MACHINE_KERNEL_PR = "r22"
+MACHINE_KERNEL_PR = "r23"
 
 TARGET_ARCH = "arm"
 
