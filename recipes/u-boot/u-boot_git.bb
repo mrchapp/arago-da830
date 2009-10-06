@@ -1,5 +1,5 @@
 require u-boot.inc
-PR ="r32"
+PR ="r33"
 
 FILESPATHPKG =. "u-boot-git:"
 
@@ -85,12 +85,12 @@ SRCREV_dm6467t-evm = "3da7475ae13445ba89c77ea563ccdfb9df540bb7"
 PV_dm6467t-evm = "2009.08+gitr${SRCREV}"
 
 SRC_URI_dm355-evm = "git://arago-project.org/git/projects/u-boot-davinci.git;protocol=git"
-SRCREV_dm355-evm = "5ae613482c9468386872cedd46f8fb389f19859d"
-PV_dm355-evm = "2009.08+gitr${SRCREV}"
+SRCREV_dm355-evm = "f8d047c84137ab331c0ee2c3e94c3f1ec4228298"
+PV_dm355-evm = "2009.05+2009.06-rc0+gitr${SRCREV}"
 
 SRC_URI_dm365-evm = "git://arago-project.org/git/projects/u-boot-davinci.git;protocol=git"
-SRCREV_dm365-evm = "5ae613482c9468386872cedd46f8fb389f19859d"
-PV_dm365-evm = "2009.08+gitr${SRCREV}"
+SRCREV_dm365-evm = "f8d047c84137ab331c0ee2c3e94c3f1ec4228298"
+PV_dm365-evm = "2009.05+2009.06-rc0+gitr${SRCREV}"
 
 SRC_URI_da830-omapl137-evm = "git://arago-project.org/git/people/sekhar/u-boot-omapl1.git;protocol=git;branch=wakeup"
 SRCREV_da830-omapl137-evm = "04a03bb477ad842b84c61b29f11422089ad0088d"
