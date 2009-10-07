@@ -57,7 +57,7 @@ ARAGO_DVSDK_PREREQ = "\
     "
 
 DVSDK_TARGET_PACKAGE_dm355-evm = "ti-dvsdk-demos"
-DVSDK_TARGET_PACKAGE_dm365-evm = "ti-dmai-demos"
+DVSDK_TARGET_PACKAGE_dm365-evm = "ti-dvsdk-demos"
 
 # add dvsdk components
 RDEPENDS_${PN} = "\
@@ -68,5 +68,5 @@ RDEPENDS_${PN} = "\
     ${ARAGO_FSTOOLS} \
     ${ARAGO_UTILS} \
     ${ARAGO_DVSDK_PREREQ} \
-	${DVSDK_TARGET_PACKAGE} \
+    ${DVSDK_TARGET_PACKAGE} \
     "
