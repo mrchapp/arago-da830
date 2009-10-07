@@ -57,7 +57,7 @@ ARAGO_DVSDK_PREREQ = "\
     "
 
 DVSDK_TARGET_PACKAGE_dm355-evm = "ti-dvsdk-demos"
-DVSDK_TARGET_PACKAGE_dm365-evm = "ti-dmai-apps"
+DVSDK_TARGET_PACKAGE_dm365-evm = "ti-dmai-demos"
 
 # add dvsdk components
 RDEPENDS_${PN} = "\
