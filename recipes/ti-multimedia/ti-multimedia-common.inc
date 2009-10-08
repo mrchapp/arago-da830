@@ -26,7 +26,7 @@ export USER_XDC_PATH    = "${CE_INSTALL_DIR}/examples"
 export XDC_TARGET       = gnu.targets.arm.GCArmv5T
 
 XDC_PLATFORM_dm355-evm   = ti.platforms.evmDM355
-XDC_PLATFORM_dm355-evm   = ti.platforms.evmDM365
+XDC_PLATFORM_dm365-evm   = ti.platforms.evmDM365
 XDC_PLATFORM_dm6446-evm  = ti.platforms.evmDM6446
 XDC_PLATFORM_omap3evm    = ti.platforms.evm3530
 XDC_PLATFORM_beagleboard = ti.platforms.evm3530

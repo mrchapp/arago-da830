@@ -16,19 +16,17 @@ TARGET_dm365-evm ?= "dm365"
 
 include ti-multimedia-common.inc
 
+VERBOSE="true"
+
 do_compile () {
-    if [ ${PLATFORM} == "dm355" ] ; then
         cd ${S}
-        make clean
-        make ${PLATFORM}
-    fi
+        make -e clean
+        make -e ${PLATFORM}
 }
 
 do_install () {
-    if [ ${PLATFORM} == "dm355" ] ; then
         cd ${S}
-        make ${TARGET} EXEC_DIR=${D}/${installdir}/dvsdk-demos install 
-    fi
+        make -e ${TARGET} EXEC_DIR=${D}/${installdir}/dvsdk-demos install
 }
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
