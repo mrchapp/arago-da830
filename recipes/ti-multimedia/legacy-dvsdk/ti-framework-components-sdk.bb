@@ -5,13 +5,15 @@ require ../ti-framework-components.inc
 PV = "${PV_pn-ti-framework-components}"
 BASE_SRC_URI = "${BASE_SRC_URI_pn-ti-framework-components}"
 
+DVSDK_PATH="${@['${prefix}/dvsdk', bb.data.getVar('META_DVSDK_PATH', d, 1)][bool(bb.data.getVar('META_DVSDK_PATH', d, 1))]}"
+
 do_compile () {
         echo "! Do not rebuild for now !"
 }
 
 do_install() {
-    install -d ${D}/${prefix}/dvsdk/framework_components_${PV}
-    cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/framework_components_${PV}
+    install -d ${D}/${DVSDK_PATH}/framework_components_${PV}
+    cp -pPrf ${S}/* ${D}/${DVSDK_PATH}/framework_components_${PV}
 
     # Create rules.make file
 	mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
@@ -19,5 +21,5 @@ do_install() {
     echo "FC_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/framework_components_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/fc.Rules.make
 }
 
-FILES_${PN} = "${prefix}/dvsdk/framework_components_${PV}"
+FILES_${PN} = "${DVSDK_PATH}/framework_components_${PV}"
 INSANE_SKIP_${PN} = True

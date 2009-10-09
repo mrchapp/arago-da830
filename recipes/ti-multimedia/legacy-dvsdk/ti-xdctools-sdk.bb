@@ -5,10 +5,12 @@ require ../../ti-tools/ti-xdctools.inc
 BASE_PV = "${BASE_PV_pn-ti-xdctools-native}"
 PV      = "${PV_pn-ti-xdctools-native}"
 
+DVSDK_PATH="${@['${prefix}/dvsdk', bb.data.getVar('META_DVSDK_PATH', d, 1)][bool(bb.data.getVar('META_DVSDK_PATH', d, 1))]}"
+
 do_install() {
-    install -d ${D}/${prefix}/dvsdk/xdctools_${PV}
-    cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/xdctools_${PV}
-    chmod 755 -R ${D}/${prefix}/dvsdk/xdctools_${PV}
+    install -d ${D}/${DVSDK_PATH}/xdctools_${PV}
+    cp -pPrf ${S}/* ${D}/${DVSDK_PATH}/xdctools_${PV}
+    chmod 755 -R ${D}/${DVSDK_PATH}/xdctools_${PV}
     chmod 755 -R  ${S}
 
     # Creates rules.make file
@@ -17,6 +19,6 @@ do_install() {
     echo "XDC_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/xdctools_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/xdc.Rules.make
 }
 
-FILES_${PN} = "${prefix}/dvsdk/xdctools_${PV}"
+FILES_${PN} = "${DVSDK_PATH}/xdctools_${PV}"
 INSANE_SKIP_${PN} = True
 INHIBIT_PACKAGE_STRIP = "1"
