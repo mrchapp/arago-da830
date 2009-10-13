@@ -1,7 +1,7 @@
 DESCRIPTION = "DMAI for TI ARM/DSP processors"
 
 BRANCH="GITPSP_INT_101009"
-SRCREV="323"
+SRCREV="325"
 
 SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=${BRANCH};proto=https;user=anonymous;pswd='' \
 		file://loadmodules-ti-dmai-dm355_al.sh \
@@ -13,6 +13,6 @@ SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=${BRANCH};proto=https;us
 S = "${WORKDIR}/${BRANCH}/davinci_multimedia_application_interface"
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "svnr${SRCREV}"
-PR = "r30"
+PR = "r32"
 
 INHIBIT_PACKAGE_STRIP = "1"
