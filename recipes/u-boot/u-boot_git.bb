@@ -1,5 +1,5 @@
 require u-boot.inc
-PR ="r33"
+PR ="r34"
 
 FILESPATHPKG =. "u-boot-git:"
 
@@ -77,11 +77,11 @@ SRCREV_dm6446-evm = "f8d047c84137ab331c0ee2c3e94c3f1ec4228298"
 PV_dm6446-evm = "2009.05+2009.06-rc0+gitr${SRCREV}"
 
 SRC_URI_dm6467-evm = "git://arago-project.org/git/people/hemant/u-boot-dm646x.git;protocol=git"
-SRCREV_dm6467-evm = "3da7475ae13445ba89c77ea563ccdfb9df540bb7"
+SRCREV_dm6467-evm = "b037106746e5b942d7ef06bfcd776a7cdfe32f68"
 PV_dm6467-evm = "2009.08+gitr${SRCREV}"
 
 SRC_URI_dm6467t-evm = "git://arago-project.org/git/people/hemant/u-boot-dm646x.git;protocol=git"
-SRCREV_dm6467t-evm = "3da7475ae13445ba89c77ea563ccdfb9df540bb7"
+SRCREV_dm6467t-evm = "b037106746e5b942d7ef06bfcd776a7cdfe32f68"
 PV_dm6467t-evm = "2009.08+gitr${SRCREV}"
 
 SRC_URI_dm355-evm = "git://arago-project.org/git/projects/u-boot-davinci.git;protocol=git"
