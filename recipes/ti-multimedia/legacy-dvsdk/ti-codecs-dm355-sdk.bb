@@ -3,10 +3,11 @@ inherit sdk
 require ../ti-codecs-dm355.inc
 
 PV = "${PV_pn-ti-codecs-dm355}"
+BASE_SRC_URI = "${BASE_SRC_URI_pn-ti-codecs-dm355}"
 
 DVSDK_PATH="${@['${prefix}/dvsdk', bb.data.getVar('META_DVSDK_PATH', d, 1)][bool(bb.data.getVar('META_DVSDK_PATH', d, 1))]}"
 
-SRC_URI = "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/dvsdk/codecs/dm355_codecs_setuplinux_${PV}.bin \
+SRC_URI = "${BASE_SRC_URI}/dm355_codecs_setuplinux_${PV}.bin \
            file://dm355mm.patch;patch=1 \
           "
 
