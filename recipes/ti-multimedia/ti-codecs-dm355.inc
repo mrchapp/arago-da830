@@ -1,8 +1,9 @@
 DESCRIPTION = "DM355 Codecs"
 
 PV = "1_13_000"
+BASE_SRC_URI = "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/dvsdk/codecs"
 
-SRC_URI	= "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/dvsdk/codecs/dm355_codecs_setuplinux_${PV}.bin \
+SRC_URI	= "${BASE_SRC_URI}/dm355_codecs_setuplinux_${PV}.bin \
 		   file://mapdmaq \
 		 "
 
@@ -10,7 +11,7 @@ S = "${WORKDIR}/dm355_codecs_${PV}"
 BINFILE="dm355_codecs_setuplinux_${PV}.bin"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
-PR = "r15"
+PR = "r16"
 
 do_compile() {
 	echo "Do nothing"
