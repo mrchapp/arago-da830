@@ -8,6 +8,7 @@ SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=${BRANCH};proto=https;us
 		file://loadmodules-ti-dmai-dm365_al.sh \
 		file://loadmodules-ti-dmai-dm6446_al.sh \
 		file://loadmodules-ti-dmai-o3530_al.sh \
+		file://loadmodules-ti-dmai-dm6467_al.sh \
 	"
 
 S = "${WORKDIR}/${BRANCH}/davinci_multimedia_application_interface"

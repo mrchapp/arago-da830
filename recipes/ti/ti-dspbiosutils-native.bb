@@ -1,5 +1,6 @@
-require ti-dspbios.inc
 inherit native
+
+require ti-dspbiosutils.inc
 
 do_stage() {
     install -d ${STAGING_DIR_NATIVE}/${PN}

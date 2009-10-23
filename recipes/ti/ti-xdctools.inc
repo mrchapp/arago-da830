@@ -2,8 +2,9 @@ DESCRIPTION = "TI XDC tool"
 
 BASE_PV = "3_15"
 PV = "3_15_01_59"
+BASE_SRC_URI = "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/rtsc/xdctools_${BASE_PV}/exports"
 
-SRC_URI	= "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/rtsc/xdctools_${BASE_PV}/exports/xdctools_setuplinux_${PV}.bin"
+SRC_URI	= "${BASE_SRC_URI}/xdctools_setuplinux_${PV}.bin"
 BINFILE="xdctools_setuplinux_${PV}.bin"
 
 S = "${WORKDIR}/xdctools_${PV}"

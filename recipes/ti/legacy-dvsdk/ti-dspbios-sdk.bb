@@ -3,25 +3,26 @@ inherit sdk
 
 # download bios_setuplinux_5_33_02.bin from https://www-a.ti.com/downloads/sds_support/targetcontent/bios/bios_5_33/bios_5_33_02/index_external.html and copy in Arago/OE installation directory
 
-SRC_URI	= "http://install.source.dir.com/bios_setuplinux_5_33_02.bin"
-BINFILE="bios_setuplinux_5_33_02.bin"
+PV = "${PV_pn-ti-dspbios-native}"
+BASE_SRC_URI = "${BASE_SRC_URI_pn-ti-dspbios-native}"
 
-S = "${WORKDIR}/bios_5_33_02"
+DVSDK_PATH="${@['${prefix}/dvsdk', bb.data.getVar('META_DVSDK_PATH', d, 1)][bool(bb.data.getVar('META_DVSDK_PATH', d, 1))]}"
 
-# Yes, the xdc stuff still breaks with a '.' in PWD
-PV = "533"
-PR = "r13"
+do_compile () {
+        echo "! Do not rebuild for now !"
+}
 
 do_install() {
-    install -d ${D}/${prefix}/dvsdk/bios_5_33_02
-    cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/bios_5_33_02
+
+    install -d ${D}/${DVSDK_PATH}/bios_${PV}
+    cp -pPrf ${S}/* ${D}/${DVSDK_PATH}/bios_${PV}
 
     # Creates rules.make file
 	  mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
 	  echo "# Where DSP/BIOS is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/bios.Rules.make
-    echo "BIOS_INSTALL_DIR=${prefix}/dvsdk/bios_5_33_02" >> ${STAGING_DIR_HOST}/ti-sdk-rules/bios.Rules.make
+    echo "BIOS_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/bios_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/bios.Rules.make
 }
 
-FILES_${PN} ="${prefix}/dvsdk/bios_5_33_02/*"
+FILES_${PN} = "${DVSDK_PATH}/bios_${PV}"
 INSANE_SKIP_${PN} = True
 INHIBIT_PACKAGE_STRIP = "1"

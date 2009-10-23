@@ -5,6 +5,7 @@ inherit task
 
 DVSDK_TARGET_PACKAGE_dm355-evm = "ti-dvsdk-demos"
 DVSDK_TARGET_PACKAGE_dm365-evm = "ti-dvsdk-demos"
+DVSDK_TARGET_PACKAGE_dm6467t-evm = "ti-dvsdk-demos"
 
 RDEPENDS_${PN} = "\
     task-arago-demo \

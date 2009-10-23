@@ -22,6 +22,16 @@ DVSDK_TARGET_EXCLUDE_dm6446-evm = "\
     ti-dmai-apps \
     "
 
+DVSDK_TARGET_EXCLUDE_dm6467t-evm = "\
+    ti-dm355mm-module \
+    ti-dmai-apps \
+    "
+
+DVSDK_TARGET_EXCLUDE_dm6467-evm = "\
+    ti-dm355mm-module \
+    ti-dmai-apps \
+    "
+
 DVSDK_TARGET_EXCLUDE_omap3evm = "\
     ti-linuxutils \
     ti-dsplink-module \

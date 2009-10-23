@@ -2,16 +2,15 @@ DESCRIPTION = "This package creates Rules.make file and copies top label Makefil
 
 inherit sdk
 
-PR="r8"
+PR="r9"
 
 FILES=${@os.path.dirname(bb.data.getVar('FILE',d,1))}/files/dvsdk-rules
 DVSDK_PATH="${@['${prefix}/dvsdk', bb.data.getVar('META_DVSDK_PATH', d, 1)][bool(bb.data.getVar('META_DVSDK_PATH', d, 1))]}"
 
-DEPENDS  = "ti-codecs-dm355-sdk ti-codecs-dm365-sdk ti-dm365mm-module-sdk ti-xdctools-sdk ti-xdais-sdk ti-codec-engine-sdk ti-linuxutils-sdk ti-framework-components-sdk ti-dmai-sdk ti-dvsdk-demos-sdk"
+DEPENDS  = "ti-dsplink-module-sdk ti-dspbiosutils-sdk ti-edma3-lld-sdk ti-codec-combo-dm6467-sdk  ti-cgt6x-sdk ti-dspbios-sdk ti-codecs-dm355-sdk ti-codecs-dm365-sdk ti-dm365mm-module-sdk ti-xdctools-sdk ti-xdais-sdk ti-codec-engine-sdk ti-linuxutils-sdk ti-framework-components-sdk ti-dmai-sdk ti-dvsdk-demos-sdk"
 DEPENDS_dm6446-evm  = "ti-codec-combo-dm6446-sdk  ti-cgt6x-sdk ti-dspbios-sdk ti-xdctools-sdk ti-xdais-sdk ti-codec-engine-sdk ti-linuxutils-sdk ti-framework-components-sdk ti-dmai-sdk"
 DEPENDS_omap3evm    = "ti-codec-combo-omap3530-sdk ti-cgt6x-sdk ti-dspbios-sdk ti-xdctools-sdk ti-xdais-sdk ti-codec-engine-sdk ti-linuxutils-sdk ti-framework-components-sdk ti-dmai-sdk"
 DEPENDS_beagleboard = "ti-codec-combo-omap3530-sdk ti-cgt6x-sdk ti-dspbios-sdk ti-xdctools-sdk ti-xdais-sdk ti-codec-engine-sdk ti-linuxutils-sdk ti-framework-components-sdk ti-dmai-sdk"
-
 include ../ti-multimedia-common.inc
 
 do_install () {

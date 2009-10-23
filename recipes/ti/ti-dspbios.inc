@@ -1,4 +1,13 @@
-DESCRIPTION = "TI DSP/BIOS for Davinci and OMAP processor"
+DESCRIPTION ?= "TI DSP/BIOS for Davinci and OMAP processor"
+
+PV = "5_41_00_06"
+PR = "r15"
+
+BASE_SRC_URI = "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/dspbios/${PV}/exports"
+SRC_URI	= "${BASE_SRC_URI}/bios_setuplinux_${PV}.bin"
+BINFILE="bios_setuplinux_${PV}.bin"
+
+S = "${WORKDIR}/bios_${PV}"
 
 TI_BIN_UNPK_CMDS="Y: qY:workdir:Y"
 

@@ -1,46 +1,44 @@
-DESCRIPTION = "DSPLINK 1.61.3 module for TI ARM/DSP processors"
+require ti-dsplink-module.inc
+
+include ../ti-multimedia/ti-multimedia-common.inc
+
 inherit module
 
 # compile and run time dependencies
 DEPENDS 	+= " virtual/kernel perl-native ti-dspbios-native ti-cgt6x-native update-modules"
+DEPENDS_dm6467-evm   += "ti-xdctools-native"
+DEPENDS_dm6467t-evm  += "ti-xdctools-native"
 
 # tconf from xdctools dislikes '.' in pwd :/
 #This is a kernel module, don't set PR directly
 MACHINE_KERNEL_PR_append = "a"                                                  
-PV = "1613"
 
-# Download codec_engine_2_23_01.tar.gz from https://www-a.ti.com/downloads/sds_support/targetcontent/CE/ce_2_23/index.html and copy in Arago/OE download directory.
-
-installdir = "${prefix}/ti"
-SRC_URI = "http://install.source.dir.com/codec_engine_2_23_01.tar.gz  \
-		   file://loadmodules-ti-dsplink-apps.sh \
-		   file://unloadmodules-ti-dsplink-apps.sh"
-
-# Set the source directory
-S = "${WORKDIR}/codec_engine_2_23_01"
-	
 # DSPLINK - Config Variable for different platform
 DSPLINKPLATFORM            ?= "DAVINCI"
 DSPLINKPLATFORM_omap3evm   ?= "OMAP3530"
 DSPLINKPLATFORM_beagleboard   ?= "OMAP3530"
 DSPLINKPLATFORM_dm6446-evm ?= "DAVINCI"
 DSPLINKPLATFORM_da830-omapl137-evm ?= "OMAPL1XX"
+DSPLINKPLATFORM_dm6467-evm ?= "DAVINCIHD"
+DSPLINKPLATFORM_dm6467t-evm ?= "DAVINCIHD"
 
 DSPLINKDSPCFG            ?= "DM6446GEMSHMEM"
 DSPLINKDSPCFG_omap3evm   ?= "OMAP3530SHMEM"
 DSPLINKDSPCFG_beagleboard   ?= "OMAP3530SHMEM"
 DSPLINKDSPCFG_dm6446-evm ?= "DM6446GEMSHMEM"
 DSPLINKDSPCFG_da830-omapl137-evm ?= "OMAPL1XXGEMSHMEM"
+DSPLINKDSPCFG_dm6467-evm ?= "DM6467GEMSHMEM"
+DSPLINKDSPCFG_dm6467t-evm ?= "DM6467GEMSHMEM"
 
 DSPLINKGPPOS             ?= "MVL5G"
 DSPLINKGPPOS_omap3evm    ?= "OMAPLSP"
 DSPLINKGPPOS_beagleboard    ?= "OMAPLSP"
 DSPLINKGPPOS_dm6446-evm  ?= "MVL5G"
 DSPLINKGPPOS_da830-omapl137-evm  ?= "MVL5G"
+DSPLINKGPPOS_dm6467-evm  ?= "DM6467LSP"
+DSPLINKGPPOS_dm6467t-evm  ?= "DM6467LSP"
 
-export DSPLINK="${S}/cetools/packages/dsplink"
-STAGING_TI_DSPBIOS_DIR="${STAGING_DIR_NATIVE}/ti-dspbios-native"
-STAGING_TI_CGT6x_DIR="${STAGING_DIR_NATIVE}/ti-cgt6x-native"
+export DSPLINK="${S}/dsplink"
 
 do_compile() {
 
@@ -52,9 +50,9 @@ do_compile() {
 	 --gppos=${DSPLINKGPPOS} --comps=ponslrm
     )
 
-	  # dsplink makefile is hard-coded to use kbuild only on OMAP3530.
+    # dsplink makefile is hard-coded to use kbuild only on OMAP3530.
     # we are forcing  to use kbuild on other platforms.
-	  sed -i  's/OMAP3530/${DSPLINKPLATFORM}/g' ${DSPLINK}/gpp/src/Makefile	
+    #	  sed -i  's/OMAP3530/${DSPLINKPLATFORM}/g' ${DSPLINK}/gpp/src/Makefile	
 
     # TODO :: KERNEL_CC, etc need replacing with user CC
     # TODO :: Need to understand why OBJDUMP is required for kernel module
@@ -108,15 +106,17 @@ do_compile() {
     # Build the dsp library (debug and release)
     cd ${DSPLINK}/dsp/src
     make \
-      BASE_CGTOOLS="${STAGING_TI_CGT6x_DIR}" \
-      BASE_SABIOS="${STAGING_TI_DSPBIOS_DIR}" \
+      BASE_CGTOOLS="${CODEGEN_INSTALL_DIR}" \
+      BASE_SABIOS="${BIOS_INSTALL_DIR}" \
+      XDCTOOLS_DIR="${XDC_INSTALL_DIR}" \      
       clean all
 
     # Build the dsp samples (debug and release)
     cd ${DSPLINK}/dsp/src/samples
     make \
-      BASE_CGTOOLS="${STAGING_TI_CGT6x_DIR}" \
-      BASE_SABIOS="${STAGING_TI_DSPBIOS_DIR}" \
+      BASE_CGTOOLS="${CODEGEN_INSTALL_DIR}" \
+      BASE_SABIOS="${BIOS_INSTALL_DIR}" \
+      XDCTOOLS_DIR="${XDC_INSTALL_DIR}" \      
       clean all
 }
 
@@ -141,6 +141,11 @@ do_install () {
     # DSPLINK test app module un/load scripts
     install ${WORKDIR}/loadmodules-ti-dsplink-apps.sh ${D}/${installdir}/dsplink/apps
     install ${WORKDIR}/unloadmodules-ti-dsplink-apps.sh ${D}/${installdir}/dsplink/apps
+}
+
+do_stage() {
+    install -d ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}
+    cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}/ 
 }
 
 pkg_postrm () {

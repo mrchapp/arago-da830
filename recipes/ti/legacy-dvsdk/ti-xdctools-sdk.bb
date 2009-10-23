@@ -2,12 +2,17 @@ inherit sdk
 
 require ../ti-xdctools.inc
 
-BASE_PV = "${BASE_PV_pn-ti-xdctools-native}"
-PV      = "${PV_pn-ti-xdctools-native}"
+PV = "${PV_pn-ti-xdctools-native}"
+BASE_SRC_URI = "${BASE_SRC_URI_pn-ti-xdctools-native}"
 
 DVSDK_PATH="${@['${prefix}/dvsdk', bb.data.getVar('META_DVSDK_PATH', d, 1)][bool(bb.data.getVar('META_DVSDK_PATH', d, 1))]}"
 
+do_compile () {
+        echo "! Do not rebuild for now !"
+}
+
 do_install() {
+
     install -d ${D}/${DVSDK_PATH}/xdctools_${PV}
     cp -pPrf ${S}/* ${D}/${DVSDK_PATH}/xdctools_${PV}
     chmod 755 -R ${D}/${DVSDK_PATH}/xdctools_${PV}
