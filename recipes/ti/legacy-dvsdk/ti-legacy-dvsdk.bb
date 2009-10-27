@@ -7,7 +7,7 @@ PR="r9"
 FILES=${@os.path.dirname(bb.data.getVar('FILE',d,1))}/files/dvsdk-rules
 DVSDK_PATH="${@['${prefix}/dvsdk', bb.data.getVar('META_DVSDK_PATH', d, 1)][bool(bb.data.getVar('META_DVSDK_PATH', d, 1))]}"
 
-DEPENDS  = "ti-dsplink-module-sdk ti-dspbiosutils-sdk ti-edma3-lld-sdk ti-codec-combo-dm6467-sdk  ti-cgt6x-sdk ti-dspbios-sdk ti-codecs-dm355-sdk ti-codecs-dm365-sdk ti-dm365mm-module-sdk ti-xdctools-sdk ti-xdais-sdk ti-codec-engine-sdk ti-linuxutils-sdk ti-framework-components-sdk ti-dmai-sdk ti-dvsdk-demos-sdk"
+DEPENDS  = "ti-dsplink-module-sdk ti-dspbiosutils-sdk ti-edma3-lld-sdk ti-codec-combo-dm6467-sdk ti-dspbios-sdk ti-codecs-dm355-sdk ti-codecs-dm365-sdk ti-dm365mm-module-sdk ti-xdctools-sdk ti-xdais-sdk ti-codec-engine-sdk ti-linuxutils-sdk ti-framework-components-sdk ti-dmai-sdk ti-dvsdk-demos-sdk"
 DEPENDS_dm6446-evm  = "ti-codec-combo-dm6446-sdk  ti-cgt6x-sdk ti-dspbios-sdk ti-xdctools-sdk ti-xdais-sdk ti-codec-engine-sdk ti-linuxutils-sdk ti-framework-components-sdk ti-dmai-sdk"
 DEPENDS_omap3evm    = "ti-codec-combo-omap3530-sdk ti-cgt6x-sdk ti-dspbios-sdk ti-xdctools-sdk ti-xdais-sdk ti-codec-engine-sdk ti-linuxutils-sdk ti-framework-components-sdk ti-dmai-sdk"
 DEPENDS_beagleboard = "ti-codec-combo-omap3530-sdk ti-cgt6x-sdk ti-dspbios-sdk ti-xdctools-sdk ti-xdais-sdk ti-codec-engine-sdk ti-linuxutils-sdk ti-framework-components-sdk ti-dmai-sdk"
@@ -31,6 +31,8 @@ do_install () {
       echo "" >> ${D}/${DVSDK_PATH}/Rules.make
     done
 
+    echo "# Where the Code Gen is installed." >>  ${D}/${DVSDK_PATH}/Rules.make
+    echo "CODEGEN_INSTALL_DIR=$(DVSDK_INSTALL_DIR)/cgt6x_6_1_12" >>  ${D}/${DVSDK_PATH}/Rules.make
     echo "# The directory that points to your kernel source directory." >>  ${D}/${DVSDK_PATH}/Rules.make
     echo "LINUXKERNEL_INSTALL_DIR=${prefix}/${TARGET_SYS}/usr/src/kernel" >> ${D}/${DVSDK_PATH}/Rules.make
     echo "" >> ${D}/${DVSDK_PATH}/Rules.make

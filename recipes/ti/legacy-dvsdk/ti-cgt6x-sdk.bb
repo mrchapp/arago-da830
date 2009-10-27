@@ -11,9 +11,10 @@ do_compile () {
 do_install() {
 
     install -d ${D}/${DVSDK_PATH}/cgt6x_${PV}
-    cp -pPrf ${S}/* ${D}/${DVSDK_PATH}/cgt6x_${PV}
+#Don't copy the Codegen to the DVSDK-Legacy; hence commented out
+#cp -pPrf ${S}/* ${D}/${DVSDK_PATH}/cgt6x_${PV}
 	
-	# Creates rules.make file
+	# Creates rules.make file, irrespective of codegen copied or not
     mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
     echo "# Where the Code Gen is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/cgt6x.Rules.make
     echo "CODEGEN_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/cgt6x_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/cgt6x.Rules.make

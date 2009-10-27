@@ -12,16 +12,16 @@ do_compile () {
 }
 
 do_install() {
-    install -d ${D}/${DVSDK_PATH}/dsplink_linux${PV}
-    cp -pPrf ${S}/* ${D}/${DVSDK_PATH}/dsplink_linux${PV}
-    chmod 755 -R ${D}/${DVSDK_PATH}/dsplink_linux${PV}
+    install -d ${D}/${DVSDK_PATH}/dsplink_linux_${PV}
+    cp -pPrf ${S}/* ${D}/${DVSDK_PATH}/dsplink_linux_${PV}
+    chmod 755 -R ${D}/${DVSDK_PATH}/dsplink_linux_${PV}
     chmod 755 -R  ${S}
 
     # Creates rules.make file
 	mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
 	echo "# Where the DSP Link package is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/dlink.Rules.make
-    echo "LINK_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/dsplink_linux${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/dlink.Rules.make
+    echo "LINK_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/dsplink_linux_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/dlink.Rules.make
 }
 
-FILES_${PN} = "${DVSDK_PATH}/dsplink_linux${PV}"
+FILES_${PN} = "${DVSDK_PATH}/dsplink_linux_${PV}"
 INSANE_SKIP_${PN} = True

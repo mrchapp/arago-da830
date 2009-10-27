@@ -12,16 +12,16 @@ do_compile () {
 }
 
 do_install() {
-    install -d ${D}/${DVSDK_PATH}/edma3_lld${PV}
-    cp -pPrf ${S}/* ${D}/${DVSDK_PATH}/edma3_lld${PV}
-    chmod 755 -R ${D}/${DVSDK_PATH}/edma3_lld${PV}
+    install -d ${D}/${DVSDK_PATH}/edma3_lld_${PV}
+    cp -pPrf ${S}/* ${D}/${DVSDK_PATH}/edma3_lld_${PV}
+    chmod 755 -R ${D}/${DVSDK_PATH}/edma3_lld_${PV}
     chmod 755 -R  ${S}
 
     # Creates rules.make file
 	mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
 	echo "# Where the DSPBIOS Utils package is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/edma3lld.Rules.make
-    echo "EDMA3_LLD_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/edma3_lld${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/edma3lld.Rules.make
+    echo "EDMA3_LLD_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/edma3_lld_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/edma3lld.Rules.make
 }
 
-FILES_${PN} = "${DVSDK_PATH}/edma3_lld${PV}"
+FILES_${PN} = "${DVSDK_PATH}/edma3_lld_${PV}"
 INSANE_SKIP_${PN} = True
