@@ -338,6 +338,14 @@ dmai_clean:
 #==============================================================================
 dsplink:	dsplink_arm dsplink_dsp dsplink_samples
 
+dsplink_dsp_genpackage:
+	$(XDC_INSTALL_DIR)/xdc -C $(LINK_INSTALL_DIR)/dsplink/dsp clean 
+	$(XDC_INSTALL_DIR)/xdc -C $(LINK_INSTALL_DIR)/dsplink/dsp .interfaces
+
+dsplink_gpp_genpackage:
+	$(XDC_INSTALL_DIR)/xdc -C $(LINK_INSTALL_DIR)/dsplink/gpp clean 
+	$(XDC_INSTALL_DIR)/xdc -C $(LINK_INSTALL_DIR)/dsplink/gpp .interfaces
+	
 dsplink_cfg:
 ifeq ($(HAS_DSPLINK),true)
 	DSPLINK=$(LINK_INSTALL_DIR)/dsplink perl $(LINK_INSTALL_DIR)/dsplink/config/bin/dsplinkcfg.pl $(DSPLINK_CONFIG)
@@ -345,14 +353,14 @@ else
 	$(error DSP Link build is not supported for $(PLATFORM))
 endif
 
-dsplink_arm:	dsplink_cfg
+dsplink_arm:	dsplink_cfg dsplink_gpp_genpackage
 	DSPLINK=$(LINK_INSTALL_DIR)/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/dsplink/gpp/src BASE_TOOLCHAIN=$(MVTOOL_DIR) BASE_BUILDOS=$(LINUXKERNEL_INSTALL_DIR) KERNEL_DIR=${LINUXKERNEL_INSTALL_DIR} TOOL_PATH=$(CSTOOL_DIR)/bin
 	@mkdir -p $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)
 	@cp $(DSPLINK_MODULE) $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)/
 	@echo
 	@echo "dsplinkk.ko kernel module can be found under $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)"
 
-dsplink_dsp:	dsplink_cfg
+dsplink_dsp:	dsplink_cfg dsplink_dsp_genpackage
 	DSPLINK=$(LINK_INSTALL_DIR)/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/dsplink/dsp/src BASE_SABIOS=$(BIOS_INSTALL_DIR) XDCTOOLS_DIR=$(XDC_INSTALL_DIR) BASE_CGTOOLS=$(CODEGEN_INSTALL_DIR)
 
 dsplink_samples:
