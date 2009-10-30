@@ -5,7 +5,7 @@ DESCRIPTION = "Code Generation Tools for TI DaVinci and OMAP"
 TI_BIN_UNPK_CMDS="Y:qY:workdir: : "
 TI_BIN_UNPK_WDEXT="/cgt"
 
-include ../ti-multimedia/ti-eula-unpack.inc
+include ti-eula-unpack.inc
 
 python do_unpack () {
     bb.build.exec_func('base_do_unpack', d)

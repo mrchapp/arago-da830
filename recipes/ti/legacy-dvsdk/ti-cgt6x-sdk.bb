@@ -1,4 +1,4 @@
-require ../../ti-tools/ti-cgt6x.inc
+require ../ti-cgt6x.inc
 inherit sdk
 
 SRC_URI	= "http://install.source.dir.com/ti_cgt_c6000_6.1.9_setup_linux_x86.bin"
@@ -25,4 +25,3 @@ do_install() {
 INHIBIT_PACKAGE_STRIP = "1"
 FILES_${PN} = "${prefix}/dvsdk/cg6x_6_1_9"
 INSANE_SKIP_${PN} = True
-

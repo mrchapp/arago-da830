@@ -1,6 +1,6 @@
 inherit sdk
 
-require ../../ti-tools/ti-xdais.inc
+require ../ti-xdais.inc
 
 PV           = "${PV_pn-ti-xdais}"
 PVEXTENSION  = "${PVEXTENSION_pn-ti-xdais}"

@@ -12,7 +12,7 @@ S = "${WORKDIR}/omap3530_dvsdk_combos_tspa_3_16_01"
 
 DEPENDS="ti-codec-engine"
 
-include ../ti-multimedia/ti-multimedia-common.inc
+include ti-multimedia-common.inc
 
 # Yes, the xdc stuff still breaks with a '.' in PWD
 PV = "3161"

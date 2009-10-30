@@ -1,5 +1,5 @@
 DESCRIPTION = "OMAP3530 Codec Combo 3.16.01"
-require ../../ti-dsp/ti-codec-combo-omap3530.inc
+require ../ti-codec-combo-omap3530.inc
 
 inherit sdk
 
@@ -32,4 +32,3 @@ do_install() {
 INHIBIT_PACKAGE_STRIP = "1"
 FILES_${PN} = "${prefix}/dvsdk/omap3530_dvsdk_combos_3_16_01/*"
 INSANE_SKIP_${PN} = True
-

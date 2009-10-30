@@ -1,6 +1,6 @@
 inherit sdk
 
-require ../../ti-tools/ti-xdctools.inc
+require ../ti-xdctools.inc
 
 BASE_PV = "${BASE_PV_pn-ti-xdctools-native}"
 PV      = "${PV_pn-ti-xdctools-native}"
