@@ -7,6 +7,5 @@ inherit sdk
 PACKAGES = "${PN}"
 
 RDEPENDS_${PN} = "\
-	task-arago-dvsdk-host \
+    task-arago-toolchain-dvsdk-host \
     "
-

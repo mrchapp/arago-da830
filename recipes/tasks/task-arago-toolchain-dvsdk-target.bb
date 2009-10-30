@@ -10,7 +10,6 @@ PACKAGES = "${PN}"
 # Also feel free to remove stuff that's silly.
 
 RDEPENDS_${PN} = "\
-	task-arago-base-target \
-	kernel-source \
-   "
-
+    task-arago-toolchain-target \
+    kernel-source \
+    "

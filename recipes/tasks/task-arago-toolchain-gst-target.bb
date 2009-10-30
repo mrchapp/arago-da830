@@ -1,6 +1,6 @@
 DESCRIPTION = "Target packages for a standalone Arago SDK or external toolchain"
 ALLOW_EMPTY = "1"
-PR = "r23"
+PR = "r24"
 
 PACKAGES = "${PN}"
 
@@ -10,8 +10,7 @@ PACKAGES = "${PN}"
 # Also feel free to remove stuff that's silly.
 
 RDEPENDS_${PN} = "\
-	task-arago-base-target \
-	kernel-source \
-	gstreamer-dev \
-	gstreamer-ti-dev \
+    task-arago-toolchain-dvsdk-target \
+    gstreamer-dev \
+    gstreamer-ti-dev \
     "

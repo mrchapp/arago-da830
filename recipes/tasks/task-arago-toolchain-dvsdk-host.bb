@@ -17,7 +17,8 @@ DVSDK_HOST_PACKAGE = "\
     ti-linuxutils-sdk \
     ti-dmai-sdk \
     ti-dvsdk-demos-sdk \
-"
+    "
+
 DVSDK_HOST_PACKAGE_dm6446-evm = "\
     ti-codec-engine-sdk \
     ti-codec-combo-dm6446-sdk \
@@ -25,7 +26,8 @@ DVSDK_HOST_PACKAGE_dm6446-evm = "\
     ti-dmai-sdk \
     ti-dspbios-sdk \
     ti-cgt6x-sdk \
-"
+    "
+
 DVSDK_HOST_PACKAGE_dm6467-evm = "\
     ti-codec-engine-sdk \
     ti-codec-combo-dm6467-sdk \
@@ -33,7 +35,8 @@ DVSDK_HOST_PACKAGE_dm6467-evm = "\
     ti-dmai-sdk \
     ti-dspbios-sdk \
     ti-cgt6x-sdk \
-"
+    "
+
 DVSDK_HOST_PACKAGE_omap3evm = "\
     ti-codec-engine-sdk \
     ti-codec-combo-omap3530-sdk \
@@ -41,7 +44,8 @@ DVSDK_HOST_PACKAGE_omap3evm = "\
     ti-dmai-sdk \
     ti-dspbios-sdk \
     ti-cgt6x-sdk \
-"
+    "
+
 DVSDK_HOST_PACKAGE_beagleboard = "\
     ti-codec-engine-sdk \
     ti-codec-combo-omap3530-sdk \
@@ -49,10 +53,10 @@ DVSDK_HOST_PACKAGE_beagleboard = "\
     ti-dmai-sdk \
     ti-dspbios-sdk \
     ti-cgt6x-sdk \
-"
+    "
 
 RDEPENDS_${PN} = "\
-    task-arago-base-host \
+    task-arago-toolchain-host \
     ${DVSDK_HOST_PACKAGE} \
     ti-legacy-dvsdk \
     "
