@@ -92,13 +92,13 @@ SRC_URI_dm365-evm = "git://arago-project.org/git/projects/u-boot-davinci.git;pro
 SRCREV_dm365-evm = "f8d047c84137ab331c0ee2c3e94c3f1ec4228298"
 PV_dm365-evm = "2009.05+2009.06-rc0+gitr${SRCREV}"
 
-SRC_URI_da830-omapl137-evm = "git://arago-project.org/git/people/sekhar/u-boot-omapl1.git;protocol=git;branch=wakeup"
-SRCREV_da830-omapl137-evm = "04a03bb477ad842b84c61b29f11422089ad0088d"
-PV_da830-omapl137-evm = "2009.01+gitr${SRCREV}"
+SRC_URI_da830-omapl137-evm = "git://arago-project.org/git/people/sekhar/u-boot-omapl1.git;protocol=git;branch=master"
+SRCREV_da830-omapl137-evm = "17a083a2bdfc84cc9c9894c7a5c8156d6d4d1e62"
+PV_da830-omapl137-evm = "2009.08+gitr${SRCREV}"
 
-SRC_URI_da850-omapl138-evm = "git://arago-project.org/git/people/sekhar/u-boot-omapl1.git;protocol=git;branch=wakeup"
-SRCREV_da850-omapl138-evm = "04a03bb477ad842b84c61b29f11422089ad0088d"
-PV_da850-omapl138-evm = "2009.01+gitr${SRCREV}"
+SRC_URI_da850-omapl138-evm = "git://arago-project.org/git/people/sekhar/u-boot-omapl1.git;protocol=git;branch=master"
+SRCREV_da850-omapl138-evm = "17a083a2bdfc84cc9c9894c7a5c8156d6d4d1e62"
+PV_da850-omapl138-evm = "2009.08+gitr${SRCREV}"
 
 SRC_URI_dm355-leopard = "git://www.denx.de/git/u-boot-arm.git;protocol=git;branch=next \
                         file://leopardboard-support.patch;patch=1 \
