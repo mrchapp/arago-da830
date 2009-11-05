@@ -1,10 +1,10 @@
 inherit sdk
 
+require ../ti-dmai.inc
+
 BRANCH = "${BRANCH_pn-ti-dmai}"
 SRCREV = "${SRCREV_pn-ti-dmai}"
 SDKVER = "2_10_00_00"
-
-require ../ti-dmai.inc
 
 SRC_URI += "file://doxygen_templates.tar.gz \
             file://arago-tdox"
