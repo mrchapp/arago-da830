@@ -11,6 +11,7 @@ DEPENDS  = "ti-dsplink-module-sdk ti-dspbiosutils-sdk ti-edma3-lld-sdk ti-codec-
 DEPENDS_dm6446-evm  = "ti-codec-combo-dm6446-sdk  ti-cgt6x-sdk ti-dspbios-sdk ti-xdctools-sdk ti-xdais-sdk ti-codec-engine-sdk ti-linuxutils-sdk ti-framework-components-sdk ti-dmai-sdk"
 DEPENDS_omap3evm    = "ti-codec-combo-omap3530-sdk ti-cgt6x-sdk ti-dspbios-sdk ti-xdctools-sdk ti-xdais-sdk ti-codec-engine-sdk ti-linuxutils-sdk ti-framework-components-sdk ti-dmai-sdk"
 DEPENDS_beagleboard = "ti-codec-combo-omap3530-sdk ti-cgt6x-sdk ti-dspbios-sdk ti-xdctools-sdk ti-xdais-sdk ti-codec-engine-sdk ti-linuxutils-sdk ti-framework-components-sdk ti-dmai-sdk"
+
 include ../ti-multimedia-common.inc
 
 do_install () {

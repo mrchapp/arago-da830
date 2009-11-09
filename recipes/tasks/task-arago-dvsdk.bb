@@ -1,10 +1,11 @@
 DESCRIPTION = "Extended task to add dvsdk components"
-PR = "r13"
+PR = "r14"
 
 inherit task
 
 DVSDK_TARGET_PACKAGE_dm355-evm = "ti-dvsdk-demos"
 DVSDK_TARGET_PACKAGE_dm365-evm = "ti-dvsdk-demos"
+DVSDK_TARGET_PACKAGE_dm6467-evm = "ti-dvsdk-demos"
 DVSDK_TARGET_PACKAGE_dm6467t-evm = "ti-dvsdk-demos"
 
 RDEPENDS_${PN} = "\

@@ -1,4 +1,4 @@
-DESCRIPTION ?= "Code Generation Tools for TI DaVinci and OMAP"
+DESCRIPTION = "Code Generation Tools for TI DaVinci and OMAP"
 
 PV = "6.1.12"
 PR = "r3"

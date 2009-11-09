@@ -1,6 +1,7 @@
-require ti-dsplink-module.inc
+DESCRIPTION = "DSPLINK module for TI ARM/DSP processors"
 
-require ../ti-multimedia/ti-multimedia-common.inc
+require ti-dsplink-module.inc
+require ti-multimedia-common.inc
 
 inherit module
 
@@ -48,7 +49,7 @@ do_compile() {
 	 --gppos=${DSPLINKGPPOS} --comps=ponslrm
     )
 
-    # dsplink makefile is hard-coded to use kbuild only on OMAP3530.
+	  # dsplink makefile is hard-coded to use kbuild only on OMAP3530.
     # we are forcing  to use kbuild on other platforms.
     #	  sed -i  's/OMAP3530/${DSPLINKPLATFORM}/g' ${DSPLINK}/gpp/src/Makefile	
 

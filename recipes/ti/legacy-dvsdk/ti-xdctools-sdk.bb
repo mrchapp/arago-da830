@@ -12,7 +12,6 @@ do_compile () {
 }
 
 do_install() {
-
     install -d ${D}/${DVSDK_PATH}/xdctools_${PV}
     cp -pPrf ${S}/* ${D}/${DVSDK_PATH}/xdctools_${PV}
     chmod 755 -R ${D}/${DVSDK_PATH}/xdctools_${PV}

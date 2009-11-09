@@ -1,4 +1,4 @@
-DESCRIPTION ?= "TI DSP/BIOS for Davinci and OMAP processor"
+DESCRIPTION = "TI DSP/BIOS for Davinci and OMAP processor"
 
 PV = "5_41_00_06"
 PR = "r15"
