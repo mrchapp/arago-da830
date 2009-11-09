@@ -1,6 +1,11 @@
-DEVICES       = "DM355"
-GPPOS         = "LINUX_GCC"
+# DMAI
 PLATFORM      = "dm355"
-PROGRAMS      = "APP_LOCAL"
-TARGET        = "dm355_al"
 XDC_PLATFORM  = ti.platforms.evmDM355
+
+# Obsoleted (CE examples rebuild)
+#DEVICES       = "DM355"
+#GPPOS         = "LINUX_GCC"
+#PROGRAMS      = "APP_LOCAL"
+
+# DMAI recipe
+#TARGET        = "dm355_al"

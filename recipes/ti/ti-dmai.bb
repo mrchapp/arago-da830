@@ -13,8 +13,7 @@ DEPENDS_da830-omapl137-evm 	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-d
 include ti-multimedia-common.inc
 
 TARGET 			?= "all"
-TARGET_omap3evm 	?= "o3530_al"
-TARGET_beagleboard 	?= "o3530_al"
+TARGET_armv7a 	?= "o3530_al"
 TARGET_dm355-evm 	?= "dm355_al"
 TARGET_dm365-evm 	?= "dm365_al"
 TARGET_dm6446-evm 	?= "dm6446_al"
