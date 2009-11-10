@@ -1,6 +1,6 @@
 inherit sdk
 
-require ../../ti-dsp/ti-dsplink-module.inc
+require ..//ti-dsplink-module.inc
 
 PV = "${PV_pn-ti-dsplink-module}"
 BASE_SRC_URI = "${BASE_SRC_URI_pn-ti-dsplink-module}"

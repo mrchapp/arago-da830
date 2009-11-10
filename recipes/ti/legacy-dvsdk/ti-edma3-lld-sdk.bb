@@ -1,6 +1,6 @@
 inherit sdk
 
-require ../../ti-dsp/ti-edma3-lld.inc
+require ../ti-edma3-lld.inc
 
 PV      = "${PV_pn-ti-edma3-lld}"
 BASE_SRC_URI = "${BASE_SRC_URI_pn-ti-edma3-lld}"

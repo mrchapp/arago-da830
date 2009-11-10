@@ -1,6 +1,6 @@
 inherit sdk
 
-require ../../ti-dsp/ti-codec-combo-dm6467.inc
+require ../ti-codec-combo-dm6467.inc
 
 PV = "${PV_pn-ti-codec-combo-dm6467}"
 CSVER="${CSVER_pn-ti-codec-combo-dm6467}"

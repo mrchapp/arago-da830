@@ -1,6 +1,6 @@
 inherit sdk
 
-require ../../ti-dsp/ti-dspbiosutils.inc
+require ../ti-dspbiosutils.inc
 
 PV      = "${PV_pn-ti-dspbiosutils-native}"
 BASE_SRC_URI = "${BASE_SRC_URI_pn-ti-dspbiosutils-native}"
