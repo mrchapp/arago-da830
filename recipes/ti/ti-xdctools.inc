@@ -9,7 +9,7 @@ BINFILE="xdctools_setuplinux_${PV}.bin"
 
 S = "${WORKDIR}/xdctools_${PV}"
 
-PR = "r18"
+PR = "r19"
 
 TI_BIN_UNPK_CMDS="Y: qY:workdir:Y"
 
