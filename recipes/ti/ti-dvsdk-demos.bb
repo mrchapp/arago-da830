@@ -40,6 +40,6 @@ FILES_${PN} = "${installdir}/dvsdk-demos/*"
 RDEPENDS_ti-dvsdk-demos_dm355-evm += "ti-dm355mm-module ti-linuxutils alsa-lib libpng freetype jpeg"
 RDEPENDS_ti-dvsdk-demos_dm365-evm += "ti-dm365mm-module ti-linuxutils alsa-lib libpng freetype jpeg"
 # Template needs to be changed after DM6467 demo is complete
-RDEPENDS_ti-dvsdk-demos_dm6467-evm += "ti-dm365mm-module ti-linuxutils alsa-lib libpng freetype jpeg"
-RDEPENDS_ti-dvsdk-demos_dm6467t-evm += "ti-dm365mm-module ti-linuxutils alsa-lib libpng freetype jpeg"
+RDEPENDS_ti-dvsdk-demos_dm6467-evm += "ti-linuxutils alsa-lib libpng freetype jpeg"
+RDEPENDS_ti-dvsdk-demos_dm6467t-evm += "ti-linuxutils alsa-lib libpng freetype jpeg"
 

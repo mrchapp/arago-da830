@@ -12,4 +12,3 @@ SRC_URI = "${BASE_SRC_URI}/dsplink_linux_${PV}.tar.gz  \
 # Set the source directory
 S = "${WORKDIR}/dsplink_linux_1_64_00_02"
 
-INHIBIT_PACKAGE_STRIP = "1"

@@ -24,4 +24,3 @@ do_install() {
 }
 
 FILES_${PN} = "${DVSDK_PATH}/biosutils_${PV}"
-INSANE_SKIP_${PN} = True

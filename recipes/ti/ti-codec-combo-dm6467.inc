@@ -10,4 +10,3 @@ SRC_URI = "${BASE_SRC_URI}/cs${CSVER}dm6467_${PV}.tar.gz "
 # Set the source directory
 S = "${WORKDIR}/cs${CSVER}dm6467_${PV}"
 
-INHIBIT_PACKAGE_STRIP = "1"

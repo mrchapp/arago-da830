@@ -1,6 +1,6 @@
 require ti-codec-combo-dm6467.inc
 
-include ../ti-multimedia/ti-multimedia-common.inc
+require ../ti-multimedia/ti-multimedia-common.inc
 
 # compile time dependencies
 DEPENDS="ti-codec-engine ti-dspbiosutils-native ti-dsplink-module"

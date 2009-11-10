@@ -10,4 +10,3 @@ SRC_URI = "${BASE_SRC_URI}/edma3_lld_${PV}.tar.gz "
 # Set the source directory
 S = "${WORKDIR}/edma3_lld_${PV}"
 
-INHIBIT_PACKAGE_STRIP = "1"

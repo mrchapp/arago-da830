@@ -10,4 +10,3 @@ SRC_URI = "${BASE_SRC_URI}/biosutils_${PV}.tar.gz "
 # Set the source directory
 S = "${WORKDIR}/biosutils_${PV}"
 
-INHIBIT_PACKAGE_STRIP = "1"

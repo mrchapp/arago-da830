@@ -1,9 +1,7 @@
 require ti-framework-components.inc
 
 # compile time dependencies
-DEPENDS += "ti-xdctools-native ti-xdais ti-linuxutils"
-DEPENDS_dm6467t-evm  += "ti-edma3-lld"
-DEPENDS_dm6467-evm  += "ti-edma3-lld"
+DEPENDS += "ti-xdctools-native ti-xdais ti-linuxutils ti-edma3-lld"
 
 do_compile () {
         echo "! Do not rebuild for now !"

@@ -32,7 +32,8 @@ do_install () {
     done
 
     echo "# Where the Code Gen is installed." >>  ${D}/${DVSDK_PATH}/Rules.make
-    echo "CODEGEN_INSTALL_DIR=$(DVSDK_INSTALL_DIR)/cgt6x_6_1_12" >>  ${D}/${DVSDK_PATH}/Rules.make
+    echo "CODEGEN_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/cgt6x_6_1_12" >>  ${D}/${DVSDK_PATH}/Rules.make
+    echo "" >> ${D}/${DVSDK_PATH}/Rules.make    
     echo "# The directory that points to your kernel source directory." >>  ${D}/${DVSDK_PATH}/Rules.make
     echo "LINUXKERNEL_INSTALL_DIR=${prefix}/${TARGET_SYS}/usr/src/kernel" >> ${D}/${DVSDK_PATH}/Rules.make
     echo "" >> ${D}/${DVSDK_PATH}/Rules.make

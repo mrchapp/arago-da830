@@ -1,13 +1,11 @@
 require ti-dsplink-module.inc
 
-include ../ti-multimedia/ti-multimedia-common.inc
+require ../ti-multimedia/ti-multimedia-common.inc
 
 inherit module
 
 # compile and run time dependencies
-DEPENDS 	+= " virtual/kernel perl-native ti-dspbios-native ti-cgt6x-native update-modules"
-DEPENDS_dm6467-evm   += "ti-xdctools-native"
-DEPENDS_dm6467t-evm  += "ti-xdctools-native"
+DEPENDS 	+= " virtual/kernel perl-native ti-dspbios-native ti-cgt6x-native update-modules ti-xdctools-native"
 
 # tconf from xdctools dislikes '.' in pwd :/
 #This is a kernel module, don't set PR directly

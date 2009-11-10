@@ -225,8 +225,12 @@ cmem_clean:
 	$(MAKE) -C $(LINUXUTILS_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/interface clean RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
 
 #==============================================================================
-# Build the *evaluation* codec servers for the configured platform. Also, an
+# Build the *production* codec servers for the configured platform. Also, an
 # explicit cleanup target is defined.
+# Please note the following.
+#     1. Before executing make codecs, execute make codecs_clean
+#     2. Build DSPLINK for arm and dsp before building the codecs
+#     3. Buld the Linux kernel before building the dsplink
 #==============================================================================
 codecs: 
 ifeq ($(HAS_SERVER),true)
