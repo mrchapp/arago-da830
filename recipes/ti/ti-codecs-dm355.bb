@@ -9,8 +9,8 @@ do_install () {
 }
 
 do_stage() {
-    install -d ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}
-    cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}/ 
+    install -d ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codecs
+    cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/ti-codecs/
 }
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"

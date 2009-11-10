@@ -11,9 +11,9 @@ DEPENDS += "ti-dmai"
 DEPENDS += "alsa-lib libpng freetype jpeg"
 
 # Should go into machine config
-#TARGET           ?= "all"
-#TARGET_dm355-evm ?= "dm355"
-#TARGET_dm365-evm ?= "dm365"
+TARGET           ?= "all"
+TARGET_dm355-evm ?= "dm355"
+TARGET_dm365-evm ?= "dm365"
 
 include ti-multimedia-common.inc
 
