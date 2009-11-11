@@ -1,7 +1,6 @@
 inherit sdk
 
 require ../ti-xdctools.inc
-
 PV = "${PV_pn-ti-xdctools-native}"
 BASE_SRC_URI = "${BASE_SRC_URI_pn-ti-xdctools-native}"
 

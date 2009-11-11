@@ -1,5 +1,6 @@
-require ../ti-dspbios.inc
 inherit sdk
+
+require ../ti-dspbios.inc
 
 # download bios installer and copy in Arago/OE installation directory
 
