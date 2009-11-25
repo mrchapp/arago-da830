@@ -6,6 +6,8 @@ inherit module-base
 DEPENDS_omap3evm  +=   "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omap3530 virtual/kernel"
 DEPENDS_beagleboard	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omap3530 virtual/kernel "
 DEPENDS_dm6446-evm 	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-dm6446 virtual/kernel "
+DEPENDS_dm6467-evm 	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-dm6467 virtual/kernel "
+DEPENDS_dm6467t-evm 	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-dm6467 virtual/kernel "
 DEPENDS_dm355-evm  	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-codecs-dm355 virtual/kernel"
 DEPENDS_dm365-evm  	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-codecs-dm365 virtual/kernel"
 DEPENDS_da830-omapl137-evm 	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-dspbios-native ti-cgt6x-native ti-codec-combo-omapl137 virtual/kernel "
@@ -13,11 +15,12 @@ DEPENDS_da830-omapl137-evm 	+= "alsa-lib ti-codec-engine ti-xdctools-native ti-d
 include ti-multimedia-common.inc
 
 TARGET 			?= "all"
-TARGET_omap3evm 	?= "o3530_al"
-TARGET_beagleboard 	?= "o3530_al"
+TARGET_armv7a 	?= "o3530_al"
 TARGET_dm355-evm 	?= "dm355_al"
 TARGET_dm365-evm 	?= "dm365_al"
 TARGET_dm6446-evm 	?= "dm6446_al"
+TARGET_dm6467-evm 	?= "dm6467_al"
+TARGET_dm6467t-evm 	?= "dm6467_al"
 TARGET_da830-omapl137-evm 	?= "ol137_al"
 
 PARALLEL_MAKE = ""
@@ -54,9 +57,9 @@ do_compile () {
 		USER_XDC_PATH="${USER_XDC_PATH}" \
 		CROSS_COMPILE="${SDK_PATH}/bin/${TARGET_PREFIX}" \
 		XDAIS_INSTALL_DIR="${XDAIS_INSTALL_DIR}" \
-		LINK_INSTALL_DIR="${CE_INSTALL_DIR}/cetools/packages/dsplink" \
+		LINK_INSTALL_DIR="${LINK_INSTALL_DIR}" \
 		CMEM_INSTALL_DIR="${CMEM_INSTALL_DIR}" \
-		LPM_INSTALL_DIR="${CE_INSTALL_DIR}/cetools" \
+		LPM_INSTALL_DIR="${LPM_INSTALL_DIR}" \
 		VERBOSE="true" \
 		PLATFORM="${TARGET}"
 }
@@ -97,6 +100,8 @@ FILES_ti-dmai-tests = "${installdir}/dmai-tests/*"
 RDEPENDS_ti-dmai-apps_dm355-evm += "ti-dm355mm-module ti-linuxutils ti-codecs-dm355"
 RDEPENDS_ti-dmai-apps_dm365-evm += "ti-dm365mm-module ti-linuxutils ti-codecs-dm365"
 RDEPENDS_ti-dmai-apps_dm6446-evm += "ti-linuxutils ti-dsplink-module ti-codec-combo-dm6446"
+RDEPENDS_ti-dmai-apps_dm6467-evm += "ti-linuxutils ti-dsplink-module ti-codec-combo-dm6467"
+RDEPENDS_ti-dmai-apps_dm6467t-evm += "ti-linuxutils ti-dsplink-module ti-codec-combo-dm6467"
 RDEPENDS_ti-dmai-apps_omap3evm += "ti-linuxutils ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module ti-sdma-module"
 RDEPENDS_ti-dmai-apps_beagleboard += "ti-linuxutils ti-dsplink-module ti-codec-combo-omap3530 ti-lpm-module ti-sdma-module"
 RDEPENDS_ti-dmai-apps_da830-omapl137-evm += "ti-linuxutils ti-dsplink-module ti-codec-combo-ol137"

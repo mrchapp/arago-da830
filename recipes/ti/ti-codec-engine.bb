@@ -1,6 +1,8 @@
 require ti-codec-engine.inc
 
 # compile time dependencies
+DEPENDS_dm6467t-evm  += "ti-xdctools-native ti-xdais ti-linuxutils ti-framework-components ti-cgt6x-native ti-dspbios-native"
+DEPENDS_dm6467-evm  += "ti-xdctools-native ti-xdais ti-linuxutils ti-framework-components ti-cgt6x-native ti-dspbios-native"
 DEPENDS_dm6446-evm  += "ti-xdctools-native ti-xdais ti-linuxutils ti-framework-components ti-cgt6x-native ti-dspbios-native"
 DEPENDS_omap3evm    += "ti-xdctools-native ti-xdais ti-linuxutils ti-framework-components ti-cgt6x-native ti-dspbios-native"
 DEPENDS_beagleboard += "ti-xdctools-native ti-xdais ti-linuxutils ti-framework-components ti-cgt6x-native ti-dspbios-native"

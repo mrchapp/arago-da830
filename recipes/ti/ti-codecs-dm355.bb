@@ -9,10 +9,9 @@ do_install () {
 }
 
 do_stage() {
-    install -d ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}
-    cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}/${PN}/ 
+    install -d ${CODEC_INSTALL_DIR}
+    cp -pPrf ${S}/* ${CODEC_INSTALL_DIR}/
 }
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 FILES_${PN} = "${installdir}/codecs/mapdmaq"
-

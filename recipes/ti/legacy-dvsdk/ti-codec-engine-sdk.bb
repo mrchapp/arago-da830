@@ -26,9 +26,6 @@ do_install() {
     mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
     echo "# Where the Codec Engine package is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
     echo "CE_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/codec_engine_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
-    echo "" >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
-    echo "# Where the DSP Link package is installed." >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make    
-    echo "LINK_INSTALL_DIR=\$(CE_INSTALL_DIR)/cetools" >> ${STAGING_DIR_HOST}/ti-sdk-rules/ce.Rules.make
 }
 
 FILES_${PN} = "${DVSDK_PATH}/codec_engine_${PV}"

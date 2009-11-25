@@ -1,27 +1,25 @@
-require ../ti-cgt6x.inc
 inherit sdk
+require ../ti-cgt6x.inc
 
-SRC_URI	= "http://install.source.dir.com/ti_cgt_c6000_6.1.9_setup_linux_x86.bin"
+PV = "${PV_pn-ti-cgt6x-native}"
+BASE_SRC_URI = "${BASE_SRC_URI_pn-ti-cgt6x-native}"
 
-BINFILE="ti_cgt_c6000_6.1.9_setup_linux_x86.bin"
+DVSDK_PATH="${@['${prefix}/dvsdk', bb.data.getVar('META_DVSDK_PATH', d, 1)][bool(bb.data.getVar('META_DVSDK_PATH', d, 1))]}"
 
-S = "${WORKDIR}/cgt"
-
-# Yes, the xdc stuff still breaks with a '.' in PWD
-PV = "6190"
-PR = "r1"
-
+do_compile () {
+        echo "! Do not rebuild for now !"
+}
 do_install() {
-	install -d ${D}/${prefix}/dvsdk/cg6x_6_1_9
-    cp -pPrf ${S}/* ${D}/${prefix}/dvsdk/cg6x_6_1_9
-	
-	# Creates rules.make file
-	mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
-	echo "# Where the TI C6x codegen tool is installed." >  ${STAGING_DIR_HOST}/ti-sdk-rules/cgt6x.Rules.make
-	echo "CODEGEN_INSTALL_DIR=${prefix}/dvsdk/cg6x_6_1_9" >> ${STAGING_DIR_HOST}/ti-sdk-rules/cgt6x.Rules.make
-  echo "" >> 	${STAGING_DIR_HOST}/ti-sdk-rules/cgt6x.Rules.make
+    install -d ${D}/${DVSDK_PATH}/cgt6x_${PV}
+#Don't copy the Codegen to the DVSDK-Legacy; hence commented out
+#cp -pPrf ${S}/* ${D}/${DVSDK_PATH}/cgt6x_${PV}
+
+	# Creates rules.make file, irrespective of codegen copied or not
+    mkdir -p ${STAGING_DIR_HOST}/ti-sdk-rules
+    echo "# Where the TI C6x codegen tool is installed." > ${STAGING_DIR_HOST}/ti-sdk-rules/cgt6x.Rules.make
+    echo "CODEGEN_INSTALL_DIR=\$(DVSDK_INSTALL_DIR)/cgt6x_${PV}" >> ${STAGING_DIR_HOST}/ti-sdk-rules/cgt6x.Rules.make
+    echo "" >> 	${STAGING_DIR_HOST}/ti-sdk-rules/cgt6x.Rules.make
 }
 
-INHIBIT_PACKAGE_STRIP = "1"
-FILES_${PN} = "${prefix}/dvsdk/cg6x_6_1_9"
+FILES_${PN} = "${DVSDK_PATH}/cgt6x_${PV}"
 INSANE_SKIP_${PN} = True

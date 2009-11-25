@@ -14,7 +14,7 @@ REPOSITORIES:=$(DVTB_INSTALL_DIR)/packages
 LINUXKERNEL_CONFIG=davinci_dm644x_defconfig
 LINUXSAMPLES_PLATFORM=dm644x
 DSPLINK_CONFIG=--platform=DAVINCI --nodsp=1 --dspcfg_0=DM6446GEMSHMEM --dspos_0=DSPBIOS5XX --gppos=MVL5G --comps=ponslrm
-DSPLINK_MODULE=$(LINK_INSTALL_DIR)/packages/dsplink/gpp/export/BIN/Linux/DAVINCI/RELEASE/dsplinkk.ko
+DSPLINK_MODULE=$(LINK_INSTALL_DIR)/dsplink/gpp/export/BIN/Linux/DAVINCI/RELEASE/dsplinkk.ko
 HAS_SERVER=true
 HAS_DSPLINK=true
 DMAI_PLATFORM=dm6446_al
@@ -23,10 +23,10 @@ ifeq ($(PLATFORM),dm6467)
 COMPONENTS+=$(BIOSUTILS_INSTALL_DIR) $(LINK_INSTALL_DIR)
 CHECKLIST:=$(CODEGEN_INSTALL_DIR)/bin/cl6x
 REPOSITORIES:=$(DVTB_INSTALL_DIR)/packages
-LINUXKERNEL_CONFIG=davinci_dm6467_defconfig
+LINUXKERNEL_CONFIG=davinci_dm646x_1ghz_defconfig
 LINUXSAMPLES_PLATFORM=dm646x
-DSPLINK_CONFIG=--platform=DAVINCIHD --nodsp=1 --dspcfg_0=DM6467GEMSHMEM --dspos_0=DSPBIOS5XX --gppos=MVL5G --comps=ponslrm
-DSPLINK_MODULE=$(LINK_INSTALL_DIR)/packages/dsplink/gpp/export/BIN/Linux/DAVINCIHD/RELEASE/dsplinkk.ko
+DSPLINK_CONFIG=--platform=DAVINCIHD --nodsp=1 --dspcfg_0=DM6467GEMSHMEM --dspos_0=DSPBIOS5XX --gppos=DM6467LSP --comps=ponslrm
+DSPLINK_MODULE=$(LINK_INSTALL_DIR)/dsplink/gpp/export/BIN/Linux/DAVINCIHD/RELEASE/dsplinkk.ko
 HAS_SERVER=true
 HAS_DSPLINK=true
 DMAI_PLATFORM=dm6467_al
@@ -225,17 +225,21 @@ cmem_clean:
 	$(MAKE) -C $(LINUXUTILS_INSTALL_DIR)/packages/ti/sdo/linuxutils/cmem/src/interface clean RULES_MAKE=$(DVSDK_INSTALL_DIR)/Rules.make
 
 #==============================================================================
-# Build the *evaluation* codec servers for the configured platform. Also, an
+# Build the *production* codec servers for the configured platform. Also, an
 # explicit cleanup target is defined.
+# Please note the following.
+#     1. Before executing make codecs, execute make codecs_clean
+#     2. Build DSPLINK for arm and dsp before building the codecs
+#     3. Buld the Linux kernel before building the dsplink
 #==============================================================================
 codecs:
 ifeq ($(HAS_SERVER),true)
-	$(MAKE) -C $(CODEC_INSTALL_DIR) DVSDK_INSTALL_DIR=$(DVSDK_INSTALL_DIR) BIOS_INSTALL_DIR=$(BIOS_INSTALL_DIR) XDC_INSTALL_DIR=$(XDC_INSTALL_DIR) CE_INSTALL_DIR=$(CE_INSTALL_DIR) FC_INSTALL_DIR=$(FC_INSTALL_DIR) CMEM_INSTALL_DIR=$(LINUXUTILS_INSTALL_DIR) CODECS_INSTALL_DIR=$(CODEC_INSTALL_DIR) BIOSUTILS_INSTALL_DIR=$(BIOSUTILS_INSTALL_DIR) XDAIS_INSTALL_DIR=$(XDAIS_INSTALL_DIR) LINK_INSTALL_DIR=$(LINK_INSTALL_DIR) XDCARGS=\"eval\"
+	$(MAKE) -C $(CODEC_INSTALL_DIR) DVSDK_INSTALL_DIR=$(DVSDK_INSTALL_DIR) BIOS_INSTALL_DIR=$(BIOS_INSTALL_DIR) XDC_INSTALL_DIR=$(XDC_INSTALL_DIR) CE_INSTALL_DIR=$(CE_INSTALL_DIR) FC_INSTALL_DIR=$(FC_INSTALL_DIR) CMEM_INSTALL_DIR=$(LINUXUTILS_INSTALL_DIR) CODEC_INSTALL_DIR=$(CODEC_INSTALL_DIR) BIOSUTILS_INSTALL_DIR=$(BIOSUTILS_INSTALL_DIR) XDAIS_INSTALL_DIR=$(XDAIS_INSTALL_DIR) EDMA3_LLD_INSTALL_DIR=$(EDMA3_LLD_INSTALL_DIR) CODEGEN_INSTALL_DIR=$(CODEGEN_INSTALL_DIR) LINK_INSTALL_DIR=$(LINK_INSTALL_DIR) XDCARGS=\"prod\"
 endif
 
 codecs_clean:
 ifeq ($(HAS_SERVER),true)
-	$(MAKE) -C $(CODEC_INSTALL_DIR) DVSDK_INSTALL_DIR=$(DVSDK_INSTALL_DIR) BIOS_INSTALL_DIR=$(BIOS_INSTALL_DIR) XDC_INSTALL_DIR=$(XDC_INSTALL_DIR) CE_INSTALL_DIR=$(CE_INSTALL_DIR) FC_INSTALL_DIR=$(FC_INSTALL_DIR) CMEM_INSTALL_DIR=$(LINUXUTILS_INSTALL_DIR) CODECS_INSTALL_DIR=$(CODEC_INSTALL_DIR) BIOSUTILS_INSTALL_DIR=$(BIOSUTILS_INSTALL_DIR) XDAIS_INSTALL_DIR=$(XDAIS_INSTALL_DIR) LINK_INSTALL_DIR=$(LINK_INSTALL_DIR) XDCARGS=\"eval\" clean
+	$(MAKE) -C $(CODEC_INSTALL_DIR) DVSDK_INSTALL_DIR=$(DVSDK_INSTALL_DIR) BIOS_INSTALL_DIR=$(BIOS_INSTALL_DIR) XDC_INSTALL_DIR=$(XDC_INSTALL_DIR) CE_INSTALL_DIR=$(CE_INSTALL_DIR) FC_INSTALL_DIR=$(FC_INSTALL_DIR) CMEM_INSTALL_DIR=$(LINUXUTILS_INSTALL_DIR) CODEC_INSTALL_DIR=$(CODEC_INSTALL_DIR) BIOSUTILS_INSTALL_DIR=$(BIOSUTILS_INSTALL_DIR) XDAIS_INSTALL_DIR=$(XDAIS_INSTALL_DIR) LINK_INSTALL_DIR=$(LINK_INSTALL_DIR) XDCARGS=\"prod\" clean
 endif
 
 #==============================================================================
@@ -338,32 +342,40 @@ dmai_clean:
 #==============================================================================
 dsplink:	dsplink_arm dsplink_dsp dsplink_samples
 
+dsplink_dsp_genpackage:
+	$(XDC_INSTALL_DIR)/xdc -C $(LINK_INSTALL_DIR)/dsplink/dsp clean 
+	$(XDC_INSTALL_DIR)/xdc -C $(LINK_INSTALL_DIR)/dsplink/dsp .interfaces
+
+dsplink_gpp_genpackage:
+	$(XDC_INSTALL_DIR)/xdc -C $(LINK_INSTALL_DIR)/dsplink/gpp clean 
+	$(XDC_INSTALL_DIR)/xdc -C $(LINK_INSTALL_DIR)/dsplink/gpp .interfaces
+	
 dsplink_cfg:
-ifneq ($(HAS_DSPLINK),true)
-	DSPLINK=$(LINK_INSTALL_DIR)/packages/dsplink perl $(LINK_INSTALL_DIR)/packages/dsplink/config/bin/dsplinkcfg.pl $(DSPLINK_CONFIG)
+ifeq ($(HAS_DSPLINK),true)
+	DSPLINK=$(LINK_INSTALL_DIR)/dsplink perl $(LINK_INSTALL_DIR)/dsplink/config/bin/dsplinkcfg.pl $(DSPLINK_CONFIG)
 else
 	$(error DSP Link build is not supported for $(PLATFORM))
 endif
 
-dsplink_arm:	dsplink_cfg
-	DSPLINK=$(LINK_INSTALL_DIR)/packages/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/packages/dsplink/gpp/src BASE_TOOLCHAIN=$(MVTOOL_DIR) BASE_BUILDOS=$(LINUXKERNEL_INSTALL_DIR)
+dsplink_arm:	dsplink_cfg dsplink_gpp_genpackage
+	DSPLINK=$(LINK_INSTALL_DIR)/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/dsplink/gpp/src BASE_TOOLCHAIN=$(MVTOOL_DIR) BASE_BUILDOS=$(LINUXKERNEL_INSTALL_DIR) KERNEL_DIR=${LINUXKERNEL_INSTALL_DIR} TOOL_PATH=$(CSTOOL_DIR)/bin
 	@mkdir -p $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)
 	@cp $(DSPLINK_MODULE) $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)/
 	@echo
 	@echo "dsplinkk.ko kernel module can be found under $(DVSDK_INSTALL_DIR)/kernel_binaries/$(PLATFORM)"
 
-dsplink_dsp:	dsplink_cfg
-	DSPLINK=$(LINK_INSTALL_DIR)/packages/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/packages/dsplink/dsp/src BASE_SABIOS=$(BIOS_INSTALL_DIR) XDCTOOLS_DIR=$(XDC_INSTALL_DIR) BASE_CGTOOLS=$(CODEGEN_INSTALL_DIR)
+dsplink_dsp:	dsplink_cfg dsplink_dsp_genpackage
+	DSPLINK=$(LINK_INSTALL_DIR)/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/dsplink/dsp/src BASE_SABIOS=$(BIOS_INSTALL_DIR) XDCTOOLS_DIR=$(XDC_INSTALL_DIR) BASE_CGTOOLS=$(CODEGEN_INSTALL_DIR)
 
 dsplink_samples:
-	DSPLINK=$(LINK_INSTALL_DIR)/packages/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/packages/dsplink/gpp/src/samples BASE_TOOLCHAIN=$(MVTOOL_DIR) BASE_BUILDOS=$(LINUXKERNEL_INSTALL_DIR)
-	DSPLINK=$(LINK_INSTALL_DIR)/packages/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/packages/dsplink/dsp/src/samples BASE_SABIOS=$(BIOS_INSTALL_DIR) XDCTOOLS_DIR=$(XDC_INSTALL_DIR) BASE_CGTOOLS=$(CODEGEN_INSTALL_DIR)
+	DSPLINK=$(LINK_INSTALL_DIR)/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/dsplink/gpp/src/samples BASE_TOOLCHAIN=$(MVTOOL_DIR) BASE_BUILDOS=$(LINUXKERNEL_INSTALL_DIR)
+	DSPLINK=$(LINK_INSTALL_DIR)/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/dsplink/dsp/src/samples BASE_SABIOS=$(BIOS_INSTALL_DIR) XDCTOOLS_DIR=$(XDC_INSTALL_DIR) BASE_CGTOOLS=$(CODEGEN_INSTALL_DIR)
 
 dsplink_clean:
-	DSPLINK=$(LINK_INSTALL_DIR)/packages/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/packages/dsplink/gpp/src BASE_TOOLCHAIN=$(MVTOOL_DIR) BASE_BUILDOS=$(LINUXKERNEL_INSTALL_DIR) clean
-	DSPLINK=$(LINK_INSTALL_DIR)/packages/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/packages/dsplink/dsp/src BASE_SABIOS=$(BIOS_INSTALL_DIR) XDCTOOLS_DIR=$(XDC_INSTALL_DIR) BASE_CGTOOLS=$(CODEGEN_INSTALL_DIR) clean
-	DSPLINK=$(LINK_INSTALL_DIR)/packages/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/packages/dsplink/gpp/src/samples BASE_TOOLCHAIN=$(MVTOOL_DIR) BASE_BUILDOS=$(LINUXKERNEL_INSTALL_DIR) clean
-	DSPLINK=$(LINK_INSTALL_DIR)/packages/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/packages/dsplink/dsp/src/samples BASE_SABIOS=$(BIOS_INSTALL_DIR) XDCTOOLS_DIR=$(XDC_INSTALL_DIR) BASE_CGTOOLS=$(CODEGEN_INSTALL_DIR) clean
+	DSPLINK=$(LINK_INSTALL_DIR)/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/dsplink/gpp/src BASE_TOOLCHAIN=$(MVTOOL_DIR) BASE_BUILDOS=$(LINUXKERNEL_INSTALL_DIR) clean
+	DSPLINK=$(LINK_INSTALL_DIR)/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/dsplink/dsp/src BASE_SABIOS=$(BIOS_INSTALL_DIR) XDCTOOLS_DIR=$(XDC_INSTALL_DIR) BASE_CGTOOLS=$(CODEGEN_INSTALL_DIR) clean
+	DSPLINK=$(LINK_INSTALL_DIR)/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/dsplink/gpp/src/samples BASE_TOOLCHAIN=$(MVTOOL_DIR) BASE_BUILDOS=$(LINUXKERNEL_INSTALL_DIR) clean
+	DSPLINK=$(LINK_INSTALL_DIR)/dsplink $(XDC_INSTALL_DIR)/gmake -C $(LINK_INSTALL_DIR)/dsplink/dsp/src/samples BASE_SABIOS=$(BIOS_INSTALL_DIR) XDCTOOLS_DIR=$(XDC_INSTALL_DIR) BASE_CGTOOLS=$(CODEGEN_INSTALL_DIR) clean
 
 #==============================================================================
 # Install the built binaries to the target file system.
@@ -395,7 +407,7 @@ ifeq ($(PLATFORM),dm6446)
 	@install -m 666 $(CODEC_INSTALL_DIR)/packages/ti/sdo/servers/loopback/loopbackCombo.x64P $(EXEC_DIR)/
 	-@install -m 666 $(CODEC_INSTALL_DIR)/packages/ti/sdo/servers/loopback/loopbackCombo_e.x64P $(EXEC_DIR)/
 	@echo Copying dsplinkk.ko
-	@install -m 666 $(LINK_INSTALL_DIR)/packages/dsplink/gpp/export/BIN/Linux/DAVINCI/RELEASE/dsplinkk.ko $(EXEC_DIR)/
+	@install -m 666 $(LINK_INSTALL_DIR)/dsplink/gpp/export/BIN/Linux/DAVINCI/RELEASE/dsplinkk.ko $(EXEC_DIR)/
 endif
 
 ifeq ($(PLATFORM),dm6467)
@@ -407,7 +419,7 @@ ifeq ($(PLATFORM),dm6467)
 	@install -m 666 $(CODEC_INSTALL_DIR)/packages/ti/sdo/servers/loopback/loopbackCombo.x64P $(EXEC_DIR)/
 	-@install -m 666 $(CODEC_INSTALL_DIR)/packages/ti/sdo/servers/loopback/loopbackCombo_e.x64P $(EXEC_DIR)/
 	@echo Copying dsplinkk.ko
-	@install -m 666 $(LINK_INSTALL_DIR)/packages/dsplink/gpp/export/BIN/Linux/DAVINCIHD/RELEASE/dsplinkk.ko $(EXEC_DIR)/
+	@install -m 666 $(LINK_INSTALL_DIR)/dsplink/gpp/export/BIN/Linux/DAVINCIHD/RELEASE/dsplinkk.ko $(EXEC_DIR)/
 	@echo Copying mapdmaqhd..
 	@install -m 777 $(DVSDK_INSTALL_DIR)/mapdmaq-hd/mapdmaq-hd $(EXEC_DIR)/
 endif
