@@ -5,8 +5,6 @@ PSPREL = "2.1.2.9"
 
 PV = "${KVER}-psp${PSPREL}"
 
-DEFAULT_PREFERENCE = "99"
-
 SRCREV = "c40ce00e32082c57070fdba39c7d7cba3228d440"
 
 SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git;protocol=git"
