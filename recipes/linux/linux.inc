@@ -68,7 +68,7 @@ do_configure_prepend() {
         #
         # oabi / eabi support
         #
-        if [ "${TARGET_OS}" = "linux-gnueabi" -o  "${TARGET_OS}" = "linux-uclibcgnueabi" ]; then
+        if [ "${TARGET_OS}" = "linux-gnueabi" -o  "${TARGET_OS}" = "linux-uclibceabi" ]; then
                 echo "CONFIG_AEABI=y"                   >> ${S}/.config
                 if [ "${ARM_KEEP_OABI}" = "1" ] ; then
                         echo "CONFIG_OABI_COMPAT=y"             >> ${S}/.config
@@ -162,6 +162,7 @@ do_devicetree_image() {
     if test -n "${KERNEL_DEVICETREE}" ; then
         dtc -I dts -O dtb ${KERNEL_DEVICETREE_FLAGS} -o devicetree ${KERNEL_DEVICETREE}
         install -m 0644 devicetree ${D}/boot/devicetree-${KERNEL_VERSION}
+        install -d ${DEPLOY_DIR_IMAGE}
         install -m 0644 devicetree ${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGE_BASE_NAME}.dtb
         cd ${DEPLOY_DIR_IMAGE}
         rm -f ${KERNEL_IMAGE_SYMLINK_NAME}.dtb
@@ -169,7 +170,7 @@ do_devicetree_image() {
     fi
 }
 
-addtask devicetree_image after do_deploy before do_package
+addtask devicetree_image after do_install before do_package do_deploy
 
 pkg_postinst_kernel-devicetree () {
 	cd /${KERNEL_IMAGEDEST}; update-alternatives --install /${KERNEL_IMAGEDEST}/devicetree devicetree devicetree-${KERNEL_VERSION} ${KERNEL_PRIORITY} || true
