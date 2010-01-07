@@ -8,6 +8,9 @@ SRC_URI	= "${BASE_SRC_URI}/dm355_codecs_setuplinux_${PV}.bin \
 		 "
 
 S = "${WORKDIR}/dm355_codecs_${PV}"
+
+require ti-multimedia-common.inc
+
 BINFILE="dm355_codecs_setuplinux_${PV}.bin"
 
 # Yes, the xdc stuff still breaks with a '.' in PWD

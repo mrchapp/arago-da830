@@ -1,7 +1,9 @@
 DESCRIPTION = "DMAI for TI ARM/DSP processors"
 
-BRANCH="GITPSP_INT_101009"
-SRCREV="325"
+BRANCH = "BRANCH_BRIJESH_DMAI_DEV_2_xx"
+BRANCH_6467 = "GITPSP_INT_101009"
+
+SRCREV = "364"
 
 SRC_URI = "svn://gforge.ti.com/svn/dmai/branches;module=${BRANCH};proto=https;user=anonymous;pswd='' \
 		file://loadmodules-ti-dmai-dm355_al.sh \

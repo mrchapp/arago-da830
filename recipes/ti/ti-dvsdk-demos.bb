@@ -1,9 +1,7 @@
-
 inherit module-base
 
-include ti-dvsdk-demos.inc
-
-include ti-multimedia-common.inc
+require ti-multimedia-common.inc
+require ti-dvsdk-demos.inc
 
 installdir = "${prefix}/ti"
 
