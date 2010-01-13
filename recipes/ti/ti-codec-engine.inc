@@ -126,7 +126,10 @@ do_stage() {
     cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}${CE_INSTALL_DIR_RECIPE}
 }
 
-RDEPENDS_ti-codec-engine-apps = "ti-cmem-module ti-dsplink-module"
+RDEPENDS_ti-codec-engine-apps = "ti-cmem-module"
+RDEPENDS_append_dm6446   = " ti-dsplink-module"
+RDEPENDS_append_omap3    = " ti-dsplink-module"
+RDEPENDS_append_omapl138 = " ti-dsplink-module"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 INHIBIT_PACKAGE_STRIP = "1"
