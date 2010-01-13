@@ -30,6 +30,7 @@ DSPLINKDSPCFG_omapl138  = "OMAPL138GEMSHMEM"
 DSPLINKDSPCFG          ?= "DM6446GEMSHMEM"
 
 
+DSPLINKGPPOS_dm355     = "LINUX_GCC"
 DSPLINKGPPOS_dm6446     = "MVL5G"
 DSPLINKGPPOS_omapl137   = "ARM"
 DSPLINKGPPOS_omapl138   = "ARM"
@@ -100,9 +101,9 @@ do_compile() {
     # Build the gpp samples
     cd ${DSPLINK}/gpp/src/samples
     cd ${DSPLINK}/gpp/src/samples && make \
-      BASE_TOOLCHAIN="${CROSS_DIR}" \
+      BASE_TOOLCHAIN="${TOOLCHAIN_PATH}" \
       BASE_CGTOOLS="${BASE_TOOLCHAIN}/bin" \
-      OSINC_PLATFORM="${CROSS_DIR}/lib/gcc/${TARGET_SYS}/$(${TARGET_PREFIX}gcc -dumpversion)/include" \
+      OSINC_PLATFORM="${TOOLCHAIN_PATH}/lib/gcc/${TARGET_SYS}/$(${TARGET_PREFIX}gcc -dumpversion)/include" \
       OSINC_TARGET="${BASE_TOOLCHAIN}/target/usr/include" \
       CROSS_COMPILE="${TARGET_PREFIX}" \
       CC="${KERNEL_CC}" \
