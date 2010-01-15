@@ -6,7 +6,8 @@ require ti-paths.inc
 DEPENDS = "ti-framework-components ti-xdais ti-xdctools ti-cgt6x ti-biosutils ti-edma3lld"
 
 DEPENDS_append_dm6446 	= " ti-dspbios ti-linuxutils ti-dsplink-module"
-DEPENDS_append_omap3   	= " ti-dspbios ti-linuxutils ti-dsplink-module"
+DEPENDS_append_dm6467 	= " ti-dspbios ti-linuxutils ti-dsplink-module"
+DEPENDS_append_omap3   	= " ti-dspbios ti-linuxutils ti-dsplink-module ti-lpm-module"
 DEPENDS_append_omapl138 = " ti-dspbios ti-linuxutils ti-dsplink-module"
 
 SRC_URI = "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/ce/${PV}/exports/codec_engine_${PV},lite.tar.gz;name=cetarball"
@@ -16,14 +17,17 @@ S = "${WORKDIR}/codec_engine_${PV}"
 
 # Define Device variable
 DEVICES_dm6446 	?= "DM6446"
+DEVICES_dm6467 	?= "DM6467"
 DEVICES_omap3   ?= "OMAP3530"
 DEVICES_dm355   ?= "DM355"
+DEVICES_dm365   ?= "DM365"
 DEVICES_omapl137 ?= "OMAPL137"
 DEVICES_omapl138 ?= "OMAPL138"
 
 #define PROGRAM variables
 PROGRAMS        ?= "APP_CLIENT DSP_SERVER"
 PROGRAMS_dm355   = "APP_LOCAL"
+PROGRAMS_dm365   = "APP_LOCAL"
 
 CGT6x_DIR = "${CODEGEN_INSTALL_DIR}"
 XDCTOOLS_DIR = "${XDC_INSTALL_DIR}"
@@ -70,13 +74,15 @@ endif/g' \
 do_install() {
 
 	install -d ${D}/${installdir}/codec-engine-apps
-	cp ${S}/examples/apps/system_files/${DEVICES}/loadmodules.sh ${D}/${installdir}/codec-engine-apps
+	if [ -e ${S}/examples/apps/system_files/${DEVICES}/loadmodules.sh ]; then
+		cp ${S}/examples/apps/system_files/${DEVICES}/loadmodules.sh ${D}/${installdir}/codec-engine-apps
 
-	# Only for 2.25.00.05
-	sed -i \
-		-e 's/insmod/modprobe/g' \
-		-e 's/.ko//g' \
-		${D}/${installdir}/codec-engine-apps/loadmodules.sh
+		# Only for 2.25.00.05
+		sed -i \
+			-e 's/insmod/modprobe/g' \
+			-e 's/.ko//g' \
+			${D}/${installdir}/codec-engine-apps/loadmodules.sh
+	fi
 
 	cd ${S}/examples/ti/sdo/ce/examples
 
@@ -125,6 +131,7 @@ do_stage() {
     install -d ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}${CE_INSTALL_DIR_RECIPE}
     cp -pPrf ${S}/* ${STAGING_DIR}/${MULTIMACH_TARGET_SYS}${CE_INSTALL_DIR_RECIPE}
 }
+
 
 RDEPENDS_ti-codec-engine-apps = "ti-cmem-module"
 RDEPENDS_append_dm6446   = " ti-dsplink-module"
