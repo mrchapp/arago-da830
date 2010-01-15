@@ -4,7 +4,7 @@ DEPENDS = "ti-dmai gstreamer gst-plugins-base gst-plugins-good gst-plugins-ugly"
 SRCREV = "563"
 # Again, no '.' in PWD allowed :(
 PV = "svnr${SRCREV}"
-PR = "r39"
+PR = "r40"
 
 GST_TI_RC_SCRIPT_omap3 = "gstreamer-ti-omap3530-rc.sh"
 GST_TI_RC_SCRIPT_dm6446="gstreamer-ti-dm6446-rc.sh"
@@ -51,6 +51,10 @@ export DECODE_COMBO = "${installdir}/codec-combo/decodeCombo.x64P"
 
 CPPFLAGS_append = " -DPlatform_${PLATFORM}"
 
+do_configure_prepend() {
+	sed -i -e 's:(LINK_INSTALL_DIR)/packages:(LINK_INSTALL_DIR):g' ${S}/src/Makefile.am
+}
+
 do_install_prepend () {
         # install gstreamer demo scripts
         install -d ${D}/${installdir}/gst
@@ -73,12 +77,6 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 PACKAGES += "gstreamer-ti-demo-script"
 
 RDEPENDS_gstreamer-ti-demo-script = "${PN}"
-RRECOMMENDS_${PN} = " \
-gst-plugins-base-meta \
-gst-plugins-good-meta \
-gst-plugins-bad-meta \
-gst-plugins-ugly-meta \
-ti-dmai-apps"
 
 FILES_gstreamer-ti-demo-script = "${installdir}/gst/*"
 FILES_${PN} += "${libdir}/gstreamer-0.10/*.so ${sysconfdir}"

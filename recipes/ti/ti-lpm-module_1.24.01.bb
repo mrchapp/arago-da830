@@ -1,6 +1,6 @@
 DESCRIPTION = "LPM module for TI OMAP3 processors"
 
-DEPENDS = "ti-linuxutils"
+DEPENDS = "ti-linuxutils ti-dsplink-module"
 
 # tconf breaks with '.' in PWD
 PV = "1_24_01"

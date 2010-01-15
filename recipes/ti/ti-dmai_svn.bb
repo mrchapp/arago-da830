@@ -30,6 +30,8 @@ USER_XDC_PATH = "${CE_INSTALL_DIR}/examples"
 PARALLEL_MAKE = ""
 
 do_configure () {
+	 sed -i -e 's:(LINK_INSTALL_DIR)/packages:(LINK_INSTALL_DIR):g' ${S}/dmai/packages/ti/sdo/dmai/apps/Makefile.app
+	 sed -i -e 's:(LINK_INSTALL_DIR)/packages:(LINK_INSTALL_DIR):g' ${S}/dmai/packages/ti/sdo/dmai/Makefile
 
 	# PSP kernel is based on older DSS. we need to replace linux/omapfb.h with
 	# mach/omapfb.h 

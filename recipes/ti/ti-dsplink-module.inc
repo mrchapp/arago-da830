@@ -29,8 +29,8 @@ DSPLINKDSPCFG_omapl137  = "OMAPL1XXGEMSHMEM"
 DSPLINKDSPCFG_omapl138  = "OMAPL138GEMSHMEM"
 DSPLINKDSPCFG          ?= "DM6446GEMSHMEM"
 
-
-DSPLINKGPPOS_dm355     = "LINUX_GCC"
+DSPLINKGPPOS_dm355      = "LINUX_GCC"
+DSPLINKGPPOS_dm365      = "LINUX_GCC"
 DSPLINKGPPOS_dm6446     = "MVL5G"
 DSPLINKGPPOS_omapl137   = "ARM"
 DSPLINKGPPOS_omapl138   = "ARM"
@@ -152,8 +152,8 @@ do_install () {
 }
 
 do_stage () {
-    install -d ${LINK_INSTALL_DIR}/packages
-    cp -pPrf ${S}/* ${LINK_INSTALL_DIR}/packages
+    install -d ${LINK_INSTALL_DIR}
+    cp -pPrf ${S}/* ${LINK_INSTALL_DIR}
 }
 
 INHIBIT_PACKAGE_STRIP = "1"
