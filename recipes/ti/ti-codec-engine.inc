@@ -6,7 +6,6 @@ require ti-paths.inc
 DEPENDS = "ti-framework-components ti-xdais ti-xdctools ti-cgt6x ti-biosutils ti-edma3lld"
 
 DEPENDS_append_dm6446 	= " ti-dspbios ti-linuxutils ti-dsplink-module"
-DEPENDS_append_dm6467 	= " ti-dspbios ti-linuxutils ti-dsplink-module"
 DEPENDS_append_omap3   	= " ti-dspbios ti-linuxutils ti-dsplink-module ti-lpm-module"
 DEPENDS_append_omapl138 = " ti-dspbios ti-linuxutils ti-dsplink-module"
 
@@ -16,18 +15,20 @@ SRC_URI = "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/ce
 S = "${WORKDIR}/codec_engine_${PV}"
 
 # Define Device variable
-DEVICES_dm6446 	?= "DM6446"
-DEVICES_dm6467 	?= "DM6467"
-DEVICES_omap3   ?= "OMAP3530"
-DEVICES_dm355   ?= "DM355"
-DEVICES_dm365   ?= "DM365"
+DEVICES           = ""
+DEVICES_dm6446 	 ?= "DM6446"
+DEVICES_dm6467   ?= "DM6467"
+DEVICES_omap3    ?= "OMAP3530"
+DEVICES_dm355    ?= "DM355"
+DEVICES_dm365    ?= "DM365"
 DEVICES_omapl137 ?= "OMAPL137"
 DEVICES_omapl138 ?= "OMAPL138"
 
 #define PROGRAM variables
-PROGRAMS        ?= "APP_CLIENT DSP_SERVER"
-PROGRAMS_dm355   = "APP_LOCAL"
-PROGRAMS_dm365   = "APP_LOCAL"
+#TODO - should we build APP_LOCAL for SOCs as well?? - probably?
+PROGRAMS         ?= "APP_CLIENT DSP_SERVER"
+PROGRAMS_dm355    = "APP_LOCAL"
+PROGRAMS_dm365    = "APP_LOCAL"
 
 CGT6x_DIR = "${CODEGEN_INSTALL_DIR}"
 XDCTOOLS_DIR = "${XDC_INSTALL_DIR}"
@@ -38,15 +39,6 @@ do_compile () {
 	# No way to pass this via ENV?
 	sed -i  \
 		-e s:arm-none-linux-gnueabi-:${TARGET_PREFIX}:g \
-		${S}/examples/xdcpaths.mak
-
-	#only for ce 2.25.00.05
-	sed -i  \
-		-e 's/# figure out what categories of devices we are to build for/ \
-# figure out what categories of devices we are to build for \
-ifneq (,$(findstring OMAPL138,$(DEVICES))) \
-    DEVICES_DUALCPU := 1 \
-endif/g' \
 		${S}/examples/xdcpaths.mak
 
         for i in codecs extensions servers apps ; do
@@ -74,15 +66,7 @@ endif/g' \
 do_install() {
 
 	install -d ${D}/${installdir}/codec-engine-apps
-	if [ -e ${S}/examples/apps/system_files/${DEVICES}/loadmodules.sh ]; then
-		cp ${S}/examples/apps/system_files/${DEVICES}/loadmodules.sh ${D}/${installdir}/codec-engine-apps
-
-		# Only for 2.25.00.05
-		sed -i \
-			-e 's/insmod/modprobe/g' \
-			-e 's/.ko//g' \
-			${D}/${installdir}/codec-engine-apps/loadmodules.sh
-	fi
+	cp ${S}/examples/apps/system_files/${DEVICES}/loadmodules.sh ${D}/${installdir}/codec-engine-apps
 
 	cd ${S}/examples/ti/sdo/ce/examples
 
