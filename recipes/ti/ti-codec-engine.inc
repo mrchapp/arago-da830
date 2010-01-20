@@ -66,7 +66,9 @@ do_compile () {
 do_install() {
 
 	install -d ${D}/${installdir}/codec-engine-apps
-	cp ${S}/examples/apps/system_files/${DEVICES}/loadmodules.sh ${D}/${installdir}/codec-engine-apps
+	if [-e ${S}/examples/apps/system_files/${DEVICES}/loadmodules.sh ]; then
+		cp ${S}/examples/apps/system_files/${DEVICES}/loadmodules.sh ${D}/${installdir}/codec-engine-apps
+	fi
 
 	cd ${S}/examples/ti/sdo/ce/examples
 
