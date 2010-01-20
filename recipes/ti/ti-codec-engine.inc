@@ -3,11 +3,12 @@ DESCRIPTION = "Codec Engine for TI ARM/DSP processors"
 require ti-paths.inc
 
 # compile time dependencies
-DEPENDS = "ti-framework-components ti-xdais ti-xdctools ti-cgt6x ti-biosutils ti-edma3lld"
+DEPENDS = "ti-framework-components ti-xdais ti-xdctools ti-cgt6x ti-biosutils ti-edma3lld ti-linuxutils"
 
-DEPENDS_append_dm6446 	= " ti-dspbios ti-linuxutils ti-dsplink-module"
-DEPENDS_append_omap3   	= " ti-dspbios ti-linuxutils ti-dsplink-module ti-lpm-module"
-DEPENDS_append_omapl138 = " ti-dspbios ti-linuxutils ti-dsplink-module"
+DEPENDS_append_dm6446 	= " ti-dspbios ti-dsplink-module"
+DEPENDS_append_dm6467 	= " ti-dspbios ti-dsplink-module"
+DEPENDS_append_omap3   	= " ti-dspbios ti-dsplink-module ti-lpm-module"
+DEPENDS_append_omapl138 = " ti-dspbios ti-dsplink-module"
 
 SRC_URI = "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/ce/${PV}/exports/codec_engine_${PV},lite.tar.gz;name=cetarball"
 
