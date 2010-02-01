@@ -20,6 +20,7 @@ ARAGO_BASE = "\
     opkg-nogpg \
     arago-feed-configs \
     initscript-telnetd \
+    devmem2 \
     "
 
 # minimal set of packages - needed to boot
