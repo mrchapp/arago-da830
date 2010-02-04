@@ -3,13 +3,12 @@ DESCRIPTION = "Configuration files for online package repositories aka feeds"
 RRECOMMENDS_${PN} += "opkg-nogpg"
 
 #PV = "${DISTRO_VERSION}"
-PR = "r6"
+PR = "r7"
 
 # Here is the deal - since we build a common filesystem for several platforms,
 # we need to add all their respective feeds manually, hence next line is out
 #PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-COMPATIBLE_MACHINE = "arago|omap3evm|am3517-evm|beagleboard|dm6446-evm|dm6467-evm|dm6467t-evm|dm355-evm|dm365-evm|dm357-evm|da830-omapl137-evm|da850-omapl138-evm"
 MACHS_ARMV5 = "dm6446-evm dm6467-evm dm6467t-evm dm355-evm dm365-evm dm357-evm da830-omapl137-evm da850-omapl138-evm"
 MACHS_ARMV7 = "omap3evm beagleboard"
 
