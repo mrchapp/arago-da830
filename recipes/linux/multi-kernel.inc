@@ -26,7 +26,7 @@ do_compile() {
 		kernel_do_compile
 		kernel_do_install
 
-		cp arch/${ARCH}/boot/uImage ${DEPLOY_DIR_IMAGE}/uImage.multi-config-$(basename $config)
+		cp arch/${ARCH}/boot/${KERNEL_IMAGETYPE} ${DEPLOY_DIR_IMAGE}/${KERNEL_IMAGE_BASE_NAME}.multi-config-$(basename $config)
 
 		if [ -d "${D}/lib" ]; then
 			fakeroot tar -cvzf ${DEPLOY_DIR_IMAGE}/${MODULES_IMAGE_BASE_NAME}.multi-config-$(basename $config).tgz -C ${D} lib
