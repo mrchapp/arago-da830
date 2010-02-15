@@ -1,7 +1,10 @@
 # glibc:
 require conf/distro/include/glibc-${TOOLCHAIN_TYPE}.inc
 
-TARGET_OS = "linux${@['','-gnueabi'][bb.data.getVar('TARGET_ARCH',d,1) in ['arm', 'armeb'] and bb.data.getVar('MACHINE',d) not in ['collie','h3600', 'h3800', 'simpad', 'htcwallaby']]}"
+ANGSTROM_BLACKLIST_pn-libiconv = "the glibc builtin iconv replacement is used"
+
+TARGET_OS = "linux"
+TARGET_OS .= "${@['','-gnueabi'][bb.data.getVar('TARGET_ARCH',d,1) in ['arm', 'armeb']]}"
 
 #mess with compiler flags to use -Os instead of -O2
 #Please see http://free-electrons.com/doc/embedded_linux_optimizations/img47.html for some more info
@@ -20,6 +23,9 @@ BUILD_OPTIMIZATION = "-O2 -g"
 BUILD_OPTIMIZATION_pn-perl-native = "-O1 -g"
 
 TARGET_LINK_HASH_STYLE = "${@['-Wl,--hash-style=gnu',''][bb.data.getVar('TARGET_ARCH',d,1) in ['mips', 'mipsel']]}"
+
+# Disable -Wl,as-needed for now till all the test come back OK
+#require conf/distro/include/angstrom-ldflags.inc
 
 CXXFLAGS += "-fvisibility-inlines-hidden"
 
