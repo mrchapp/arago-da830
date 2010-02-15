@@ -1,26 +1,11 @@
 # Arago base image
-# gives you a small images with basic media libraries
+# gives you a small image with package manager
+
+require arago-image.inc
 
 # The size of the uncompressed ramdisk is 8MB
 ROOTFS_SIZE = "8192"
 
-EXTRA_IMAGECMD_ext2.gz += "-i 4096"
-
-# Disable this due to distribution restrictions
-# DISTRO_SSH_DAEMON ?= "dropbear"
-
-IMAGE_PREPROCESS_COMMAND = "create_etc_timestamp"
-
-# Disable these for now
-# util-linux-mount util-linux-umount \
-
-IMAGE_INSTALL = "\
-    task-arago-base \
-    ${DISTRO_SSH_DAEMON} \
-    angstrom-version \
-    "
+IMAGE_INSTALL += "task-arago-base"
 
 export IMAGE_BASENAME = "arago-base-image"
-IMAGE_LINGUAS = ""
-
-inherit image

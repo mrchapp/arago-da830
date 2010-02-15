@@ -1,25 +1,17 @@
-# dvsdk demo image - this contains the DMAI apps
+# Arago DVSDK image
+# gives you an image with DVSDK libs and demo apps
+
+require arago-image.inc
+
+COMPATIBLE_MACHINE = "(?!arago)"
 
 # The size of the uncompressed ramdisk is 100MB
-IMAGE_ROOTFS_SIZE_ext2.gz = "102400"
+ROOTFS_SIZE = "102400"
 
-# Disable this due to distribution restrictions
-# DISTRO_SSH_DAEMON ?= "dropbear"
-
-IMAGE_PREPROCESS_COMMAND = "create_etc_timestamp"
-
-# Disable these for now
-# util-linux-mount util-linux-umount \
-
-IMAGE_INSTALL = "\
-	task-arago-base \
-	task-arago-dvsdk \
-	${DISTRO_SSH_DAEMON} \
-	angstrom-version \
+IMAGE_INSTALL += "\
+    task-arago-base \
+    task-arago-demo \
+    task-arago-dvsdk \
     "
 
 export IMAGE_BASENAME = "arago-dvsdk-image"
-IMAGE_LINGUAS = ""
-
-inherit image
-

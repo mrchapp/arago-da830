@@ -1,5 +1,5 @@
 DESCRIPTION = "Task to add base gstreamer and TI plugins"
-PR = "r12"
+PR = "r13"
 
 inherit task
 
