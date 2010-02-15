@@ -58,7 +58,7 @@ PREFERRED_PROVIDER_gdbserver = "gdbserver"
 PREFERRED_VERSION_gdbserver = "6.6"
 PREFERRED_VERSION_gdb = "6.6"
 PREFERRED_VERSION_gdb-cross-sdk = "6.6"
-PREFERRED_PROVIDER_libopkg-dev = "opkg-nogpg"
+PREFERRED_PROVIDER_libopkg-dev = "opkg-nogpg-nocurl"
 PREFERRED_PROVIDER_ti-lpm-module = "ti-local-power-manager"
 
 # Disable DropBear for now due to export restrictions

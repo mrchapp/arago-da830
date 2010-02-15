@@ -1,9 +1,9 @@
 DESCRIPTION = "Configuration files for online package repositories aka feeds"
 
-RRECOMMENDS_${PN} += "opkg-nogpg"
+RRECOMMENDS_${PN} += "opkg-nogpg-nocurl"
 
 #PV = "${DISTRO_VERSION}"
-PR = "r7"
+PR = "r8"
 
 # Here is the deal - since we build a common filesystem for several platforms,
 # we need to add all their respective feeds manually, hence next line is out

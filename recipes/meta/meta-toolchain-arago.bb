@@ -1,4 +1,4 @@
-PR = "r3"
+PR = "r4"
 
 SDK_DISTRO = "arago"
 TOOLCHAIN_OUTPUTNAME = "${SDK_DISTRO}-${DISTRO_VERSION}-${FEED_ARCH}-${TARGET_OS}-${SDK_SUFFIX}"
@@ -15,7 +15,7 @@ TOOLCHAIN_TARGET_EXCLUDE += "\
     libthread-db1 \
     sln \
     curl \
-    opkg-nogpg \
+    opkg-nogpg-nocurl \
     alsa-conf-base \
     update-rc.d \
     update-rc.d-dev \
