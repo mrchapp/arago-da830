@@ -27,7 +27,7 @@ export CE_INSTALL_DIR_RECIPE         = "${installdir}/ti-codec-engine-tree"
 export EDMA3_LLD_INSTALL_DIR_RECIPE  = "${installdir}/ti-edma3lld-tree"
 export LINUXUTILS_INSTALL_DIR_RECIPE = "${installdir}/ti-linuxutils-tree"
 export CMEM_INSTALL_DIR_RECIPE       = "${installdir}/ti-linuxutils-tree"
-export LINK_INSTALL_DIR_RECIPE       = "${installdir}/ti-dsplink-module-tree/packages"
+export LINK_INSTALL_DIR_RECIPE       = "${installdir}/ti-dsplink-tree/packages"
 export LPM_INSTALL_DIR_RECIPE        = "${installdir}/ti-local-power-manager-tree"
 export DMAI_INSTALL_DIR_RECIPE       = "${installdir}/ti-dmai-tree"
 
@@ -60,10 +60,6 @@ XDC_PLATFORM_omapl138 = ti.platforms.evmOMAPL138
 export XDC_PLATFORM
 
 export PLATFORM_XDC = ${XDC_PLATFORM}
-
-LPMDSPPOWERSOC_omap3  = "omap3530"
-
-export LPMDSPPOWERSOC
 
 DSPSUFFIX_omapl137 = "x674"
 DSPSUFFIX_omapl138 = "x674"
