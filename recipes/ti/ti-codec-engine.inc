@@ -28,6 +28,7 @@ DEVICES_omapl138 ?= "OMAPL138"
 
 # Need to set this for other platforms as well
 GPPOS_dm355      = "LINUX_GCC"
+GPPOS_dm365      = "LINUX_GCC"
 
 #define PROGRAM variables
 #TODO - should we build APP_LOCAL for SOCs as well?? - probably?
