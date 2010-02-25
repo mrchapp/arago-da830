@@ -1,0 +1,33 @@
+#! /bin/sh
+
+am18xxdemo="/usr/tests/am18xx-demo"
+
+test -x "$am18xxdemo" || exit 0
+grep "AM18xx EVM" /proc/cpuinfo >/dev/null 2>&1 || exit 0
+
+export LD_LIBRARY_PATH=/usr/lib
+export TSLIB_PLUGINDIR=/usr/lib/ts
+export TSLIB_TSDEVICE=/dev/input/touchscreen0
+export TSLIB_CONFFILE=/etc/ts.conf
+export QWS_MOUSE_PROTO=Tslib:/dev/input/touchscreen0
+
+case "$1" in
+  start)
+    echo -n "Starting AM18xx Demo application"
+    if [ ! -f /etc/pointercal ] ; then
+        ts_calibrate
+    fi
+    start-stop-daemon --start --quiet --background --exec $am18xxdemo
+    echo "."
+    ;;
+  stop)
+    echo -n "Stopping AM18xx Demo application"
+    start-stop-daemon --stop --quiet --pidfile /var/run/am18xx-demo.pid
+    echo "."
+    ;;
+  *)
+    echo "Usage: /etc/init.d/am18xx-demo {start|stop}"
+    exit 1
+esac
+
+exit 0
