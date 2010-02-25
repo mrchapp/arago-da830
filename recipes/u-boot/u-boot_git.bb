@@ -77,11 +77,11 @@ SRCREV_dm6446-evm = "f8d047c84137ab331c0ee2c3e94c3f1ec4228298"
 PV_dm6446-evm = "2009.05+2009.06-rc0+gitr${SRCREV}"
 
 SRC_URI_dm6467-evm = "git://arago-project.org/git/people/hemant/u-boot-dm646x.git;protocol=git"
-SRCREV_dm6467-evm = "885b88d78a7e5eb9c2b8d754fba272637ccce113"
+SRCREV_dm6467-evm = "cab1855d17d9842117842308f6dc9fa82156d3ee"
 PV_dm6467-evm = "2009.08+gitr${SRCREV}"
 
 SRC_URI_dm6467t-evm = "git://arago-project.org/git/people/hemant/u-boot-dm646x.git;protocol=git"
-SRCREV_dm6467t-evm = "885b88d78a7e5eb9c2b8d754fba272637ccce113"
+SRCREV_dm6467t-evm = "cab1855d17d9842117842308f6dc9fa82156d3ee"
 PV_dm6467t-evm = "2009.08+gitr${SRCREV}"
 
 SRC_URI_dm355-evm = "git://arago-project.org/git/projects/u-boot-davinci.git;protocol=git"

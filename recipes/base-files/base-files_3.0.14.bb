@@ -1,7 +1,7 @@
 DESCRIPTION = "Miscellaneous files for the base system."
 SECTION = "base"
 PRIORITY = "required"
-PR = "r89"
+PR = "r90"
 LICENSE = "GPL"
 
 SRC_URI = " \
@@ -67,6 +67,10 @@ hostname_slugos = "nslu2"
 hostname_mnci = "MNCI"
 hostname_rt3000 = "MNRT"
 hostname_jlime = "JLime"
+
+# It's not possible to differentiate between DA8xx/OMAP-L1xx/AM18xx parts
+hostname_da830-omapl137-evm = "arago"
+hostname_da850-omapl138-evm = "arago"
 
 do_install () {
 	for d in ${dirs755}; do
