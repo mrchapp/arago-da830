@@ -70,7 +70,10 @@ DMAIPLATFORM          ?= "<UNDEFINED_DMAIPLATFORM>"
 #GPPOS_dm355      = "LINUX_GCC"
 #GPPOS_dm365      = "LINUX_GCC"
 #GPPOS           ?= "<UNDEFINEDGPPOS>"
-#USER_XDC_PATH = "${CE_INSTALL_DIR}/examples"
+
+# This is needed for dm355/dm365 targets in order to find ti.sdo.codecs.g711
+# TODO :: review - should we just pass this in do_compile?
+USER_XDC_PATH = "${CE_INSTALL_DIR}/examples"
 
 PARALLEL_MAKE = ""
 
