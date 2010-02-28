@@ -60,6 +60,9 @@ do_configure() {
     # We can safely sed it out since it has been empty for the past 2 years
     sed -i /page.h/d ${S}/dsplink/gpp/src/api/Linux/drv_api.c || true 
 
+    # Makefile passes hardcoded CROSS_COMPILE - rename so this doesnt get passed to kbuild
+    sed -i -e s:CROSS_COMPILE:BOGUS_CROSS_COMPILE:g ${S}/dsplink/gpp/src/Rules.mk
+
     # Run perl script to create appropriate makefiles (v1.60 and up)
     (
     cd ${DSPLINK}
@@ -67,7 +70,6 @@ do_configure() {
 	--dspcfg_0=${DSPLINKDSPCFG} --dspos_0=DSPBIOS5XX \
 	--gppos=${DSPLINKGPPOS} --comps=ponslrmc
     )
-
 }
 
 do_prepsources () {
