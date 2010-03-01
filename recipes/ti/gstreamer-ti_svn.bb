@@ -17,7 +17,7 @@ require ti-staging.inc
 PROVIDES += "gstreamer-ti-demo-script"
 
 PV = "svnr${SRCREV}"
-PR = "r44"
+PR = "r45"
 
 S = "${WORKDIR}/gstreamer_ti/ti_build/ticodecplugin"
 
@@ -86,6 +86,9 @@ export PLATFORM_XDC    = ${XDC_PLATFORM}
 export MVTOOL_DIR      = "${TOOLCHAIN_PATH}"
 export CROSS_COMPILE   = "${TOOLCHAIN_PATH}/bin/${TARGET_PREFIX}"
 
+# Makefile also expects to be able to find the kernel headers from the envirionment
+export LINUXKERNEL_INSTALL_DIR = ${STAGING_KERNEL_DIR} 
+
 # export codec combo (or server) locations
 # Why do we need to do this?? - These will get picked up from CODEC_INSTALL_DIR?
 # Sould only need this if we change from default server
@@ -101,6 +104,12 @@ CPPFLAGS_append = " -DPlatform_${PLATFORM}"
 
 do_configure_prepend() {
     sed -i -e 's:(LINK_INSTALL_DIR)/packages:(LINK_INSTALL_DIR):g' ${S}/src/Makefile.am
+
+    # TODO :: Is this still true?
+    # PSP kernel is based on older DSS. we need to replace linux/omapfb.h with mach/omapfb.h
+    if ! [ -e ${STAGING_KERNEL_DIR}/include/linux/omapfb.h ] ; then
+         sed -i -e s:linux/omapfb:mach/omapfb:g ${S}/src/omapfb.h || true
+    fi
 }
 
 do_install_prepend () {

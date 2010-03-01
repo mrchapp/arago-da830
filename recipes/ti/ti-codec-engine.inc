@@ -21,6 +21,7 @@ DEPENDS = "ti-framework-components ti-xdais ti-xdctools ti-cgt6x ti-biosutils ti
 DEPENDS_append_dm6446 	= " ti-dspbios ti-dsplink ti-local-power-manager"
 DEPENDS_append_dm6467 	= " ti-dspbios ti-dsplink"
 DEPENDS_append_omap3   	= " ti-dspbios ti-dsplink ti-local-power-manager"
+DEPENDS_append_omapl137 = " ti-dspbios ti-dsplink"
 DEPENDS_append_omapl138 = " ti-dspbios ti-dsplink"
 
 # SOC_FAMILY configuration
@@ -175,3 +176,4 @@ RDEPENDS_ti-codec-engine-examples_append_omapl137 = " ti-dsplink-module"
 RDEPENDS_ti-codec-engine-examples_append_omapl138 = " ti-dsplink-module"
 FILES_ti-codec-engine-examples = "${installdir}/ti-codec-engine-examples/*"
 INSANE_SKIP_ti-codec-engine-examples = True
+
