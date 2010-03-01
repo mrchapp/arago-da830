@@ -1,12 +1,14 @@
 DESCRIPTION = "Extended task to add DVSDK components"
-PR = "r17"
+PR = "r18"
 
 inherit task
 
-DVSDK_TARGET_PACKAGE = "ti-dvsdk-demos"
+# DVSDK demos are for DaVinci only
+DVSDK_TARGET_PACKAGE_dm355 = "ti-dvsdk-demos"
+DVSDK_TARGET_PACKAGE_dm365 = "ti-dvsdk-demos"
+DVSDK_TARGET_PACKAGE_dm6467 = "ti-dvsdk-demos"
 
-# omap3 seems to be missing dvsdk-demos
-DVSDK_TARGET_PACKAGE_omap3 = "ti-dmai-apps ti-dmai-tests"
+DVSDK_TARGET_PACKAGE = "ti-dmai-apps ti-dmai-tests"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
