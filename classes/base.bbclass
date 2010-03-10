@@ -508,7 +508,7 @@ def package_stagefile(file, d):
 package_stagefile_shell() {
 	if [ "$PSTAGING_ACTIVE" = "1" ]; then
 		srcfile=$1
-		destfile=`echo $srcfile | sed s#${DEPLOY_DIR}#${PSTAGE_TMPDIR_STAGE}#`
+		destfile=`echo $srcfile | sed s#${TMPDIR}#${PSTAGE_TMPDIR_STAGE}#`
 		destdir=`dirname $destfile`
 		mkdir -p $destdir
 		cp -dp $srcfile $destfile

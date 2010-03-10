@@ -14,7 +14,7 @@ SCRATCH ?= "${OEBASE}"
 DL_DIR = "${SCRATCH}/downloads"
 
 # Put resulting images and packages in deploy directory outside of temp
-DEPLOY_DIR = "${OEBASE}/arago-deploy"
+#DEPLOY_DIR = "${OEBASE}/arago-deploy"
 
 # Default TMPDIR is safe for multi-user environment
 TMPDIR = "${SCRATCH}/arago-tmp"
