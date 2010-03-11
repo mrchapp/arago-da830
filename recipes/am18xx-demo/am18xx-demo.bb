@@ -6,7 +6,7 @@ PRIORITY = "optional"
 PV = "1.0"
 PR = "r1+svnr${SRCREV}"
 
-SRCREV="9"
+SRCREV="12"
 
 RRECOMMENDS_${PN} = "qt4-embedded-plugin-mousedriver-tslib"
 
