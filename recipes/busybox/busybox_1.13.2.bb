@@ -1,8 +1,8 @@
 require busybox.inc
-PR = "r19"
+PR = "${INC_PR}.1"
 
 SRC_URI = "\
-  http://www.busybox.net/downloads/busybox-${PV}.tar.gz \
+  http://www.busybox.net/downloads/busybox-${PV}.tar.bz2;name=tarball \
   file://busybox-1.13.2-awk.patch;patch=1 \
   file://busybox-1.13.2-depmod.patch;patch=1 \
   file://busybox-1.13.2-init.patch;patch=1 \
@@ -25,7 +25,7 @@ SRC_URI = "\
   file://busybox-cron \
   file://busybox-httpd \
   file://busybox-udhcpd \
-  file://default.script \
+  file://default.script file://simple.script \
   file://hwclock.sh \
   file://mount.busybox \
   file://mountall \
@@ -36,15 +36,15 @@ SRC_URI = "\
   file://mdev \
   file://mdev.conf \
 "
+SRC_URI[tarball.md5sum] = "9e2a604d18bef219a5a6bf3acf78b9e1"
+SRC_URI[tarball.sha256sum] = "927774408bd982dd246fb716bb2e646ab0708ce321b42c5e271dc98c1f5d1dc8"
 
 EXTRA_OEMAKE += "V=1 ARCH=${TARGET_ARCH} CROSS_COMPILE=${TARGET_PREFIX}"
 
-do_configure () {
-	install -m 0644 ${WORKDIR}/defconfig ${S}/.config
+do_configure_prepend () {
 	if [ "${TARGET_ARCH}" = "avr32" ] ; then
-		sed -i s:CONFIG_FEATURE_OSF_LABEL=y:CONFIG_FEATURE_OSF_LABEL=n: ${S}/.config
+		sed -i s:CONFIG_FEATURE_OSF_LABEL=y:CONFIG_FEATURE_OSF_LABEL=n: ${WORKDIR}/defconfig
 	fi
-	cml1_do_configure
 }
 
 do_install_append() {
