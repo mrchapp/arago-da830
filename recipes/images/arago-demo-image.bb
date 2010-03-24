@@ -6,7 +6,7 @@ require arago-image.inc
 COMPATIBLE_MACHINE = "(?!arago)"
 
 # The size of the uncompressed ramdisk is 32MB
-ROOTFS_SIZE = "32768"
+ROOTFS_SIZE = "40960"
 
 # DM646x have many modules, bump to 40MB
 ROOTFS_SIZE_dm6467 = "40960"
