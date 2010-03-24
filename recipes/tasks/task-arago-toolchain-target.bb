@@ -1,6 +1,6 @@
 DESCRIPTION = "Target packages for a standalone Arago SDK or external toolchain"
 ALLOW_EMPTY = "1"
-PR = "r3"
+PR = "r4"
 
 PACKAGES = "${PN}"
 
@@ -21,7 +21,6 @@ RDEPENDS_${PN} = "\
     lzo-dev \
     libopkg-dev \
     libpng-dev \
-    libpng12-dev \
     readline-dev \
     libts-dev \
     libusb-compat-dev \
