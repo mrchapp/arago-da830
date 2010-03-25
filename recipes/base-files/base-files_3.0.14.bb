@@ -46,7 +46,7 @@ dirs755 = "/bin /boot /dev ${sysconfdir} ${sysconfdir}/default \
 	   /media/union /media/realroot /media/hdd \
 	   /media/mmc1"
 
-dirs755_micro = "/dev /proc ${sysconfdir}"
+dirs755_micro = "/dev /proc /sys ${sysconfdir}"
 dirs2775_micro = ""
 dirs1777_micro = "/tmp"
 
