@@ -1,12 +1,5 @@
 #!/bin/sh
 
-# Check if the gstreamer register is build already, otherwise build it
-if [ ! -f /home/root/.gstreamer-0.10/registry.arm.bin ] ; then
-    echo -n "\nBuilding Gstreamer Register... "
-    gst-inspect >/dev/null 2>&1
-    echo "done."
-fi
-
 # We start a system wide gstd daemon
 if ! pidof gstd  > /dev/null; then
     { gstd 2>&1 | logger -t GSTD & } ; 
@@ -25,7 +18,7 @@ if ! grep -q mouse1 /proc/bus/input/devices ; then
             ts_calibrate
         fi
         echo -e "\nFreonDemo using touchscreen"
-        export QWS_MOUSE_PROTO=tslib
+        export QWS_MOUSE_PROTO=tslib:/dev/input/touchscreen0
     else
         echo "ERROR, no mouse or touchscreen detected for FreonDemo"
         exit 1;
