@@ -1,5 +1,5 @@
 DESCRIPTION = "Extended task to get more basic and demo apps"
-PR = "r10"
+PR = "r11"
 
 inherit task
 
@@ -17,6 +17,7 @@ ARAGO_ALSA_EXTRA = "\
     alsa-utils-iecset \
     alsa-utils-midi \
     alsa-utils-speakertest \
+    alsa-state \
     "
 
 ARAGO_TSLIB = "\
