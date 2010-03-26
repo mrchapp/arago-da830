@@ -1,6 +1,6 @@
 DESCRIPTION = "Target packages for a standalone Arago SDK or external toolchain"
 ALLOW_EMPTY = "1"
-PR = "r4"
+PR = "r5"
 
 PACKAGES = "${PN}"
 
@@ -14,7 +14,7 @@ RDEPENDS_${PN} = "\
     alsa-lib-dev \
     alsa-utils-dev \
     curl-dev \
-    e2fsprogs-libs-dev \
+    util-linux-ng-dev \
     i2c-tools-dev \
     freetype-dev \
     jpeg-dev \
@@ -30,5 +30,5 @@ RDEPENDS_${PN} = "\
     mtd-utils-dev \
     ncurses-dev \
     opkg-nogpg-nocurl-dev \
-    sysvinit-dev \
+#    sysvinit-dev \
     "
