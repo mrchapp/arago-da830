@@ -10,7 +10,7 @@ ROOTFS_SIZE = "153600"
 
 IMAGE_INSTALL += "\
     task-arago-base \
-    task-arago-demo \
+    task-arago-console \
     task-arago-dvsdk \
     task-arago-gst \
     "

@@ -1,4 +1,4 @@
-# Arago demo image
+# Arago console image
 # gives you an image with basic media libraries
 
 require arago-image.inc
@@ -17,7 +17,7 @@ ROOTFS_SIZE_overo = "81920"
 
 IMAGE_INSTALL += "\
     task-arago-base \
-    task-arago-demo \
+    task-arago-console \
     "
 
-export IMAGE_BASENAME = "arago-demo-image"
+export IMAGE_BASENAME = "arago-console-image"

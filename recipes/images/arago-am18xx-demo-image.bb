@@ -7,7 +7,7 @@ COMPATIBLE_MACHINE = "(?!arago)"
 
 IMAGE_INSTALL += "\
     task-arago-base \
-    task-arago-demo \
+    task-arago-console \
     task-arago-am18xx-demo \
     "
 
