@@ -1,5 +1,5 @@
 require u-boot.inc
-PR ="r35"
+PR ="r36"
 
 FILESPATHPKG =. "u-boot-git:"
 
@@ -72,24 +72,24 @@ SRC_URI_overo = "git://gitorious.org/u-boot-omap3/mainline.git;branch=omap3-dev;
 SRCREV_overo = "2dea1db2a3b7c12ed70bbf8ee50755089c5e5170"
 PV_overo = "2009.03+${PR}+gitr${SRCREV}"
 
-SRC_URI_dm6446-evm = "git://arago-project.org/git/projects/u-boot-davinci.git;protocol=git"
-SRCREV_dm6446-evm = "f8d047c84137ab331c0ee2c3e94c3f1ec4228298"
+SRC_URI_dm6446-evm = "git://arago-project.org/git/projects/u-boot-davinci.git;protocol=git;branch=u-boot-davinci-2009.06"
+SRCREV_dm6446-evm = "ea7387c9511ac92a46d3d147adffe36f868820e4"
 PV_dm6446-evm = "2009.05+2009.06-rc0+gitr${SRCREV}"
 
 SRC_URI_dm6467-evm = "git://arago-project.org/git/people/hemant/u-boot-dm646x.git;protocol=git"
-SRCREV_dm6467-evm = "cab1855d17d9842117842308f6dc9fa82156d3ee"
+SRCREV_dm6467-evm = "98b31e3aae3e3fb772f8d06c18ccdd6265aa0d38"
 PV_dm6467-evm = "2009.08+gitr${SRCREV}"
 
 SRC_URI_dm6467t-evm = "git://arago-project.org/git/people/hemant/u-boot-dm646x.git;protocol=git"
-SRCREV_dm6467t-evm = "cab1855d17d9842117842308f6dc9fa82156d3ee"
+SRCREV_dm6467t-evm = "98b31e3aae3e3fb772f8d06c18ccdd6265aa0d38"
 PV_dm6467t-evm = "2009.08+gitr${SRCREV}"
 
-SRC_URI_dm355-evm = "git://arago-project.org/git/projects/u-boot-davinci.git;protocol=git"
-SRCREV_dm355-evm = "f8d047c84137ab331c0ee2c3e94c3f1ec4228298"
+SRC_URI_dm355-evm = "git://arago-project.org/git/projects/u-boot-davinci.git;protocol=git;branch=u-boot-davinci-2009.06"
+SRCREV_dm355-evm = "ea7387c9511ac92a46d3d147adffe36f868820e4"
 PV_dm355-evm = "2009.05+2009.06-rc0+gitr${SRCREV}"
 
-SRC_URI_dm365-evm = "git://arago-project.org/git/projects/u-boot-davinci.git;protocol=git"
-SRCREV_dm365-evm = "f8d047c84137ab331c0ee2c3e94c3f1ec4228298"
+SRC_URI_dm365-evm = "git://arago-project.org/git/projects/u-boot-davinci.git;protocol=git;branch=u-boot-davinci-2009.06"
+SRCREV_dm365-evm = "ea7387c9511ac92a46d3d147adffe36f868820e4"
 PV_dm365-evm = "2009.05+2009.06-rc0+gitr${SRCREV}"
 
 SRC_URI_da830-omapl137-evm = "git://arago-project.org/git/people/sekhar/u-boot-omapl1.git;protocol=git;branch=master"
