@@ -20,6 +20,7 @@ DL_DIR = "${SCRATCH}/downloads"
 TMPDIR = "${SCRATCH}/arago-tmp"
 
 # Set the collections
+require conf/collections.inc
 COLLECTIONS = "${OEBASE}/arago/ ${OEBASE}/arago-oe-dev/"
 
 # Optionally add BOM and Custom collections
