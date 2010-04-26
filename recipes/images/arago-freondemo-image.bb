@@ -10,6 +10,7 @@ IMAGE_INSTALL += "\
     task-arago-console \
     task-arago-dvsdk \
     task-arago-gst \
+    task-arago-qte \
     task-arago-freondemo \
     "
 

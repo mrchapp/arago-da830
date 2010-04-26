@@ -8,6 +8,7 @@ COMPATIBLE_MACHINE = "(?!arago)"
 IMAGE_INSTALL += "\
     task-arago-base \
     task-arago-console \
+    task-arago-qte \
     task-arago-freondemo \
     "
 
