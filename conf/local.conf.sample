@@ -47,6 +47,9 @@ TOOLCHAIN_SYSPATH = "${@bb.data.getVar('TARGET_ARCH', d, 1) != bb.data.getVar('B
 TOOLCHAIN_PATH = "${@bool(bb.data.getVar('TOOLCHAIN_SYSPATH', d, 1)) and (os.path.exists(bb.data.getVar('TOOLCHAIN_SYSPATH', d, 1)) and os.path.dirname(bb.data.getVar('TOOLCHAIN_SYSPATH', d, 1)) or bb.fatal('No valid toolchain in PATH')) or ''}"
 SDK_PATH = "${@[bb.data.getVar('TOOLCHAIN_PATH', d, 1), bb.data.getVar('META_SDK_PATH', d, 1)][bool(bb.data.getVar('META_SDK_PATH', d, 1))]}"
 
+INHERIT += "amend"
+FILESPATHBASE = "${@':'.join(set((bb.data.getVar('FILE_DIRNAME', d, 1).replace(bb.data.getVar('OEBASE', d, 1)+'/arago-oe-dev/', bb.data.getVar('OEBASE', d, 1)+'/arago/')+':'+bb.data.getVar('FILE_DIRNAME', d, 1)).split(':')))}"
+
 # Libraries provided by the toolchain/SDK
 ASSUME_SHLIBS += "libc.so.6:libc6 libm.so.6:libc6 libutil.so.1:libc6 libcrypt.so.1:libc6"
 ASSUME_SHLIBS += "libdl.so.2:libc6 libpthread.so.0:libc6 librt.so.1:libc6 libgcc_s.so.1:libgcc1"
@@ -62,6 +65,8 @@ PREFERRED_VERSION_gdb-cross-sdk = "6.6"
 PREFERRED_PROVIDER_libopkg-dev = "opkg-nogpg-nocurl"
 PREFERRED_PROVIDER_ti-lpm-module = "ti-local-power-manager"
 PREFERRED_PROVIDER_ti-dsplink-module = "ti-dsplink"
+PREFERRED_PROVIDER_qt4-embedded = "qt4-embedded"
+PREFERRED_VERSION_iperf = "1.7.0"
 
 # Disable DropBear for now due to export restrictions
 DISTRO_SSH_DAEMON = ""
