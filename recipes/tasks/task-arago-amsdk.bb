@@ -1,5 +1,5 @@
 DESCRIPTION = "Task for AMSDK additional dependencies"
-PR = "r2"
+PR = "r3"
 
 inherit task
 
@@ -17,5 +17,6 @@ RDEPENDS_${PN} = "\
     iperf \
     bluez-hcidump \
     obexftp \
+    ussp-push \
     matrix-gui \
     "
