@@ -1,0 +1,1805 @@
+Only in wpa_suppl: aes_wrap.d
+Only in wpa_suppl: aes_wrap.o
+Only in wpa_suppl: base64.d
+Only in wpa_suppl: base64.o
+Only in wpa_suppl: bufferObj.c
+Only in wpa_suppl: bufferObj.d
+Only in wpa_suppl: bufferObj.h
+Only in wpa_suppl: bufferObj.o
+Only in wpa_supplicant-0.5.7: changelog
+Only in wpa_suppl: CipherWrapper.c
+Only in wpa_suppl: CipherWrapper.d
+Only in wpa_suppl: CipherWrapper.h
+Only in wpa_suppl: CipherWrapper.o
+Only in wpa_suppl: common.d
+Only in wpa_suppl: common.o
+Only in wpa_suppl: .config
+diff -cr wpa_supplicant-0.5.7/config.c wpa_suppl/config.c
+*** wpa_supplicant-0.5.7/config.c	2009-08-16 14:24:55.001499000 +0300
+--- wpa_suppl/config.c	2008-11-20 13:16:20.000000000 +0200
+***************
+*** 22,27 ****
+--- 22,34 ----
+  #include "l2_packet.h"
+  #include "config.h"
+  
++ #ifdef CONFIG_EAP_WSC
++ #include "WscTypes.h"
++ #include "ossl_typ.h"
++ #include "rand.h"
++ #include "wsc_supplicant.h"
++ #endif
++ 
+  
+  /*
+   * Structure for network configuration parsing. This data is used to implement
+***************
+*** 52,72 ****
+  	int key_data;
+  };
+  
+- 
+  static char * wpa_config_parse_string(const char *value, size_t *len)
+  {
+! 	if (*value == '"') {
+  		char *pos;
+! 		value++;
+  		pos = os_strrchr(value, '"');
+  		if (pos == NULL || pos[1] != '\0')
+  			return NULL;
+  		*pos = '\0';
+  		*len = os_strlen(value);
+  		return os_strdup(value);
+! 	} else {
+  		u8 *str;
+  		size_t hlen = os_strlen(value);
+  		if (hlen & 1)
+  			return NULL;
+  		*len = hlen / 2;
+--- 59,83 ----
+  	int key_data;
+  };
+  
+  static char * wpa_config_parse_string(const char *value, size_t *len)
+  {
+! 	if (*value == '"') 
+! 	{
+  		char *pos;
+! 			
+! 		value++;		
+  		pos = os_strrchr(value, '"');
+  		if (pos == NULL || pos[1] != '\0')
+  			return NULL;
+  		*pos = '\0';
+  		*len = os_strlen(value);
+  		return os_strdup(value);
+! 	} 
+! 	else 
+! 	{
+  		u8 *str;
+  		size_t hlen = os_strlen(value);
++ 
+  		if (hlen & 1)
+  			return NULL;
+  		*len = hlen / 2;
+***************
+*** 1030,1035 ****
+--- 1041,1160 ----
+  	return wpa_config_write_wep_key(ssid, 3);
+  }
+  
++ #ifdef CONFIG_EAP_WSC
++ static int wpa_config_parse_wsc_pin(const struct parse_data *data, 
++ 					struct wpa_ssid *ssid, int line,
++ 				     const char *value)
++ {
++ 	size_t res_len;
++ 	char c_devPwd[32];
++ 	u32 val;
++ 	u32 checksum;
++ 	u8 devPwd[10];
++ 	u8 password[LONG_PIN_LEN+1];
++ 
++ 	if(!ssid->wsc_pin)
++ 	{
++ 		free(ssid->wsc_pin);
++ 	}
++ 	ssid->wsc_pin = wpa_config_parse_string(value, &res_len);
++ 
++ 	if (ssid->wsc_pin == NULL) 
++ 	{
++ 		wpa_printf(MSG_ERROR, "Line %d: failed to parse %s '%s'.",
++ 			   line, data->name, value);
++ 		return -1;
++ 	}
++ 
++ 	if ((res_len != SHORT_PIN_LEN) && (res_len != LONG_PIN_LEN))
++ 	{
++ 		wpa_printf(MSG_ERROR, "Line %d: failed to parse %s '%s'. Pin length: %d is invalid",
++ 			   line, data->name, value, res_len);
++ 		return -1;
++ 	}
++ 
++ 	if (strncmp(ssid->wsc_pin, RANDOM_PIN_NUMBER, (sizeof(RANDOM_PIN_NUMBER) - 1)) == 0)
++ 	{
++ 		RAND_bytes(devPwd, LONG_PIN_LEN);
++ 		sprintf(c_devPwd, "%08u", *(u32 *)devPwd);
++ 		
++ 		/* Compute the checksum */
++ 		c_devPwd[7] = '\0';
++ 		val = strtoul(c_devPwd, NULL, 10 );
++ 		checksum = wsc_supplicant_ComputeChecksum( val );
++ 		val = val*10 + checksum;
++ 		sprintf((char *)password, "%d", val );
++ 		password[LONG_PIN_LEN] = '\0';
++ 		free(ssid->wsc_pin);
++ 		ssid->wsc_pin = strdup((char *)password);
++ 		
++ 		wpa_printf(MSG_INFO, "Random PIN: %c-%c-%c-%c-%c-%c-%c-%c\n", password[0], password[1], password[2], password[3], password[4], password[5], password[6], password[7]);
++ 	}
++ 	else if (strncmp(ssid->wsc_pin, RANDOM_SHORT_PIN_NUMBER, (sizeof(RANDOM_SHORT_PIN_NUMBER) - 1)) == 0)
++ 	{
++ 		RAND_bytes(devPwd, SHORT_PIN_LEN);
++ 		sprintf(c_devPwd, "%04u", *(u32 *)devPwd);
++ 		c_devPwd[SHORT_PIN_LEN] = '\0';
++ 		
++ 		/* save randomized PIN created */
++ 		strcpy((char *)password, c_devPwd);
++ 		free(ssid->wsc_pin);
++ 		ssid->wsc_pin = strdup((char *)password);
++ 		
++ 		wpa_printf(MSG_INFO, "Random PIN: %c-%c-%c-%c\n", password[0], password[1], password[2], password[3]);
++ 	}
++ 	else 
++ 	{
++ 		wpa_printf(MSG_DEBUG, "PIN exist='%s'", ssid->wsc_pin);
++ 		
++ 		/* (if res_len==4 no checksum check is required) */
++ 		if (res_len == LONG_PIN_LEN)
++ 		{
++ 			/* check the checksum */
++ 			strcpy(c_devPwd, ssid->wsc_pin);
++ 			c_devPwd[7] = '\0';
++ 			val = strtoul(c_devPwd, NULL, 10 );
++ 			checksum = wsc_supplicant_ComputeChecksum( val );
++ 			if (checksum != (ssid->wsc_pin[7] - '0'))
++ 			{
++ 				/* checksum is incorrect */
++ 				wpa_printf(MSG_ERROR, "checksum is incorrect :\nCalculated checksum = %d, wsc_pin[7] = %c, Randomizing new PIN...", checksum, ssid->wsc_pin[7]);
++ 
++ 				/* Randomize new PIN */
++ 				RAND_bytes(devPwd, LONG_PIN_LEN);
++ 				sprintf(c_devPwd, "%08u", *(u32 *)devPwd);
++ 
++ 				/* Compute the checksum */
++ 				c_devPwd[7] = '\0';
++ 				val = strtoul(c_devPwd, NULL, 10 );
++ 				checksum = wsc_supplicant_ComputeChecksum( val );
++ 				val = val*10 + checksum;
++ 				sprintf((char *)password, "%d", val );
++ 				password[LONG_PIN_LEN] = '\0';
++ 				free(ssid->wsc_pin);
++ 				ssid->wsc_pin = strdup((char *)password);
++ 				
++ 				wpa_printf(MSG_INFO, "Random PIN: %c-%c-%c-%c-%c-%c-%c-%c\n", password[0], password[1], password[2], password[3], password[4], password[5], password[6], password[7]);
++ 			}
++ 		}
++ 	}
++ 
++ 	return 0;
++ }
++ 
++ static char * wpa_config_write_wsc_pin(const struct parse_data *data,
++ 					struct wpa_ssid *ssid)
++ {
++ 	if (ssid->wsc_pin)
++ 	{
++ 		return wpa_config_write_string_ascii((const u8 *) ssid->wsc_pin, strlen(ssid->wsc_pin));
++ 	}
++ 	return NULL;
++ }
++ 
++ #endif /* CONFIG_EAP_WSC */
++ 
++ 
+  
+  /* Helper macros for network block parser */
+  
+***************
+*** 1156,1162 ****
+  #ifdef CONFIG_IEEE80211W
+  	{ INT_RANGE(ieee80211w, 0, 2) },
+  #endif /* CONFIG_IEEE80211W */
+! 	{ INT_RANGE(peerkey, 0, 1) }
+  };
+  
+  #undef OFFSET
+--- 1281,1291 ----
+  #ifdef CONFIG_IEEE80211W
+  	{ INT_RANGE(ieee80211w, 0, 2) },
+  #endif /* CONFIG_IEEE80211W */
+! 	{ INT_RANGE(peerkey, 0, 1) },
+! #ifdef CONFIG_EAP_WSC
+! 	{ FUNC(wsc_pin) },
+! 	{ INT(wsc_mode) }
+! #endif /* CONFIG_EAP_WSC */
+  };
+  
+  #undef OFFSET
+Only in wpa_suppl: config.d
+diff -cr wpa_supplicant-0.5.7/config_file.c wpa_suppl/config_file.c
+*** wpa_supplicant-0.5.7/config_file.c	2009-08-16 14:24:55.001608000 +0300
+--- wpa_suppl/config_file.c	2007-11-07 16:23:27.000000000 +0200
+***************
+*** 559,564 ****
+--- 559,577 ----
+  	}
+  }
+  
++ #ifdef CONFIG_EAP_WSC
++ static void write_wsc_pin(FILE *f, struct wpa_ssid *ssid)
++ {
++ 	char *value;
++ 
++ 	value = wpa_config_get(ssid, "wsc_pin");
++ 	if (value == NULL)
++ 		return;
++ 	if (value[0])
++ 		fprintf(f, "\twsc_pin=%s\n", value);
++ 	free(value);
++ }
++ #endif /* CONFIG_EAP_WSC */
+  
+  static void wpa_config_write_network(FILE *f, struct wpa_ssid *ssid)
+  {
+***************
+*** 577,582 ****
+--- 590,598 ----
+  	write_pairwise(f, ssid);
+  	write_group(f, ssid);
+  	write_auth_alg(f, ssid);
++ #ifdef CONFIG_EAP_WSC
++ 	write_wsc_pin(f, ssid);
++ #endif /* CONFIG_EAP_WSC */
+  #ifdef IEEE8021X_EAPOL
+  	write_eap(f, ssid);
+  	STR(identity);
+Only in wpa_suppl: config_file.d
+Only in wpa_suppl: config_file.o
+Only in wpa_suppl: config.o
+diff -cr wpa_supplicant-0.5.7/config_ssid.h wpa_suppl/config_ssid.h
+*** wpa_supplicant-0.5.7/config_ssid.h	2009-08-16 14:24:56.000096000 +0300
+--- wpa_suppl/config_ssid.h	2009-03-29 12:45:23.000000000 +0300
+***************
+*** 15,20 ****
+--- 15,22 ----
+  #ifndef CONFIG_SSID_H
+  #define CONFIG_SSID_H
+  
++ #include <netinet/if_ether.h>
++ 
+  #ifndef BIT
+  #define BIT(n) (1 << (n))
+  #endif
+***************
+*** 46,51 ****
+--- 48,59 ----
+  #define EAP_PSK_LEN_MIN 16
+  #define EAP_PSK_LEN_MAX 32
+  
++ #ifdef CONFIG_EAP_WSC
++ #define WSC_MODE_OFF	0
++ #define WSC_MODE_PIN	1
++ #define WSC_MODE_PBC	2
++ #endif
++ 
+  
+  #define DEFAULT_EAP_WORKAROUND ((unsigned int) -1)
+  #define DEFAULT_EAPOL_FLAGS (EAPOL_FLAG_REQUIRE_KEY_UNICAST | \
+***************
+*** 200,205 ****
+--- 208,232 ----
+  	 */
+  	int scan_ssid;
+  
++ #ifdef CONFIG_EAP_WSC
++ 	/**
++ 	 * wsc_mode - the WSC mode enum
++ 	 *
++ 	 * this the WSC mode:
++ 	 *	0 - WSC_MODE_OFF
++ 	 * 	1 - WSC_MODE_PIN
++ 	 *	2 - WSC_MODE_PBC
++ 	 */
++ 	u32 wsc_mode;
++ 	/**
++ 	 * wsc_pin -the WSC PIN string
++ 	 *
++ 	 * this the WSC PIN identification string
++ 	 */
++ 	char* wsc_pin;
++ 
++ #endif /* CONFIG_EAP_WSC */
++ 
+  #ifdef IEEE8021X_EAPOL
+  
+  	/**
+Only in wpa_supplicant-0.5.7: copying
+Only in wpa_suppl: crypto.d
+Only in wpa_suppl: crypto.o
+diff -cr wpa_supplicant-0.5.7/ctrl_iface.c wpa_suppl/ctrl_iface.c
+*** wpa_supplicant-0.5.7/ctrl_iface.c	2009-08-16 14:24:56.000791000 +0300
+--- wpa_suppl/ctrl_iface.c	2008-02-20 11:55:42.000000000 +0200
+***************
+*** 539,549 ****
+--- 539,631 ----
+  }
+  
+  
++ #ifdef TI_WLAN_DRIVER
++ static int wpa_supplicant_compare_ssid(struct wpa_ssid *ssid1, struct wpa_ssid *ssid2)
++ {
++    int is_identical = 1,i;
++ 
++    if (ssid1->mode != ssid2->mode)
++    {
++          is_identical = 0;
++    }else
++    if (ssid1->ssid_len != ssid2->ssid_len)
++    {
++          is_identical = 0;
++    }else
++    if (((ssid1->ssid) && (!ssid2->ssid)) || ((!ssid1->ssid) && (ssid2->ssid)) 
++ 	   || (ssid1->ssid && ssid2->ssid && (strcmp((char *)ssid1->ssid,(char *)ssid2->ssid) != 0)))
++    {
++          is_identical = 0;
++    }else
++    if (((ssid1->bssid) && (!ssid2->bssid)) || ((!ssid1->bssid) && (ssid2->bssid)) 
++ 	   || (ssid1->bssid && ssid2->bssid && (memcmp((char *)ssid1->bssid,(char *)ssid2->bssid,ETH_ALEN) != 0)))
++    {
++          is_identical = 0;
++    }else
++    if (ssid1->key_mgmt != ssid2->key_mgmt)
++    {
++          is_identical = 0;
++    }else
++    if (ssid1->group_cipher != ssid2->group_cipher)
++    {
++          is_identical = 0;
++    }else
++    if (ssid1->pairwise_cipher != ssid2->pairwise_cipher)
++    {
++          is_identical = 0;
++    }else
++    if (ssid1->proto != ssid2->proto)
++    {
++          is_identical = 0;
++    }else
++    if (ssid1->auth_alg != ssid2->auth_alg)
++    {
++          is_identical = 0;
++    }else
++    if (ssid1->wep_tx_keyidx != ssid2->wep_tx_keyidx)
++    {
++          is_identical = 0;
++    }else
++    if (((ssid1->psk) && (!ssid2->psk)) || ((!ssid1->psk) && (ssid2->psk)) 
++ 	   || (ssid1->psk && ssid2->psk && (strcmp((char *)ssid1->psk,(char *)ssid2->psk) != 0)))
++    {
++          is_identical = 0;
++    }else
++ #ifdef CONFIG_EAP_WSC
++    if (((ssid1->wsc_pin) && (!ssid2->wsc_pin)) || ((!ssid1->wsc_pin) && (ssid2->wsc_pin)) 
++ 	   || (ssid1->wsc_pin && ssid2->wsc_pin && (strcmp((char *)ssid1->wsc_pin,(char *)ssid2->wsc_pin) != 0)))
++    {
++          is_identical = 0;
++    }else
++    if (ssid1->wsc_mode != ssid2->wsc_mode)
++    {
++          is_identical = 0;
++    }else
++ #endif /* CONFIG_EAP_WSC */
++    {
++ 		for (i=0 ; i < NUM_WEP_KEYS; i++)
++ 		{	
++ 			if ((ssid1->wep_key_len[i] != ssid2->wep_key_len[i])
++ 				 || (memcmp(ssid1->wep_key[i], ssid2->wep_key[i], ssid1->wep_key_len[i]) != 0))
++ 			{
++ 				is_identical = 0;
++ 			}
++ 		}
++    }
++ 
++    return (is_identical);
++ }
++ #endif /* TI_WLAN_DRIVER */
++ 
++ 
+  static int wpa_supplicant_ctrl_iface_select_network(
+  	struct wpa_supplicant *wpa_s, char *cmd)
+  {
+  	int id;
+  	struct wpa_ssid *ssid;
++ #ifdef TI_WLAN_DRIVER
++     struct wpa_ssid *selected_ssid;
++ #endif /* TI_WLAN_DRIVER */
+  
+  	/* cmd: "<network id>" or "any" */
+  	if (os_strcmp(cmd, "any") == 0) {
+***************
+*** 571,576 ****
+--- 653,678 ----
+  	if (ssid != wpa_s->current_ssid && wpa_s->current_ssid)
+  		wpa_supplicant_disassociate(wpa_s, REASON_DEAUTH_LEAVING);
+  
++ #ifdef TI_WLAN_DRIVER
++     selected_ssid = ssid;
++ 
++ 	/* remove all matching networks */
++ 	ssid = wpa_s->conf->ssid;
++ 	while (ssid) 
++ 	{
++ 		if ((ssid != selected_ssid) && (wpa_supplicant_compare_ssid(ssid, selected_ssid)))
++       	{
++         	wpa_printf(MSG_DEBUG, "CTRL_IFACE: found matching block !!! ssid = %s",ssid->ssid);
++          	if (wpa_config_remove_network(wpa_s->conf, ssid->id) < 0)
++          	{
++             	wpa_printf(MSG_DEBUG, "CTRL_IFACE: Could not remove network id=%d", ssid->id);
++          	}
++          	break;
++       	}
++ 		ssid = ssid->next;
++ 	}
++ #endif /* TI_WLAN_DRIVER */
++ 
+  	/* Mark all other networks disabled and trigger reassociation */
+  	ssid = wpa_s->conf->ssid;
+  	while (ssid) {
+***************
+*** 624,634 ****
+  	id = atoi(cmd);
+  	wpa_printf(MSG_DEBUG, "CTRL_IFACE: DISABLE_NETWORK id=%d", id);
+  
+! 	ssid = wpa_config_get_network(wpa_s->conf, id);
+! 	if (ssid == NULL) {
+! 		wpa_printf(MSG_DEBUG, "CTRL_IFACE: Could not find network "
+! 			   "id=%d", id);
+! 		return -1;
+  	}
+  
+  	if (ssid == wpa_s->current_ssid)
+--- 726,747 ----
+  	id = atoi(cmd);
+  	wpa_printf(MSG_DEBUG, "CTRL_IFACE: DISABLE_NETWORK id=%d", id);
+  
+! 	if(id == -1)
+! 	{
+! 		/* disable the current network */
+! 		if(wpa_s->current_ssid)
+! 		ssid = wpa_s->current_ssid;
+! 		else
+! 			return -1;
+! 	}
+! 	else
+! 	{
+! 		ssid = wpa_config_get_network(wpa_s->conf, id);
+! 		if (ssid == NULL) {
+! 			wpa_printf(MSG_DEBUG, "CTRL_IFACE: Could not find network "
+! 				   "id=%d", id);
+! 			return -1;
+! 		}
+  	}
+  
+  	if (ssid == wpa_s->current_ssid)
+***************
+*** 1063,1069 ****
+  	return 0;
+  }
+  
+- 
+  char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
+  					 char *buf, size_t *resp_len)
+  {
+--- 1176,1181 ----
+Only in wpa_suppl: ctrl_iface.d
+Only in wpa_suppl: ctrl_iface.o
+Only in wpa_suppl: ctrl_iface_unix.d
+Only in wpa_suppl: ctrl_iface_unix.o
+Only in wpa_supplicant-0.5.7: .cvsignore
+Only in wpa_suppl: d2utmp0Deuc9
+Only in wpa_suppl: d2utmp0eIxAn
+Only in wpa_suppl: d2utmp0oMyod
+Only in wpa_suppl: d2utmp0U3VSb
+Only in wpa_suppl: d2utmp11LWlV
+Only in wpa_suppl: d2utmp14oW6N
+Only in wpa_suppl: d2utmp1vohpm
+Only in wpa_suppl: d2utmp2JRlWK
+Only in wpa_suppl: d2utmp2vq5Rp
+Only in wpa_suppl: d2utmp301LCp
+Only in wpa_suppl: d2utmp3ewI81
+Only in wpa_suppl: d2utmp3uKflx
+Only in wpa_suppl: d2utmp42weVC
+Only in wpa_suppl: d2utmp49ToKD
+Only in wpa_suppl: d2utmp57UsYg
+Only in wpa_suppl: d2utmp5gIbeT
+Only in wpa_suppl: d2utmp5llgLm
+Only in wpa_suppl: d2utmp5v4ZtA
+Only in wpa_suppl: d2utmp5v6Kbf
+Only in wpa_suppl: d2utmp612Xih
+Only in wpa_suppl: d2utmp6GFMPN
+Only in wpa_suppl: d2utmp6Kpu6W
+Only in wpa_suppl: d2utmp6krSSf
+Only in wpa_suppl: d2utmp6VUVOO
+Only in wpa_suppl: d2utmp7QgL3G
+Only in wpa_suppl: d2utmp87TL88
+Only in wpa_suppl: d2utmp8aYzK5
+Only in wpa_suppl: d2utmp8TJzat
+Only in wpa_suppl: d2utmp92sHTS
+Only in wpa_suppl: d2utmpa807Pq
+Only in wpa_suppl: d2utmpAa0XhD
+Only in wpa_suppl: d2utmpACmCs8
+Only in wpa_suppl: d2utmpad0MdS
+Only in wpa_suppl: d2utmpAfpV0G
+Only in wpa_suppl: d2utmpaNDJnW
+Only in wpa_suppl: d2utmpAPFTwJ
+Only in wpa_suppl: d2utmpAprb8Z
+Only in wpa_suppl: d2utmpaTDto7
+Only in wpa_suppl: d2utmpazrgZ9
+Only in wpa_suppl: d2utmpBe2Liu
+Only in wpa_suppl: d2utmpBHVT5N
+Only in wpa_suppl: d2utmpbMAsWG
+Only in wpa_suppl: d2utmpbR7Dcc
+Only in wpa_suppl: d2utmpbu4joQ
+Only in wpa_suppl: d2utmpBvPXcB
+Only in wpa_suppl: d2utmpBw7DxK
+Only in wpa_suppl: d2utmpbz8Uze
+Only in wpa_suppl: d2utmpc5G8rp
+Only in wpa_suppl: d2utmpcDw3J7
+Only in wpa_suppl: d2utmpCMkUBC
+Only in wpa_suppl: d2utmpCtDPXv
+Only in wpa_suppl: d2utmpcVrtAL
+Only in wpa_suppl: d2utmpCyjqNL
+Only in wpa_suppl: d2utmpCZ8JJp
+Only in wpa_suppl: d2utmpd33u8v
+Only in wpa_suppl: d2utmpdaGoce
+Only in wpa_suppl: d2utmpdEaluF
+Only in wpa_suppl: d2utmpDF5eLR
+Only in wpa_suppl: d2utmpdF7Kwg
+Only in wpa_suppl: d2utmpDynXly
+Only in wpa_suppl: d2utmpdyOLw6
+Only in wpa_suppl: d2utmpE0v1s6
+Only in wpa_suppl: d2utmpe0wd72
+Only in wpa_suppl: d2utmpeaAIHF
+Only in wpa_suppl: d2utmpEcODJw
+Only in wpa_suppl: d2utmpEf5RZm
+Only in wpa_suppl: d2utmpEhiTB1
+Only in wpa_suppl: d2utmpEJcfUz
+Only in wpa_suppl: d2utmpElDneu
+Only in wpa_suppl: d2utmpemPKXw
+Only in wpa_suppl: d2utmpepPD5l
+Only in wpa_suppl: d2utmpEqW11L
+Only in wpa_suppl: d2utmpETzc1Y
+Only in wpa_suppl: d2utmpf1pIAo
+Only in wpa_suppl: d2utmpf2LsKF
+Only in wpa_suppl: d2utmpF6a57C
+Only in wpa_suppl: d2utmpfL6FE1
+Only in wpa_suppl: d2utmpfMMI60
+Only in wpa_suppl: d2utmpFtaMSB
+Only in wpa_suppl: d2utmpfTzgap
+Only in wpa_suppl: d2utmpFZb6Do
+Only in wpa_suppl: d2utmpGInich
+Only in wpa_suppl: d2utmpgIsx4a
+Only in wpa_suppl: d2utmpGKqbet
+Only in wpa_suppl: d2utmpGVfQEZ
+Only in wpa_suppl: d2utmpgZQlnG
+Only in wpa_suppl: d2utmpH99SzB
+Only in wpa_suppl: d2utmpHeFLLE
+Only in wpa_suppl: d2utmphFWaIj
+Only in wpa_suppl: d2utmphGgQ0z
+Only in wpa_suppl: d2utmphhaEhE
+Only in wpa_suppl: d2utmphlIuH2
+Only in wpa_suppl: d2utmphlmbe0
+Only in wpa_suppl: d2utmphruEWl
+Only in wpa_suppl: d2utmphwe54O
+Only in wpa_suppl: d2utmpHz5soB
+Only in wpa_suppl: d2utmpIbU7fi
+Only in wpa_suppl: d2utmpibuXKv
+Only in wpa_suppl: d2utmpiJqdQq
+Only in wpa_suppl: d2utmpIJRNYi
+Only in wpa_suppl: d2utmpikQXVP
+Only in wpa_suppl: d2utmpizqgg8
+Only in wpa_suppl: d2utmpJ5vVo4
+Only in wpa_suppl: d2utmpjjffsQ
+Only in wpa_suppl: d2utmpjOgFIS
+Only in wpa_suppl: d2utmpJRm6De
+Only in wpa_suppl: d2utmpk8C1ow
+Only in wpa_suppl: d2utmpKaH1tM
+Only in wpa_suppl: d2utmpkbgaAK
+Only in wpa_suppl: d2utmpkDBS63
+Only in wpa_suppl: d2utmpKI2XQt
+Only in wpa_suppl: d2utmpkX9doY
+Only in wpa_suppl: d2utmpL08odf
+Only in wpa_suppl: d2utmpl2ToNs
+Only in wpa_suppl: d2utmplA0udn
+Only in wpa_suppl: d2utmplihOkq
+Only in wpa_suppl: d2utmpLMtQES
+Only in wpa_suppl: d2utmpMCljZA
+Only in wpa_suppl: d2utmpMDH7be
+Only in wpa_suppl: d2utmpNsn4Ub
+Only in wpa_suppl: d2utmpOaEJ49
+Only in wpa_suppl: d2utmpObs9Fj
+Only in wpa_suppl: d2utmpoCPJF0
+Only in wpa_suppl: d2utmpOnOutx
+Only in wpa_suppl: d2utmpoW5rDy
+Only in wpa_suppl: d2utmpOybdTp
+Only in wpa_suppl: d2utmpPBA0RY
+Only in wpa_suppl: d2utmpPV90UV
+Only in wpa_suppl: d2utmppvM33K
+Only in wpa_suppl: d2utmpPw7awM
+Only in wpa_suppl: d2utmpQ1C72F
+Only in wpa_suppl: d2utmpQd0yX6
+Only in wpa_suppl: d2utmpqQVB0S
+Only in wpa_suppl: d2utmpQYRr9A
+Only in wpa_suppl: d2utmpRCuwIF
+Only in wpa_suppl: d2utmprJuhr2
+Only in wpa_suppl: d2utmpRNPntB
+Only in wpa_suppl: d2utmprVBmAZ
+Only in wpa_suppl: d2utmprx7Gkm
+Only in wpa_suppl: d2utmprXOGRc
+Only in wpa_suppl: d2utmprZilCL
+Only in wpa_suppl: d2utmpSAmPmz
+Only in wpa_suppl: d2utmpSBEwrN
+Only in wpa_suppl: d2utmpSbhyIY
+Only in wpa_suppl: d2utmpsUt60s
+Only in wpa_suppl: d2utmpsWKtMh
+Only in wpa_suppl: d2utmpTFhz0w
+Only in wpa_suppl: d2utmptKIxXQ
+Only in wpa_suppl: d2utmptMpSjz
+Only in wpa_suppl: d2utmpTrVaqI
+Only in wpa_suppl: d2utmpTZ8YUt
+Only in wpa_suppl: d2utmpuEnDSx
+Only in wpa_suppl: d2utmpV3IDxI
+Only in wpa_suppl: d2utmpv8x86l
+Only in wpa_suppl: d2utmpV9cEVE
+Only in wpa_suppl: d2utmpvH8AKI
+Only in wpa_suppl: d2utmpVjRjBA
+Only in wpa_suppl: d2utmpVkHjjq
+Only in wpa_suppl: d2utmpvLo9DJ
+Only in wpa_suppl: d2utmpVLrF79
+Only in wpa_suppl: d2utmpvpkOtm
+Only in wpa_suppl: d2utmpVVSFjv
+Only in wpa_suppl: d2utmpw1MB3J
+Only in wpa_suppl: d2utmpw7r07a
+Only in wpa_suppl: d2utmpwcqblF
+Only in wpa_suppl: d2utmpWfNjkE
+Only in wpa_suppl: d2utmpwR7lMf
+Only in wpa_suppl: d2utmpWztFyJ
+Only in wpa_suppl: d2utmpxf5A5Y
+Only in wpa_suppl: d2utmpxf5jFz
+Only in wpa_suppl: d2utmpXfXmlf
+Only in wpa_suppl: d2utmpxKuSVN
+Only in wpa_suppl: d2utmpxTKNKc
+Only in wpa_suppl: d2utmpy6FMae
+Only in wpa_suppl: d2utmpyCwlOh
+Only in wpa_suppl: d2utmpyxtNRq
+Only in wpa_suppl: d2utmpYYywlG
+Only in wpa_suppl: d2utmpZ5aB7U
+Only in wpa_suppl: d2utmpzajRnT
+Only in wpa_suppl: d2utmpzbZGGn
+Only in wpa_suppl: d2utmpzFn1EP
+Only in wpa_suppl: d2utmpZFomTB
+Only in wpa_suppl: d2utmpZkdQB5
+Only in wpa_suppl: d2utmpZm0Yl2
+Only in wpa_suppl: d2utmpzoFsDM
+Only in wpa_suppl: d2utmpZwFmTQ
+diff -cr wpa_supplicant-0.5.7/dbus_dict_helpers.c wpa_suppl/dbus_dict_helpers.c
+*** wpa_supplicant-0.5.7/dbus_dict_helpers.c	2009-08-16 14:24:56.001357000 +0300
+--- wpa_suppl/dbus_dict_helpers.c	2007-11-07 16:23:57.000000000 +0200
+***************
+*** 902,910 ****
+  
+  error:
+  	if (entry) {
+! 		wpa_dbus_dict_entry_clear(entry);
+! 		entry->type = DBUS_TYPE_INVALID;
+! 		entry->array_type = DBUS_TYPE_INVALID;
+  	}
+  
+  	return FALSE;
+--- 902,910 ----
+  
+  error:
+  	if (entry) {
+! 	wpa_dbus_dict_entry_clear(entry);
+! 	entry->type = DBUS_TYPE_INVALID;
+! 	entry->array_type = DBUS_TYPE_INVALID;
+  	}
+  
+  	return FALSE;
+Only in wpa_suppl: .depend
+Only in wpa_suppl: des.d
+Only in wpa_suppl: des.o
+Only in wpa_supplicant-0.5.7: doc
+diff -cr wpa_supplicant-0.5.7/driver.h wpa_suppl/driver.h
+*** wpa_supplicant-0.5.7/driver.h	2009-08-16 14:24:56.001560000 +0300
+--- wpa_suppl/driver.h	2007-11-07 16:24:03.000000000 +0200
+***************
+*** 752,757 ****
+--- 752,771 ----
+  	 * (management frame processing) to wpa_supplicant.
+  	 */
+  	 int (*mlme_remove_sta)(void *priv, const u8 *addr);
++ 
++ #ifdef CONFIG_EAP_WSC
++ 	/**
++ 	 * set_wsc_mode - set the driver wsc mode
++ 	 * @priv: Private driver interface data
++ 	 * @WscMode: wsc mode
++ 	 * @probeReqBuf: the probe request
++ 	 * Returns: 0 on success, -1 on failure
++ 	 *
++ 	 * This function is only needed for drivers that export MLME
++ 	 * (management frame processing) to wpa_supplicant.
++ 	 */
++ 	 int (*set_wsc_mode)(void *priv, const u32 WscMode, const void* probeReqBuf, int probeReqBufLen);	
++ #endif
+  };
+  
+  #endif /* DRIVER_H */
+Only in wpa_suppl: drivers.d
+Only in wpa_suppl: drivers.o
+diff -cr wpa_supplicant-0.5.7/driver_wext.c wpa_suppl/driver_wext.c
+*** wpa_supplicant-0.5.7/driver_wext.c	2009-08-16 14:24:57.000608000 +0300
+--- wpa_suppl/driver_wext.c	2008-01-17 13:08:53.000000000 +0200
+***************
+*** 1,6 ****
+  /*
+   * WPA Supplicant - driver interaction with generic Linux Wireless Extensions
+!  * Copyright (c) 2003-2006, Jouni Malinen <jkmaline@cc.hut.fi>
+   *
+   * This program is free software; you can redistribute it and/or modify
+   * it under the terms of the GNU General Public License version 2 as
+--- 1,6 ----
+  /*
+   * WPA Supplicant - driver interaction with generic Linux Wireless Extensions
+!  * Copyright (c) 2003-2008, Jouni Malinen <jkmaline@cc.hut.fi>
+   *
+   * This program is free software; you can redistribute it and/or modify
+   * it under the terms of the GNU General Public License version 2 as
+***************
+*** 32,37 ****
+--- 32,44 ----
+  #include "driver_wext.h"
+  #include "wpa.h"
+  
++ #ifdef CONFIG_EAP_WSC
++ #ifdef TI_WLAN_DRIVER
++ #include "TWDriver.h"
++ #include "STADExternalIf.h"
++ #endif
++ #endif
++ 
+  #ifdef CONFIG_CLIENT_MLME
+  #include <netpacket/packet.h>
+  #include <hostapd_ioctl.h>
+***************
+*** 120,126 ****
+  	wpa_printf(MSG_DEBUG, "WEXT: Operstate: linkmode=%d, operstate=%d",
+  		   linkmode, operstate);
+  
+! 	ret = send(drv->event_sock, &req, req.hdr.nlmsg_len, 0);
+  	if (ret < 0) {
+  		wpa_printf(MSG_DEBUG, "WEXT: Sending operstate IFLA failed: "
+  			   "%s (assume operstate is not supported)",
+--- 127,133 ----
+  	wpa_printf(MSG_DEBUG, "WEXT: Operstate: linkmode=%d, operstate=%d",
+  		   linkmode, operstate);
+  
+!  	ret = send(drv->event_sock, &req, req.hdr.nlmsg_len, 0);
+  	if (ret < 0) {
+  		wpa_printf(MSG_DEBUG, "WEXT: Sending operstate IFLA failed: "
+  			   "%s (assume operstate is not supported)",
+***************
+*** 190,202 ****
+  	struct iwreq iwr;
+  	int ret = 0;
+  
+! 	os_memset(&iwr, 0, sizeof(iwr));
+  	os_strncpy(iwr.ifr_name, drv->ifname, IFNAMSIZ);
+  	iwr.u.ap_addr.sa_family = ARPHRD_ETHER;
+  	if (bssid)
+! 		os_memcpy(iwr.u.ap_addr.sa_data, bssid, ETH_ALEN);
+  	else
+! 		os_memset(iwr.u.ap_addr.sa_data, 0, ETH_ALEN);
+  
+  	if (ioctl(drv->ioctl_sock, SIOCSIWAP, &iwr) < 0) {
+  		perror("ioctl[SIOCSIWAP]");
+--- 197,209 ----
+  	struct iwreq iwr;
+  	int ret = 0;
+  
+!     os_memset(&iwr, 0, sizeof(iwr));
+  	os_strncpy(iwr.ifr_name, drv->ifname, IFNAMSIZ);
+  	iwr.u.ap_addr.sa_family = ARPHRD_ETHER;
+  	if (bssid)
+!         os_memcpy(iwr.u.ap_addr.sa_data, bssid, ETH_ALEN);
+  	else
+!         os_memset(iwr.u.ap_addr.sa_data, 0, ETH_ALEN);
+  
+  	if (ioctl(drv->ioctl_sock, SIOCSIWAP, &iwr) < 0) {
+  		perror("ioctl[SIOCSIWAP]");
+***************
+*** 386,391 ****
+--- 393,406 ----
+  		wpa_supplicant_event(ctx, EVENT_STKSTART, &data);
+  #endif /* CONFIG_PEERKEY */
+  	}
++ #ifdef TI_WLAN_DRIVER
++ #ifdef CONFIG_EAP_WSC
++ 	else if(((IPC_EV_DATA*)custom)->EvParams.uEventType == IPC_EVENT_WPS_SESSION_OVERLAP)
++ 	{
++ 		wpa_supplicant_event(ctx, EVENT_WSC_PBC_OVERLAP, NULL);
++ 	}
++ #endif /* CONFIG_EAP_WSC */
++ #endif /* TI_WLAN_DRIVER */
+  }
+  
+  
+***************
+*** 791,797 ****
+  					      const char *ifname, int *flags)
+  {
+  	struct ifreq ifr;
+! 
+  	os_memset(&ifr, 0, sizeof(ifr));
+  	os_strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
+  	if (ioctl(drv->ioctl_sock, SIOCGIFFLAGS, (caddr_t) &ifr) < 0) {
+--- 806,812 ----
+  					      const char *ifname, int *flags)
+  {
+  	struct ifreq ifr;
+! 	
+  	os_memset(&ifr, 0, sizeof(ifr));
+  	os_strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
+  	if (ioctl(drv->ioctl_sock, SIOCGIFFLAGS, (caddr_t) &ifr) < 0) {
+***************
+*** 1679,1685 ****
+  				    reason_code);
+  }
+  
+! 
+  static int wpa_driver_wext_set_gen_ie(void *priv, const u8 *ie,
+  				      size_t ie_len)
+  {
+--- 1694,1700 ----
+  				    reason_code);
+  }
+  
+! #ifndef TI_WLAN_DRIVER
+  static int wpa_driver_wext_set_gen_ie(void *priv, const u8 *ie,
+  				      size_t ie_len)
+  {
+***************
+*** 1699,1704 ****
+--- 1714,1720 ----
+  
+  	return ret;
+  }
++ #endif
+  
+  
+  static int wpa_driver_wext_cipher2wext(int cipher)
+***************
+*** 1802,1813 ****
+--- 1818,1831 ----
+  
+  	if (wpa_driver_wext_set_mode(drv, params->mode) < 0)
+  		ret = -1;
++ #ifndef TI_WLAN_DRIVER
+  	/* TODO: should consider getting wpa version and cipher/key_mgmt suites
+  	 * from configuration, not from here, where only the selected suite is
+  	 * available */
+  	if (wpa_driver_wext_set_gen_ie(drv, params->wpa_ie, params->wpa_ie_len)
+  	    < 0)
+  		ret = -1;
++ #endif
+  	if (params->wpa_ie == NULL || params->wpa_ie_len == 0)
+  		value = IW_AUTH_WPA_VERSION_DISABLED;
+  	else if (params->wpa_ie[0] == RSN_INFO_ELEM)
+***************
+*** 1845,1862 ****
+  		allow_unencrypted_eapol = 0;
+  	else
+  		allow_unencrypted_eapol = 1;
+! 	
+  	if (wpa_driver_wext_set_auth_param(drv,
+  					   IW_AUTH_RX_UNENCRYPTED_EAPOL,
+  					   allow_unencrypted_eapol) < 0)
+  		ret = -1;
+  	if (params->freq && wpa_driver_wext_set_freq(drv, params->freq) < 0)
+  		ret = -1;
+- 	if (wpa_driver_wext_set_ssid(drv, params->ssid, params->ssid_len) < 0)
+- 		ret = -1;
+  	if (params->bssid &&
+  	    wpa_driver_wext_set_bssid(drv, params->bssid) < 0)
+  		ret = -1;
+  
+  	return ret;
+  }
+--- 1863,1881 ----
+  		allow_unencrypted_eapol = 0;
+  	else
+  		allow_unencrypted_eapol = 1;
+! 
+  	if (wpa_driver_wext_set_auth_param(drv,
+  					   IW_AUTH_RX_UNENCRYPTED_EAPOL,
+  					   allow_unencrypted_eapol) < 0)
+  		ret = -1;
+  	if (params->freq && wpa_driver_wext_set_freq(drv, params->freq) < 0)
+  		ret = -1;
+  	if (params->bssid &&
+  	    wpa_driver_wext_set_bssid(drv, params->bssid) < 0)
+  		ret = -1;
++ 	if (wpa_driver_wext_set_ssid(drv, params->ssid, params->ssid_len) < 0)
++ 		ret = -1;
++ 
+  
+  	return ret;
+  }
+***************
+*** 2263,2268 ****
+--- 2282,2330 ----
+  
+  #endif /* CONFIG_CLIENT_MLME */
+  
++ #ifdef CONFIG_EAP_WSC
++ static int wpa_driver_wext_set_wsc_mode(void *priv, const u32 WscMode, const void* probeReqBuf, int probeReqBufLen)
++ {
++ #ifdef TI_WLAN_DRIVER
++ 	struct wpa_driver_wext_data *drv = priv;
++ 	struct iwreq iwr;
++ 	ti_private_cmd_t private_cmd;
++ 	TWscMode WcsModeStruct;
++ 	int ret = 0;
++ 	
++ 	WcsModeStruct.WSCMode = WscMode;
++ 	memset(WcsModeStruct.probeReqWSCIE, 0, DOT11_WSC_PROBE_REQ_MAX_LENGTH);
++ 	memcpy(WcsModeStruct.probeReqWSCIE, probeReqBuf, probeReqBufLen);
++ 
++ 	private_cmd.cmd = SITE_MGR_SIMPLE_CONFIG_MODE;
++ 	private_cmd.flags = PRIVATE_CMD_SET_FLAG;
++ 	private_cmd.in_buffer = &WcsModeStruct;
++    	private_cmd.in_buffer_len = sizeof(TWscMode);
++ 	private_cmd.out_buffer = NULL;
++    	private_cmd.out_buffer_len = 0;
++ 
++ 	os_memset(&iwr, 0, sizeof(iwr));
++ 	os_strncpy(iwr.ifr_name, drv->ifname, IFNAMSIZ);	
++ 
++ 	iwr.u.data.pointer = &private_cmd;
++ 	iwr.u.data.length = sizeof(ti_private_cmd_t);
++ 	iwr.u.data.flags = 0;	
++ 
++ 	if (ioctl(drv->ioctl_sock, SIOCIWFIRSTPRIV, &iwr) < 0) {
++ 		perror("ioctl[SIOCIWFIRSTPRIV]");
++ 		ret = -1;
++ 	}
++ 
++ 	return ret;
++ #else
++ 	wpa_printf(MSG_ERROR,"wpa_driver_wext_set_wsc_mode: wpa_driver_wext_set_wsc_mode: this implementation is working only for TI WLAN driver\n");
++ 	return -1;
++ #endif
++ 
++ }
++ #endif
++ 
++ 
+  
+  static int wpa_driver_wext_set_param(void *priv, const char *param)
+  {
+***************
+*** 2340,2343 ****
+--- 2402,2408 ----
+  	.mlme_add_sta = wpa_driver_wext_mlme_add_sta,
+  	.mlme_remove_sta = wpa_driver_wext_mlme_remove_sta,
+  #endif /* CONFIG_CLIENT_MLME */
++ #ifdef CONFIG_EAP_WSC
++ 	.set_wsc_mode = wpa_driver_wext_set_wsc_mode,
++ #endif
+  };
+Only in wpa_suppl: driver_wext.d
+Only in wpa_suppl: driver_wext.o
+diff -cr wpa_supplicant-0.5.7/eap.c wpa_suppl/eap.c
+*** wpa_supplicant-0.5.7/eap.c	2009-08-16 14:24:57.000821000 +0300
+--- wpa_suppl/eap.c	2007-11-07 16:24:27.000000000 +0200
+***************
+*** 50,55 ****
+--- 50,59 ----
+  static const char * eap_sm_decision_txt(EapDecision decision);
+  #endif /* CONFIG_CTRL_IFACE || !CONFIG_NO_STDOUT_DEBUG */
+  
++ #ifdef CONFIG_EAP_WSC
++ void EapWsc_EapFailureRecv(void *priv);			
++ #endif
++ 
+  
+  
+  static Boolean eapol_get_bool(struct eap_sm *sm, enum eapol_bool_var var)
+***************
+*** 1126,1131 ****
+--- 1130,1144 ----
+  	case EAP_CODE_FAILURE:
+  		wpa_printf(MSG_DEBUG, "EAP: Received EAP-Failure");
+  		sm->rxFailure = TRUE;
++ 
++ #ifdef CONFIG_EAP_WSC
++ 
++ 		if (sm->m && sm->eap_method_priv)
++ 		{
++ 			EapWsc_EapFailureRecv(sm->eap_method_priv);
++ 		}
++ 		
++ #endif /* CONFIG_EAP_WSC */
+  		break;
+  	default:
+  		wpa_printf(MSG_DEBUG, "EAP: Ignored EAP-Packet with unknown "
+Only in wpa_suppl: eap.d
+diff -cr wpa_supplicant-0.5.7/eap_defs.h wpa_suppl/eap_defs.h
+*** wpa_supplicant-0.5.7/eap_defs.h	2009-08-16 14:24:57.001332000 +0300
+--- wpa_suppl/eap_defs.h	2007-11-07 16:24:31.000000000 +0200
+***************
+*** 58,64 ****
+--- 58,70 ----
+  	EAP_TYPE_PAX = 46 /* draft-clancy-eap-pax-11.txt */,
+  	EAP_TYPE_PSK = 47 /* draft-bersani-eap-psk-11.txt */,
+  	EAP_TYPE_SAKE = 48 /* RFC 4763 */,
++ #ifdef CONFIG_EAP_WSC
++ 	EAP_TYPE_EXPANDED = 253 /* RFC 3748 */,
++ 	EAP_TYPE_WSC = 254, /*Wireless Simple Config */
++ #else
+  	EAP_TYPE_EXPANDED = 254 /* RFC 3748 */,
++ #endif /* CONFIG_DRIVER_TI */
++ 
+  	EAP_TYPE_GPSK = 255 /* EXPERIMENTAL - type not yet allocated
+  			     * draft-ietf-emu-eap-gpsk-01.txt */
+  } EapType;
+Only in wpa_suppl: eap_md5.d
+Only in wpa_suppl: eap_md5.o
+diff -cr wpa_supplicant-0.5.7/eap_methods.c wpa_suppl/eap_methods.c
+*** wpa_supplicant-0.5.7/eap_methods.c	2009-08-16 14:24:58.000340000 +0300
+--- wpa_suppl/eap_methods.c	2007-11-07 16:24:43.000000000 +0200
+***************
+*** 455,460 ****
+--- 455,467 ----
+  	}
+  #endif /* EAP_GPSK */
+  
++ #ifdef CONFIG_EAP_WSC
++ 	if (ret == 0) {
++ 		int eap_peer_wsc_register(void);
++ 		ret = eap_peer_wsc_register();
++ 	}
++ #endif /* CONFIG_EAP_WSC */
++ 
+  #ifdef EAP_VENDOR_TEST
+  	if (ret == 0) {
+  		int eap_peer_vendor_test_register(void);
+Only in wpa_suppl: eap_methods.d
+Only in wpa_suppl: eap_methods.o
+Only in wpa_suppl: eap_mschapv2.d
+Only in wpa_suppl: eap_mschapv2.o
+Only in wpa_suppl: eap.o
+Only in wpa_suppl: eapol_sm.d
+Only in wpa_suppl: eapol_sm.o
+Only in wpa_suppl: eap_peap.d
+Only in wpa_suppl: eap_peap.o
+diff -cr wpa_supplicant-0.5.7/eap_sake.c wpa_suppl/eap_sake.c
+*** wpa_supplicant-0.5.7/eap_sake.c	2009-08-16 14:24:58.001100000 +0300
+--- wpa_suppl/eap_sake.c	2007-11-07 16:24:57.000000000 +0200
+***************
+*** 137,151 ****
+  		return NULL;
+  	}
+  
+! 	req = (struct eap_sake_hdr *) msg;
+! 	req->code = EAP_CODE_RESPONSE;
+! 	req->identifier = id;
+! 	req->length = htons((u16) *length);
+! 	req->type = EAP_TYPE_SAKE;
+! 	req->version = EAP_SAKE_VERSION;
+! 	req->session_id = data->session_id;
+! 	req->subtype = subtype;
+! 	*payload = (u8 *) (req + 1);
+  
+  	return msg;
+  }
+--- 137,151 ----
+  		return NULL;
+  	}
+  
+! 		req = (struct eap_sake_hdr *) msg;
+! 		req->code = EAP_CODE_RESPONSE;
+! 		req->identifier = id;
+! 		req->length = htons((u16) *length);
+! 		req->type = EAP_TYPE_SAKE;
+! 		req->version = EAP_SAKE_VERSION;
+! 		req->session_id = data->session_id;
+! 		req->subtype = subtype;
+! 		*payload = (u8 *) (req + 1);
+  
+  	return msg;
+  }
+***************
+*** 393,403 ****
+  		return NULL;
+  	}
+  
+! 	req = (const struct eap_sake_hdr *) reqData;
+! 	subtype = req->subtype;
+! 	session_id = req->session_id;
+! 	pos = (const u8 *) (req + 1);
+! 	end = reqData + be_to_host16(req->length);
+  
+  	wpa_printf(MSG_DEBUG, "EAP-SAKE: Received frame: subtype %d "
+  		   "session_id %d", subtype, session_id);
+--- 393,403 ----
+  		return NULL;
+  	}
+  
+! 		req = (const struct eap_sake_hdr *) reqData;
+! 		subtype = req->subtype;
+! 		session_id = req->session_id;
+! 		pos = (const u8 *) (req + 1);
+! 		end = reqData + be_to_host16(req->length);
+  
+  	wpa_printf(MSG_DEBUG, "EAP-SAKE: Received frame: subtype %d "
+  		   "session_id %d", subtype, session_id);
+Only in wpa_suppl: eap_sim_common.d
+Only in wpa_suppl: eap_sim_common.o
+Only in wpa_suppl: eap_sim.d
+Only in wpa_suppl: eap_sim.o
+Only in wpa_supplicant-0.5.7: eap_testing.txt
+Only in wpa_suppl: eap_tls_common.d
+Only in wpa_suppl: eap_tls_common.o
+Only in wpa_suppl: eap_tls.d
+Only in wpa_suppl: eap_tls.o
+Only in wpa_suppl: eap_tlv.d
+Only in wpa_suppl: eap_tlv.o
+Only in wpa_suppl: eap_ttls.d
+Only in wpa_suppl: eap_ttls.o
+Only in wpa_suppl: eap_wsc.c
+Only in wpa_suppl: eap_wsc.d
+Only in wpa_suppl: eap_wsc.o
+Only in wpa_suppl: eloop.d
+Only in wpa_suppl: eloop.o
+diff -cr wpa_supplicant-0.5.7/events.c wpa_suppl/events.c
+*** wpa_supplicant-0.5.7/events.c	2009-08-16 14:24:59.000587000 +0300
+--- wpa_suppl/events.c	2008-11-10 17:28:22.000000000 +0200
+***************
+*** 28,33 ****
+--- 28,36 ----
+  #include "wpa_ctrl.h"
+  #include "eap.h"
+  #include "ctrl_iface_dbus.h"
++ #ifdef CONFIG_EAP_WSC
++ #include "wsc_supplicant.h"
++ #endif
+  
+  
+  static int wpa_supplicant_select_config(struct wpa_supplicant *wpa_s)
+***************
+*** 664,669 ****
+--- 667,673 ----
+  	eapol_sm_notify_portValid(wpa_s->eapol, FALSE);
+  	if (wpa_s->key_mgmt == WPA_KEY_MGMT_PSK)
+  		eapol_sm_notify_eap_success(wpa_s->eapol, FALSE);
++ 
+  	/* 802.1X::portControl = Auto */
+  	eapol_sm_notify_portEnabled(wpa_s->eapol, TRUE);
+  	wpa_s->eapol_received = 0;
+***************
+*** 675,681 ****
+--- 679,693 ----
+  		/* Timeout for receiving the first EAPOL packet */
+  		wpa_supplicant_req_auth_timeout(wpa_s, 10, 0);
+  	}
++ 
+  	wpa_supplicant_cancel_scan(wpa_s);
++ 
++ #ifdef CONFIG_EAP_WSC
++ 	if(wpa_s->current_ssid)
++ 	{
++ 		wsc_supplicant_event_assoc(wpa_s->current_ssid);		
++ 	}
++ #endif
+  }
+  
+  
+***************
+*** 706,713 ****
+  		bssid = wpa_s->pending_bssid;
+  	wpa_blacklist_add(wpa_s, bssid);
+  	wpa_sm_notify_disassoc(wpa_s->wpa);
+! 	wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_DISCONNECTED "- Disconnect event - "
+! 		"remove keys");
+  	if (wpa_supplicant_dynamic_keys(wpa_s)) {
+  		wpa_s->keys_cleared = 0;
+  		wpa_clear_keys(wpa_s, wpa_s->bssid);
+--- 718,724 ----
+  		bssid = wpa_s->pending_bssid;
+  	wpa_blacklist_add(wpa_s, bssid);
+  	wpa_sm_notify_disassoc(wpa_s->wpa);
+! 	//wpa_msg(wpa_s, MSG_INFO, WPA_EVENT_DISCONNECTED "- Disconnect event - remove keys");
+  	if (wpa_supplicant_dynamic_keys(wpa_s)) {
+  		wpa_s->keys_cleared = 0;
+  		wpa_clear_keys(wpa_s, wpa_s->bssid);
+***************
+*** 825,830 ****
+--- 836,846 ----
+  		wpa_supplicant_event_stkstart(wpa_s, data);
+  		break;
+  #endif /* CONFIG_PEERKEY */
++ #ifdef CONFIG_EAP_WSC
++ 	case EVENT_WSC_PBC_OVERLAP:
++ 		wsc_supplicant_event_overlap();
++ 		break;
++ #endif /* CONFIG_EAP_WSC */
+  	default:
+  		wpa_printf(MSG_INFO, "Unknown event %d", event);
+  		break;
+Only in wpa_suppl: events.d
+Only in wpa_suppl: events.o
+Only in wpa_supplicant-0.5.7: examples
+Only in wpa_suppl: l2_packet_linux.d
+Only in wpa_suppl: l2_packet_linux.o
+Only in wpa_suppl: main.d
+Only in wpa_supplicant-0.5.7: makefile
+Only in wpa_suppl: Makefile
+Only in wpa_suppl: md4.d
+Only in wpa_suppl: md4.o
+Only in wpa_suppl: md5.d
+Only in wpa_suppl: md5.o
+Only in wpa_suppl: memwatch.c
+Only in wpa_suppl: memwatch.h
+Only in wpa_suppl: ms_funcs.d
+Only in wpa_suppl: ms_funcs.o
+Only in wpa_suppl: my_os.c
+Only in wpa_supplicant-0.5.7: nmake.mak
+Only in wpa_supplicant-0.5.7: openssl-0.9.8d-tls-extensions.patch
+Only in wpa_suppl: openssl-0.9.8e
+Only in wpa_supplicant-0.5.7: openssl-tls-extensions.patch
+Only in wpa_suppl: os.h.keep
+Only in wpa_suppl: os.h.keep.1
+Only in wpa_suppl: os.h.keep.2
+Only in wpa_suppl: os_unix.c.keep
+Only in wpa_suppl: os_unix.d
+Only in wpa_suppl: os_unix.o
+Only in wpa_suppl: pmksa_cache.d
+Only in wpa_suppl: pmksa_cache.o
+Only in wpa_suppl: preauth.c.keep
+Only in wpa_suppl: preauth.d
+Only in wpa_suppl: preauth.o
+Only in wpa_suppl: rc4.d
+Only in wpa_suppl: rc4.o
+Only in wpa_supplicant-0.5.7: readme
+Only in wpa_supplicant-0.5.7: readme-windows.txt
+Only in wpa_suppl: sha1.d
+Only in wpa_suppl: sha1.o
+Only in wpa_supplicant-0.5.7: tests
+Only in wpa_suppl: tls_openssl.d
+Only in wpa_suppl: tls_openssl.o
+Only in wpa_supplicant-0.5.7: todo.txt
+Only in wpa_supplicant-0.5.7: vs2005
+Only in wpa_supplicant-0.5.7: win_example.reg
+diff -cr wpa_supplicant-0.5.7/wpa.c wpa_suppl/wpa.c
+*** wpa_supplicant-0.5.7/wpa.c	2009-08-16 14:25:01.002062000 +0300
+--- wpa_suppl/wpa.c	2009-07-16 08:02:21.000000000 +0300
+***************
+*** 666,673 ****
+  	os_memcpy(hdr->oui, WPA_OUI_TYPE, WPA_SELECTOR_LEN);
+  	WPA_PUT_LE16(hdr->version, WPA_VERSION);
+  	pos = (u8 *) (hdr + 1);
+! 
+! 	if (group_cipher == WPA_CIPHER_CCMP) {
+  		os_memcpy(pos, WPA_CIPHER_SUITE_CCMP, WPA_SELECTOR_LEN);
+  	} else if (group_cipher == WPA_CIPHER_TKIP) {
+  		os_memcpy(pos, WPA_CIPHER_SUITE_TKIP, WPA_SELECTOR_LEN);
+--- 666,675 ----
+  	os_memcpy(hdr->oui, WPA_OUI_TYPE, WPA_SELECTOR_LEN);
+  	WPA_PUT_LE16(hdr->version, WPA_VERSION);
+  	pos = (u8 *) (hdr + 1);
+!     
+!     if (group_cipher == (WPA_CIPHER_CCMP | WPA_CIPHER_TKIP)) { // TI for Mix Mode
+!         os_memcpy(pos, RSN_CIPHER_SUITE_CCMP, RSN_SELECTOR_LEN);
+! 	} else if (group_cipher == WPA_CIPHER_CCMP) {
+  		os_memcpy(pos, WPA_CIPHER_SUITE_CCMP, WPA_SELECTOR_LEN);
+  	} else if (group_cipher == WPA_CIPHER_TKIP) {
+  		os_memcpy(pos, WPA_CIPHER_SUITE_TKIP, WPA_SELECTOR_LEN);
+***************
+*** 744,750 ****
+  	WPA_PUT_LE16(hdr->version, RSN_VERSION);
+  	pos = (u8 *) (hdr + 1);
+  
+! 	if (group_cipher == WPA_CIPHER_CCMP) {
+  		os_memcpy(pos, RSN_CIPHER_SUITE_CCMP, RSN_SELECTOR_LEN);
+  	} else if (group_cipher == WPA_CIPHER_TKIP) {
+  		os_memcpy(pos, RSN_CIPHER_SUITE_TKIP, RSN_SELECTOR_LEN);
+--- 746,754 ----
+  	WPA_PUT_LE16(hdr->version, RSN_VERSION);
+  	pos = (u8 *) (hdr + 1);
+  
+!     if (group_cipher == (WPA_CIPHER_CCMP | WPA_CIPHER_TKIP)) {
+!         os_memcpy(pos, RSN_CIPHER_SUITE_CCMP, RSN_SELECTOR_LEN);
+! 	}else if (group_cipher == WPA_CIPHER_CCMP) {
+  		os_memcpy(pos, RSN_CIPHER_SUITE_CCMP, RSN_SELECTOR_LEN);
+  	} else if (group_cipher == WPA_CIPHER_TKIP) {
+  		os_memcpy(pos, RSN_CIPHER_SUITE_TKIP, RSN_SELECTOR_LEN);
+***************
+*** 1651,1656 ****
+--- 1655,1669 ----
+  	int ret = 0;
+  
+  	switch (group_cipher) {
++     case (WPA_CIPHER_TKIP | WPA_CIPHER_CCMP):
++            if (keylen != 32 && keylen != 16) {
++ 			ret = -1;
++ 			break;
++ 		}
++ 		*key_rsc_len = 6;
++ 		*alg = WPA_ALG_TKIP | WPA_ALG_CCMP;
++ 		break;
++ 
+  	case WPA_CIPHER_CCMP:
+  		if (keylen != 16 || maxkeylen < 16) {
+  			ret = -1;
+***************
+*** 2178,2186 ****
+  			  (u8 *) &error, sizeof(error));
+  
+  	if (peer) {
+! 		wpa_printf(MSG_DEBUG, "RSN: Sending EAPOL-Key SMK Error (peer "
+! 			   MACSTR " mui %d error_type %d)",
+! 			   MAC2STR(peer), mui, error_type);
+  	} else {
+  		wpa_printf(MSG_DEBUG, "RSN: Sending EAPOL-Key SMK Error "
+  			   "(mui %d error_type %d)", mui, error_type);
+--- 2191,2199 ----
+  			  (u8 *) &error, sizeof(error));
+  
+  	if (peer) {
+! 	wpa_printf(MSG_DEBUG, "RSN: Sending EAPOL-Key SMK Error (peer "
+! 		   MACSTR " mui %d error_type %d)",
+! 		   MAC2STR(peer), mui, error_type);
+  	} else {
+  		wpa_printf(MSG_DEBUG, "RSN: Sending EAPOL-Key SMK Error "
+  			   "(mui %d error_type %d)", mui, error_type);
+Only in wpa_suppl: wpa.c.keep
+Only in wpa_suppl: wpa_cli
+Only in wpa_suppl: wpa_cli.o
+Only in wpa_suppl: wpa_ctrl.d
+Only in wpa_suppl: wpa_ctrl.o
+Only in wpa_suppl: wpa.d
+Only in wpa_supplicant-0.5.7: wpa_gui
+Only in wpa_supplicant-0.5.7: wpa_gui-qt4
+Only in wpa_suppl: wpa.o
+Only in wpa_suppl: wpa_passphrase
+Only in wpa_suppl: wpa_passphrase.o
+Only in wpa_suppl: wpa_suppl.diff
+Only in wpa_suppl: wpa_supplicant
+diff -cr wpa_supplicant-0.5.7/wpa_supplicant.c wpa_suppl/wpa_supplicant.c
+*** wpa_supplicant-0.5.7/wpa_supplicant.c	2009-08-16 14:25:01.003059000 +0300
+--- wpa_suppl/wpa_supplicant.c	2009-08-12 15:17:39.000000000 +0300
+***************
+*** 35,40 ****
+--- 35,43 ----
+  #include "pmksa_cache.h"
+  #include "wpa_ctrl.h"
+  #include "mlme.h"
++ #ifdef CONFIG_EAP_WSC
++ #include "wsc_supplicant.h"
++ #endif
+  
+  const char *wpa_supplicant_version =
+  "wpa_supplicant v" VERSION_STR "\n"
+***************
+*** 608,614 ****
+  		}
+  	}
+  	if (wpa_s->conf)
+! 		eapol_conf.fast_reauth = wpa_s->conf->fast_reauth;
+  	eapol_conf.workaround = ssid->eap_workaround;
+  	eapol_conf.eap_disabled = wpa_s->key_mgmt != WPA_KEY_MGMT_IEEE8021X &&
+  		wpa_s->key_mgmt != WPA_KEY_MGMT_IEEE8021X_NO_WPA;
+--- 611,617 ----
+  		}
+  	}
+  	if (wpa_s->conf)
+! 	eapol_conf.fast_reauth = wpa_s->conf->fast_reauth;
+  	eapol_conf.workaround = ssid->eap_workaround;
+  	eapol_conf.eap_disabled = wpa_s->key_mgmt != WPA_KEY_MGMT_IEEE8021X &&
+  		wpa_s->key_mgmt != WPA_KEY_MGMT_IEEE8021X_NO_WPA;
+***************
+*** 1220,1226 ****
+  		return -1;
+  
+  	sel = ie.group_cipher & ssid->group_cipher;
+! 	if (sel & WPA_CIPHER_CCMP) {
+  		wpa_s->group_cipher = WPA_CIPHER_CCMP;
+  		wpa_msg(wpa_s, MSG_DEBUG, "WPA: using GTK CCMP");
+  	} else if (sel & WPA_CIPHER_TKIP) {
+--- 1223,1232 ----
+  		return -1;
+  
+  	sel = ie.group_cipher & ssid->group_cipher;
+!     if ( (sel & WPA_CIPHER_CCMP)&&(sel & WPA_CIPHER_TKIP)) {//TI for Mix Mode
+!         wpa_s->group_cipher = WPA_CIPHER_CCMP | WPA_CIPHER_TKIP;
+!         wpa_msg(wpa_s, MSG_DEBUG, "WPA: using MIX MODE");
+!     } else if (sel & WPA_CIPHER_CCMP) {
+  		wpa_s->group_cipher = WPA_CIPHER_CCMP;
+  		wpa_msg(wpa_s, MSG_DEBUG, "WPA: using GTK CCMP");
+  	} else if (sel & WPA_CIPHER_TKIP) {
+***************
+*** 1345,1350 ****
+--- 1351,1362 ----
+  	 * previous association. */
+  	wpa_sm_set_assoc_wpa_ie(wpa_s->wpa, NULL, 0);
+  
++ #ifdef CONFIG_EAP_WSC
++ 	if(ssid->wsc_mode)
++ 	{
++ 		wsc_supplicant_associate(wpa_s, ssid, ssid->wsc_mode);		
++ 	}	
++ #endif
+  #ifdef IEEE8021X_EAPOL
+  	if (ssid->key_mgmt & WPA_KEY_MGMT_IEEE8021X_NO_WPA) {
+  		if (ssid->leap) {
+***************
+*** 1441,1447 ****
+  		/* Set the key before (and later after) association */
+  		wpa_supplicant_set_wpa_none_key(wpa_s, ssid);
+  	}
+! 
+  	wpa_drv_set_drop_unencrypted(wpa_s, use_crypt);
+  	wpa_supplicant_set_state(wpa_s, WPA_ASSOCIATING);
+  	os_memset(&params, 0, sizeof(params));
+--- 1453,1459 ----
+  		/* Set the key before (and later after) association */
+  		wpa_supplicant_set_wpa_none_key(wpa_s, ssid);
+  	}
+! 	
+  	wpa_drv_set_drop_unencrypted(wpa_s, use_crypt);
+  	wpa_supplicant_set_state(wpa_s, WPA_ASSOCIATING);
+  	os_memset(&params, 0, sizeof(params));
+***************
+*** 1453,1458 ****
+--- 1465,1471 ----
+  	} else {
+  		params.ssid = ssid->ssid;
+  		params.ssid_len = ssid->ssid_len;
++         params.bssid = ssid->bssid;
+  	}
+  	params.wpa_ie = wpa_ie;
+  	params.wpa_ie_len = wpa_ie_len;
+***************
+*** 1468,1474 ****
+  	}
+  	params.wep_tx_keyidx = ssid->wep_tx_keyidx;
+  
+! #ifdef CONFIG_IEEE80211W
+  	switch (ssid->ieee80211w) {
+  	case NO_IEEE80211W:
+  		params.mgmt_frame_protection = NO_MGMT_FRAME_PROTECTION;
+--- 1481,1487 ----
+  	}
+  	params.wep_tx_keyidx = ssid->wep_tx_keyidx;
+  
+! #ifdef CONFIG_IEEE80211W		
+  	switch (ssid->ieee80211w) {
+  	case NO_IEEE80211W:
+  		params.mgmt_frame_protection = NO_MGMT_FRAME_PROTECTION;
+***************
+*** 1511,1516 ****
+--- 1524,1532 ----
+  			timeout = 10;
+  		else
+  			timeout = 60;
++ #ifdef CONFIG_EAP_WSC
++ 		timeout += wsc_supplicant_associate_timeout_calc();
++ #endif
+  		wpa_supplicant_req_auth_timeout(wpa_s, timeout, 0);
+  	}
+  
+***************
+*** 1553,1567 ****
+  				 int reason_code)
+  {
+  	u8 *addr = NULL;
+  	wpa_supplicant_set_state(wpa_s, WPA_DISCONNECTED);
+! 	if (os_memcmp(wpa_s->bssid, "\x00\x00\x00\x00\x00\x00", ETH_ALEN) != 0)
+  	{
+! 		if (wpa_s->use_client_mlme)
+  			ieee80211_sta_disassociate(wpa_s, reason_code);
+  		else
+  			wpa_drv_disassociate(wpa_s, wpa_s->bssid, reason_code);
+  		addr = wpa_s->bssid;
+  	}
+  	wpa_clear_keys(wpa_s, addr);
+  	wpa_s->current_ssid = NULL;
+  	wpa_sm_set_config(wpa_s->wpa, NULL);
+--- 1569,1589 ----
+  				 int reason_code)
+  {
+  	u8 *addr = NULL;
++ #ifdef CONFIG_EAP_WSC
++ 	if(wpa_s->current_ssid && wpa_s->current_ssid->wsc_mode)
++ 		wsc_supplicant_stop();
++ #endif
++     
+  	wpa_supplicant_set_state(wpa_s, WPA_DISCONNECTED);
+!     if (os_memcmp(wpa_s->bssid, "\x00\x00\x00\x00\x00\x00", ETH_ALEN) != 0)
+  	{
+!         if (wpa_s->use_client_mlme)
+  			ieee80211_sta_disassociate(wpa_s, reason_code);
+  		else
+  			wpa_drv_disassociate(wpa_s, wpa_s->bssid, reason_code);
+  		addr = wpa_s->bssid;
+  	}
++    
+  	wpa_clear_keys(wpa_s, addr);
+  	wpa_s->current_ssid = NULL;
+  	wpa_sm_set_config(wpa_s->wpa, NULL);
+***************
+*** 1723,1739 ****
+  	int res;
+  	size_t ssid_len;
+  	u8 bssid[ETH_ALEN];
+! 
+  	if (wpa_s->use_client_mlme) {
+  		if (ieee80211_sta_get_ssid(wpa_s, ssid, &ssid_len)) {
+! 			wpa_printf(MSG_WARNING, "Could not read SSID from "
+  				   "MLME.");
+  			return NULL;
+  		}
+  	} else {
+  		res = wpa_drv_get_ssid(wpa_s, ssid);
+  		if (res < 0) {
+! 			wpa_printf(MSG_WARNING, "Could not read SSID from "
+  				   "driver.");
+  			return NULL;
+  		}
+--- 1745,1761 ----
+  	int res;
+  	size_t ssid_len;
+  	u8 bssid[ETH_ALEN];
+! 	
+  	if (wpa_s->use_client_mlme) {
+  		if (ieee80211_sta_get_ssid(wpa_s, ssid, &ssid_len)) {
+!             wpa_printf(MSG_WARNING, "Could not read SSID from "
+  				   "MLME.");
+  			return NULL;
+  		}
+  	} else {
+  		res = wpa_drv_get_ssid(wpa_s, ssid);
+  		if (res < 0) {
+!             wpa_printf(MSG_WARNING, "Could not read SSID from "
+  				   "driver.");
+  			return NULL;
+  		}
+***************
+*** 1743,1749 ****
+  	if (wpa_s->use_client_mlme)
+  		os_memcpy(bssid, wpa_s->bssid, ETH_ALEN);
+  	else if (wpa_drv_get_bssid(wpa_s, bssid) < 0) {
+! 		wpa_printf(MSG_WARNING, "Could not read BSSID from driver.");
+  		return NULL;
+  	}
+  
+--- 1765,1771 ----
+  	if (wpa_s->use_client_mlme)
+  		os_memcpy(bssid, wpa_s->bssid, ETH_ALEN);
+  	else if (wpa_drv_get_bssid(wpa_s, bssid) < 0) {
+!         wpa_printf(MSG_WARNING, "Could not read BSSID from driver.");
+  		return NULL;
+  	}
+  
+***************
+*** 1758,1763 ****
+--- 1780,1803 ----
+  		entry = entry->next;
+  	}
+  
++ #ifdef TI_WLAN_DRIVER
++ 	entry = wpa_s->conf->ssid;
++ 	while (entry) {
++ 		if (!entry->disabled &&
++ 		    entry->ssid_len == 0)
++ 			{
++ 				entry->ssid_len = ssid_len;
++                 entry->ssid = realloc(entry->ssid,ssid_len);
++                 if (entry->ssid == NULL) {
++                     wpa_printf(MSG_WARNING, "Could not realloc ssid entry.");
++                     return NULL;
++                 }
++ 				os_memcpy(entry->ssid, ssid, ssid_len);
++ 				return entry;
++ 			}	
++ 		entry = entry->next;
++ 	}
++ #endif
+  	return NULL;
+  }
+  
+Only in wpa_suppl: wpa_supplicant.d
+diff -cr wpa_supplicant-0.5.7/wpa_supplicant.h wpa_suppl/wpa_supplicant.h
+*** wpa_supplicant-0.5.7/wpa_supplicant.h	2009-08-16 14:25:01.003203000 +0300
+--- wpa_suppl/wpa_supplicant.h	2007-11-07 16:18:03.000000000 +0200
+***************
+*** 123,128 ****
+--- 123,137 ----
+  	 */
+  	EVENT_PMKID_CANDIDATE,
+  
++ #ifdef CONFIG_EAP_WSC
++ 	/**
++ 	 * EVENT_WSC_PBC_OVERLAP - notfication of a PBC overlap
++ 	 *
++ 	 * This event is used to inform the WSC of the supplicant that more 
++ 	 * than on AP is in PBC mode 
++ 	 */
++ 	EVENT_WSC_PBC_OVERLAP,
++ #endif
+  	/**
+  	 * EVENT_STKSTART - Request STK handshake (MLME-STKSTART.request)
+  	 *
+diff -cr wpa_supplicant-0.5.7/wpa_supplicant_i.h wpa_suppl/wpa_supplicant_i.h
+*** wpa_supplicant-0.5.7/wpa_supplicant_i.h	2009-08-16 14:25:02.000121000 +0300
+--- wpa_suppl/wpa_supplicant_i.h	2007-11-07 16:18:04.000000000 +0200
+***************
+*** 691,694 ****
+--- 691,706 ----
+  	return -1;
+  }
+  
++ #ifdef CONFIG_EAP_WSC
++ static inline int wpa_drv_set_wsc_mode(struct wpa_supplicant *wpa_s,
++ 					  u32 WscMode,
++ 					  void* probeReqBuf,
++ 					  int probeReqBufLen)
++ {
++ 	if (wpa_s->driver->set_wsc_mode)
++ 		return wpa_s->driver->set_wsc_mode(wpa_s->drv_priv, WscMode, probeReqBuf, probeReqBufLen);
++ 	return -1;
++ }
++ #endif
++ 
+  #endif /* WPA_SUPPLICANT_I_H */
+Only in wpa_suppl: wpa_supplicant.o
+Only in wpa_suppl: wsc_supplicant.c
+Only in wpa_suppl: wsc_supplicant.d
+Only in wpa_suppl: wsc_supplicant.h
+Only in wpa_suppl: wsc_supplicant.o
+Only in wpa_suppl: WscTypes.h
+diff -urN wpa_suppl/Makefile wpa_suppl_plus/Makefile
+--- wpa_suppl/Makefile	2010-02-01 19:27:15.000000000 +0530
++++ wpa_suppl_plus/Makefile	2010-02-01 19:23:45.000000000 +0530
+@@ -1,10 +1,7 @@
+-ifndef CC
+-CC=gcc
+-endif
+ 
+-ifndef CFLAGS
+-CFLAGS = -MMD -O2 -Wall -g
+-endif
++CC = $(CROSS_COMPILE)gcc
++
++CFLAGS = $(OPT) -fno-common -pipe -fno-builtin -Wall 
+ 
+ # Include directories for CVS version
+ CFLAGS += -I. -I../utils -I../hostapd
+@@ -30,7 +27,7 @@
+ 	echo CONFIG_DRIVER_HOSTAP=y >> .config
+ 	echo CONFIG_DRIVER_WEXT=y >> .config
+ 	echo CONFIG_WIRELESS_EXTENSION=y >> .config
+-
++	
+ install: all
+ 	mkdir -p $(DESTDIR)/usr/local/sbin/
+ 	for i in $(ALL); do cp $$i $(DESTDIR)/usr/local/sbin/$$i; done
+@@ -169,6 +166,39 @@
+ OBJS_d += driver_test.o
+ endif
+ 
++ifdef CONFIG_EAP_WSC
++OBJS += wsc_supplicant.o bufferObj.o eap_wsc.o CipherWrapper.o
++CFLAGS += -DCONFIG_EAP_WSC -Iopenssl-0.9.8e/include/openssl
++LIBS += openssl-0.9.8e/libcrypto.a
++endif
++
++ifdef TI_WLAN_DRIVER
++CFLAGS += -DTI_WLAN_DRIVER \
++			-D__BYTE_ORDER_LITTLE_ENDIAN \
++			-I ../../utils \
++			-I ../../platforms/os/linux/inc \
++		       	-I ../../stad/Export_Inc \
++			-I ../../stad/src/Application \
++			-I ../../TWD/TWDriver \
++			-I ../../TWD/FirmwareApi \
++         		-I ../../TWD/FW_Transfer/Export_Inc \
++                        -I ../../TWD/TwIf  \
++			-I ../../Txn  \
++			-I ../../platforms/os/common/inc \
++			-I ../../WiLink/utils \
++			-I ../../WiLink/platforms/os/linux/inc \
++		       	-I ../../WiLink/stad/Export_Inc \
++			-I ../../WiLink/stad/src/Application \
++			-I ../../WiLink/TWD/TWDriver \
++			-I ../../WiLink/TWD/FirmwareApi \
++         		-I ../../WiLink/TWD/FW_Transfer/Export_Inc \
++                        -I ../../WiLink/TWD/TwIf  \
++			-I ../../WiLink/Txn  \
++			-I ../../WiLink/platforms/os/common/inc 
++       	       
++      
++endif
++
+ ifndef CONFIG_L2_PACKET
+ CONFIG_L2_PACKET=linux
+ endif
+@@ -463,10 +493,10 @@
+ CFLAGS += -DEAP_TLS_FUNCS
+ OBJS += eap_tls_common.o
+ ifeq ($(CONFIG_TLS), openssl)
+-CFLAGS += -DEAP_TLS_OPENSSL
++CFLAGS += -DEAP_TLS_OPENSSL -Iopenssl-0.9.8e/include
+ OBJS += tls_openssl.o
+-LIBS += -lssl -lcrypto
+-LIBS_p += -lcrypto
++LIBS += -lssl -lcrypto -Lopenssl-0.9.8e
++LIBS_p += -lcrypto -Lopenssl-0.9.8e
+ endif
+ ifeq ($(CONFIG_TLS), gnutls)
+ OBJS += tls_gnutls.o
+@@ -740,8 +770,10 @@
+ endif
+ endif
+ 
++DEPS = $(OBJS:%.o=%.d)
++
+ ifndef LDO
+-LDO=$(CC)
++LDO=$(CROSS_COMPILE)gcc
+ endif
+ 
+ dynamic_eap_methods: $(EAPDYN)
+@@ -867,7 +899,7 @@
+ tests: test-ms_funcs test-sha1 test-aes test-eap_sim_common test-md4 test-md5
+ 
+ clean:
+-	rm -f core *~ *.o *.d eap_*.so $(ALL) $(WINALL)
++	rm -f core *~ *.o *.d eap_*.so $(ALL) $(WINALL) .depend
+ 
+ %.eps: %.fig
+ 	fig2dev -L eps $*.fig $*.eps
+@@ -890,4 +922,19 @@
+ 	rm -rf doc/latex doc/html
+ 	rm -f doc/wpa_supplicant.{eps,png} wpa_supplicant-devel.pdf
+ 
+--include $(OBJS:%.o=%.d)
++ifeq ("$(findstring $(MAKECMDGOALS), clean cleanall)", "")
++-include .depend
++endif
++
++%.o: %.c
++	@echo $@
++	$(CROSS_COMPILE)gcc -s $(CFLAGS) -c $< -o $@
++
++%.d: %.c
++	@echo $@
++	@$(CROSS_COMPILE)gcc $< -MT$(^:%.c=%.o) -M $(CFLAGS) > $@
++
++.depend: $(DEPS)
++	rm -f $@
++	for aa in $^; do cat $$aa >> $@; done
++
+
