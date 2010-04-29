@@ -2,9 +2,9 @@ DESCRIPTION = "OBEX object pusher"
 HOMEPAGE = "http://www.xmailserver.org/ussp-push.html"
 SECTION = "console"
 PRIORITY = "optional"
-DEPENDS = "bluez-libs"
+DEPENDS = "bluez-libs openobex"
 LICENSE = "GPLv2"
-PR = "r0"
+PR = "r1"
 
 SRC_URI = "http://www.xmailserver.org/ussp-push-${PV}.tar.gz \
 	file://hci_remote_name.patch;patch=1"
