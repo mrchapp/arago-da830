@@ -1,5 +1,5 @@
 DESCRIPTION = "Extended task to get more basic and console apps"
-PR = "r12"
+PR = "r13"
 
 inherit task
 
@@ -70,10 +70,6 @@ ARAGO_CONSOLE = "\
 
 RDEPENDS_${PN} = "\
     ${ARAGO_CONSOLE} \
-    "
-
-RDEPENDS_${PN}_append_omap3 = "\
-    omap-demo \
     "
 
 RRECOMMENDS_${PN} = "\
