@@ -4,7 +4,7 @@ SECTION = "multimedia"
 PRIORITY = "optional"
 
 PV = "1.0"
-PR = "r1+svnr${SRCREV}"
+PR = "r2+svnr${SRCREV}"
 
 SRCREV="35"
 
@@ -28,6 +28,7 @@ do_install() {
 	install -m 0644 ${S}/*.html ${D}/${datadir}/matrix/html/
 	install -d ${D}/${datadir}/matrix/images
 	install -m 0644 ${S}/images/*.bmp ${D}/${datadir}/matrix/images/
+	install -m 0644 ${S}/images/*.png ${D}/${datadir}/matrix/images/
 	install -d ${D}${sysconfdir}/init.d/
 	install -c -m 0755 ${WORKDIR}/init ${D}${sysconfdir}/init.d/matrix-gui
 }
