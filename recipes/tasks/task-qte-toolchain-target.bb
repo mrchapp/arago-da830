@@ -2,7 +2,7 @@ DESCRIPTION = "Target packages for Qt Embedded SDK"
 LICENSE = "MIT"
 ALLOW_EMPTY = "1"
 
-PR = "r6"
+PR = "r7"
 
 RDEPENDS_${PN} += " \
         task-arago-toolchain-target \
@@ -42,4 +42,5 @@ RDEPENDS_${PN} += " \
         bluez4-dev \
         openobex-dev \
         libstdc++-dev \
+        libgles-omap3-dev \
         "
