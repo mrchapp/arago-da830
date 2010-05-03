@@ -1,4 +1,4 @@
-PR = "r7"
+PR = "r10"
 
 SDK_DISTRO = "arago"
 TOOLCHAIN_OUTPUTNAME = "${SDK_DISTRO}-${DISTRO_VERSION}-${FEED_ARCH}-${TARGET_OS}-${SDK_SUFFIX}"
@@ -91,27 +91,6 @@ TOOLCHAIN_TARGET_EXCLUDE += "\
 #    openssl-dev \
 #    "
 
-# GnuTLS/libgcrypt dependencies
-TOOLCHAIN_TARGET_EXCLUDE += "\
-    libgcrypt11 \
-    libgcrypt-dev \
-    libgnutls26 \
-    libgnutls-dev \
-    libgnutls-extra26 \
-    libgnutls-openssl26 \
-    libgnutlsxx26 \
-    libgpg-error0 \
-    libgpg-error-dev \
-    "
-
-# PostgreSQL dependencies
-TOOLCHAIN_TARGET_EXCLUDE += "\
-    libpq4 \
-    libpq-dev \
-    postgresql \
-    postgresql-dev \
-    "
-
 TOOLCHAIN_TARGET_EXCLUDE += "\
     curl \
     opkg-nogpg-nocurl \
@@ -140,6 +119,16 @@ TOOLCHAIN_TARGET_EXCLUDE += "\
     udev-utils \
     dbus \
     wpa-supplicant-passphrase \
+    devmem2 \
+    devmem2-dev \
+    fbset \
+    fbset-dev \
+    fbset-modes \
+    kernel \
+    module-init-tools \
+    module-init-tools-depmod \
+    omap3-sgx-modules \
+    update-modules \
     "
 
 require meta-toolchain.bb
