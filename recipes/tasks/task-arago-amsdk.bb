@@ -1,5 +1,5 @@
 DESCRIPTION = "Task for AMSDK additional dependencies"
-PR = "r3"
+PR = "r4"
 
 inherit task
 
@@ -19,4 +19,5 @@ RDEPENDS_${PN} = "\
     obexftp \
     ussp-push \
     matrix-gui \
+    libgles-omap3-rawdemos \
     "
