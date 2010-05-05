@@ -1,5 +1,5 @@
 DESCRIPTION = "Task for AMSDK additional dependencies"
-PR = "r4"
+PR = "r7"
 
 inherit task
 
@@ -13,11 +13,15 @@ RDEPENDS_${PN} = "\
     iptables \
     wpa-supplicant \
     bluez4 \
-    openobex \
-    iperf \
+    bluez4-agent \
+    libasound-module-bluez \
     bluez-hcidump \
+    openobex \
+    openobex-apps \
     obexftp \
     ussp-push \
+    iperf \
     matrix-gui \
+    am-sysinfo \
     libgles-omap3-rawdemos \
     "
