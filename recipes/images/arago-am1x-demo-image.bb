@@ -1,5 +1,5 @@
-# Arago am18xx-demo image
-# gives you an image with am18xx-demo app
+# Arago am1x-demo image
+# gives you an image with am1x-demo app
 
 require arago-image.inc
 
@@ -9,7 +9,7 @@ IMAGE_INSTALL += "\
     task-arago-base \
     task-arago-console \
     task-arago-qte \
-    task-arago-am18xx-demo \
+    task-arago-am1x-demo \
     "
 
-export IMAGE_BASENAME = "arago-am18xx-demo-image"
+export IMAGE_BASENAME = "arago-am1x-demo-image"

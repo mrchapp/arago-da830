@@ -1,9 +1,9 @@
 #! /bin/sh
 
-am18xxdemo="/usr/tests/am18xx-demo"
+am1xdemo="/usr/tests/am1x-demo"
 
-test -x "$am18xxdemo" || exit 0
-grep "AM18xx EVM" /proc/cpuinfo >/dev/null 2>&1 || exit 0
+test -x "$am1xdemo" || exit 0
+grep -e "AM18xx EVM" -e "AM17xx EVM" /proc/cpuinfo >/dev/null 2>&1 || exit 0
 
 export LD_LIBRARY_PATH=/usr/lib
 export TSLIB_PLUGINDIR=/usr/lib/ts
@@ -13,20 +13,20 @@ export QWS_MOUSE_PROTO=Tslib:/dev/input/touchscreen0
 
 case "$1" in
   start)
-    echo -n "Starting AM18xx Demo application"
+    echo -n "Starting AM1x Demo application"
     if [ ! -f /etc/pointercal ] ; then
         ts_calibrate
     fi
-    start-stop-daemon --start --quiet --background --exec $am18xxdemo
+    start-stop-daemon --start --quiet --background --exec $am1xdemo
     echo "."
     ;;
   stop)
-    echo -n "Stopping AM18xx Demo application"
-    start-stop-daemon --stop --quiet --pidfile /var/run/am18xx-demo.pid
+    echo -n "Stopping AM1x Demo application"
+    start-stop-daemon --stop --quiet --pidfile /var/run/am1x-demo.pid
     echo "."
     ;;
   *)
-    echo "Usage: /etc/init.d/am18xx-demo {start|stop}"
+    echo "Usage: /etc/init.d/am1x-demo {start|stop}"
     exit 1
 esac
 
