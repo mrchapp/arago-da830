@@ -1,7 +1,7 @@
 #! /bin/sh
 
 matrixtui="/usr/bin/matrix_tui"
-TUI_OPTS="/usr/share/matrix/html/menu_main.html"
+TUI_OPTS="/usr/share/matrix/xml/matrix.xml"
 
 test -x "$matrixtui" || exit 0
 
