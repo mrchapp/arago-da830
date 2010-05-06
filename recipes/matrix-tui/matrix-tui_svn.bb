@@ -6,7 +6,7 @@ PRIORITY = "optional"
 
 SRCREV = "26"
 PV = "1.0"
-PR = "r1+svnr${SRCREV}"
+PR = "r1+svnr${SRCPV}"
 
 INSANE_SKIP_${PN} = "True"
 
