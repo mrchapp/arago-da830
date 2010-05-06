@@ -1,5 +1,5 @@
 DESCRIPTION = "Task for AMSDK additional dependencies"
-PR = "r7"
+PR = "r8"
 
 inherit task
 
@@ -22,6 +22,8 @@ RDEPENDS_${PN} = "\
     ussp-push \
     iperf \
     matrix-gui \
+    matrix-tui \
     am-sysinfo \
+    am-benchmarks \
     libgles-omap3-rawdemos \
     "
