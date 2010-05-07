@@ -4,9 +4,12 @@ LICENSE = "Apache"
 SECTION = "multimedia"
 PRIORITY = "optional"
 
-SRCREV = "54"
+SRCREV = "56"
 PV = "1.0"
-PR = "r4+svnr${SRCPV}"
+PR = "r5+svnr${SRCPV}"
+
+# Skip the QA for browser binary (temporary)
+INSANE_SKIP_${PN} = "True"
 
 SRC_URI = "svn://gforge.ti.com/svn/matrix_gui/;module=trunk;proto=https;user=anonymous;pswd='' \
 	file://init \
@@ -33,6 +36,8 @@ MATRIX_EXTRA_BINS = " \
 	standby \
 	sysSettings \
 	taskInfo \
+
+	browser \
 "
 
 do_install() {
@@ -44,7 +49,6 @@ do_install() {
 	install -d ${D}/${datadir}/matrix/html
 	install -m 0644 ${S}/*.html ${D}/${datadir}/matrix/html/
 	install -d ${D}/${datadir}/matrix/images
-	install -m 0644 ${S}/images/*.bmp ${D}/${datadir}/matrix/images/
 	install -m 0644 ${S}/images/*.png ${D}/${datadir}/matrix/images/
 	install -d ${D}${sysconfdir}/init.d/
 	install -c -m 0755 ${WORKDIR}/init ${D}${sysconfdir}/init.d/matrix-gui
