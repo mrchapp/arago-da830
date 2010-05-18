@@ -1,5 +1,6 @@
 DESCRIPTION = "Task for AMSDK additional dependencies"
-PR = "r8"
+LICENSE = "MIT"
+PR = "r9"
 
 inherit task
 

@@ -1,5 +1,6 @@
 DESCRIPTION = "Basic task to get a device booting"
-PR = "r8"
+LICENSE = "MIT"
+PR = "r9"
 
 inherit task
 

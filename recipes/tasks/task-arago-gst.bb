@@ -1,5 +1,6 @@
 DESCRIPTION = "Task to add base gstreamer and TI plugins"
-PR = "r13"
+LICENSE = "MIT"
+PR = "r14"
 
 inherit task
 

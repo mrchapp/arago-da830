@@ -1,5 +1,6 @@
 DESCRIPTION = "Task to add Qt/Embedded and basic plugins"
-PR = "r6"
+LICENSE = "MIT"
+PR = "r7"
 
 inherit task
 

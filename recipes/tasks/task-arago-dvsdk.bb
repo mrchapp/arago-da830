@@ -1,5 +1,6 @@
 DESCRIPTION = "Extended task to add DVSDK components"
-PR = "r18"
+LICENSE = "MIT"
+PR = "r19"
 
 inherit task
 

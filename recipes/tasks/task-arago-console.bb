@@ -1,5 +1,6 @@
 DESCRIPTION = "Extended task to get more basic and console apps"
-PR = "r13"
+LICENSE = "MIT"
+PR = "r14"
 
 inherit task
 
