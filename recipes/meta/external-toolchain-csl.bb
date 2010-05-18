@@ -190,10 +190,9 @@ PKGV_linux-libc-headers = ${CSL_VER_KERNEL}
 
 LICENSE_ldd = "LGPLv2.1+"
 LICENSE_glibc = "LGPLv2.1+"
+LICENSE_glibc-thread-db = "LGPLv2.1+"
 LICENSE_libgcc := "${@["GPLv3 with GCC RLE", "GPLv2 with GCC RLE"][csl_get_main_version(d) <= "2009q1-203"]}"
 LICENSE_libstdc++ := "${@["GPLv3 with GCC RLE", "GPLv2 with GCC RLE"][csl_get_main_version(d) <= "2009q1-203"]}"
-LICENSE_glibc = "LGPLv2.1+"
-LICENSE_glibc-thread-db = "LGPLv2.1+"
 
 do_install() {
 	install -d ${D}${sysconfdir}
