@@ -3,7 +3,7 @@ require ti-dmai.inc
 PV = "2_10_00_09"
 PR = "r3"
  
-COMPATIBLE_MACHINE = "(dm365-evm|dm355-evm|dm6467-evm)"
+COMPATIBLE_MACHINE = "(dm365-evm|dm355-evm|dm6467-evm|dm6467t-evm)"
 
 SRC_URI_append = "file://doxygen_templates.tar.gz \
                   file://arago-tdox"
