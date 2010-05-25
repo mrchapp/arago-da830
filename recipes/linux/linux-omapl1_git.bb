@@ -7,15 +7,15 @@ COMPATIBLE_MACHINE = "(da830-omapl137-evm|da850-omapl138-evm)"
 
 DEFAULT_PREFERENCE = "1"
 
-BRANCH = "master"
-SRCREV = "2acf935c01b9adb50164d421c40cdc5862b9e143"
+BRANCH = "fbdev_sekhar"
+SRCREV = "57e7a8185d842a2cafa742ad8b7fb57d8826ed8e"
 KVER = "2.6.32+2.6.33-rc4"
 
 KERNEL_IMAGE_BASE_NAME = "${KERNEL_IMAGETYPE}-${PV}-${MACHINE}"
 MODULES_IMAGE_BASE_NAME = "modules-${PV}-${MACHINE}"
 PV = "${KVER}-${PR}+gitr${SRCREV}"
 
-SRC_URI = "git://arago-project.org/git/projects/linux-omapl1.git;protocol=git;branch=${BRANCH} \
+SRC_URI = "git://arago-project.org/git/people/martin/linux-da830.git;protocol=git;branch=${BRANCH} \
            file://defconfig"
 
 S = "${WORKDIR}/git"

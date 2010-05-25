@@ -21,7 +21,7 @@ TMPDIR = "${SCRATCH}/arago-tmp"
 
 # Set the collections
 require conf/collections.inc
-COLLECTIONS = "${OEBASE}/arago/ ${OEBASE}/arago-oe-dev/"
+COLLECTIONS = "${NSDK}/build/oe ${OEBASE}/arago/ ${OEBASE}/arago-oe-dev/"
 
 # Optionally add BOM and Custom collections
 COLLECTIONS =. "${@['', bb.data.getVar('OEBASE', d, 1)+'/arago-custom/ '][os.path.exists(bb.data.getVar('OEBASE', d, 1)+'/arago-custom/')]}"
