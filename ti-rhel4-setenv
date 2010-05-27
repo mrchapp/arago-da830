@@ -4,3 +4,4 @@ export LD_LIBRARY_PATH=/apps/free/sqlite/3.6.4/lib/:$LD_LIBRARY_PATH
 export PATH=/apps/free/help2man/1.36.4/bin/:$PATH
 export PYTHONPATH=/apps/free/python/modules-0811/lib/python2.5/site-packages/:$PYTHONPATH
 export PATH=/apps/free/git/1.6.0.4/bin/:$PATH
+export PATH=/apps/free/chrpath/0.13/bin/:$PATH
