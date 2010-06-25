@@ -27,8 +27,6 @@ SRC_URI = "svn://gforge.ti.com/svn/dmai/;module=${DMAIBRANCH};proto=https;user=a
 		file://loadmodules-ti-dmai-ol138_al.sh \
 	"
 
-SRC_URI_append_omapl137 = " file://dmai-r423-add-omapl137-support.patch "
-
 DEPENDS = "virtual/kernel alsa-lib ti-framework-components ti-codec-engine ti-xdctools"
 
 DEPENDS_append_dm6446 	= " ti-codecs-dm6446   ti-dspbios ti-cgt6x ti-linuxutils"
@@ -53,6 +51,11 @@ DMAIPLATFORM          ?= "<UNDEFINED_DMAIPLATFORM>"
 #GPPOS_dm355      = "LINUX_GCC"
 #GPPOS_dm365      = "LINUX_GCC"
 #GPPOS           ?= "<UNDEFINEDGPPOS>"
+
+# Need to re-define this for OMAP-L137/L138
+DSPSUFFIX_omapl137 = "x64P"
+DSPSUFFIX_omapl138 = "x64P"
+DSPSUFFIX ?= "x64p"
 
 # This is needed for dm355/dm365 targets in order to find ti.sdo.codecs.g711
 # TODO :: review - should we just pass this in do_compile?
