@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.33-rc4
-# Thu May 20 11:10:14 2010
+# Mon Jun 28 11:03:33 2010
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -1576,7 +1576,8 @@ CONFIG_INOTIFY_USER=y
 # CONFIG_QUOTA is not set
 # CONFIG_AUTOFS_FS is not set
 CONFIG_AUTOFS4_FS=m
-# CONFIG_FUSE_FS is not set
+CONFIG_FUSE_FS=m
+# CONFIG_CUSE is not set
 
 #
 # Caches
