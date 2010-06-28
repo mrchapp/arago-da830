@@ -1,5 +1,5 @@
 DESCRIPTION = "Arago based rootfs for nSDK development"
-PR = "r0"
+PR = "r1"
 
 inherit task
 
@@ -60,6 +60,9 @@ RDEPENDS_${PN} = "\
     gstd \
     thttpd \
     "
+
+# Work around needed for some srctree based recipes
+DEPENDS += "cmake-native"
 
 # I am not sure what all the meta stuff is about but
 # seems to pull in a whole host of stuff. E.g. gdk-pixbuf which pulls in gtk
