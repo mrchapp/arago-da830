@@ -51,18 +51,23 @@ RDEPENDS_${PN} = "\
     gst-plugin-alsa \
     gst-plugin-audioconvert \
     gst-plugin-audioresample \
+    gst-plugin-icydemux \
+    gst-plugin-id3demux \
     gst-plugin-volume \
     gst-plugin-audiotestsrc \
     gst-plugin-decodebin \
     gst-plugin-playbin \
+    gst-plugin-souphttpsrc \
     gst-plugin-autodetect \
     gst-plugin-mad \
-    gstd \
     thttpd \
     "
 
 # Work around needed for some srctree based recipes
 DEPENDS += "cmake-native"
+
+# Need earlier version due to bug in 3.3.9 which prevents discovery
+PREFERRED_VERSION_samba	= "3.3.0"
 
 # I am not sure what all the meta stuff is about but
 # seems to pull in a whole host of stuff. E.g. gdk-pixbuf which pulls in gtk
