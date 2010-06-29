@@ -48,7 +48,7 @@ TOOLCHAIN_PATH = "${@bool(bb.data.getVar('TOOLCHAIN_SYSPATH', d, 1)) and (os.pat
 SDK_PATH = "${@[bb.data.getVar('TOOLCHAIN_PATH', d, 1), bb.data.getVar('META_SDK_PATH', d, 1)][bool(bb.data.getVar('META_SDK_PATH', d, 1))]}"
 
 INHERIT += "amend"
-FILESPATHBASE = "${@':'.join(set((bb.data.getVar('FILE_DIRNAME', d, 1).replace(bb.data.getVar('OEBASE', d, 1)+'/arago-oe-dev/', bb.data.getVar('OEBASE', d, 1)+'/arago/')+':'+bb.data.getVar('FILE_DIRNAME', d, 1)).split(':')))}"
+FILESPATHBASE = "${@':'.join(sorted(list(set((bb.data.getVar('FILE_DIRNAME', d, 1).replace(bb.data.getVar('OEBASE', d, 1)+'/arago-oe-dev/', bb.data.getVar('OEBASE', d, 1)+'/arago/')+':'+bb.data.getVar('FILE_DIRNAME', d, 1)).split(':'))),None,None,True))}"
 
 # Libraries provided by the toolchain/SDK
 ASSUME_SHLIBS += "libc.so.6:libc6 libm.so.6:libc6 libutil.so.1:libc6 libcrypt.so.1:libc6"
