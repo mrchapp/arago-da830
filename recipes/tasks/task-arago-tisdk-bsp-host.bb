@@ -1,0 +1,37 @@
+DESCRIPTION = "Task to build and install Board Support Package sources (or development header) packages on host"
+PR = "r22"
+LICENSE="MIT"
+ALLOW_EMPTY = "1"
+
+inherit task
+PACKAGE_ARCH = "${MACHINE_ARCH}"
+
+BSP_COMPONENTS_COMMON = "\
+    u-boot-src \
+    "
+
+BSP_COMPONENTS_dm365 = "\
+    ti-linux-driver-examples-src \
+    "
+
+BSP_COMPONENTS_dm355 = "\
+    ti-linux-driver-examples-src \
+    "
+
+BSP_COMPONENTS_dm6446 = "\
+    ti-linux-driver-examples-src \
+    "
+
+BSP_COMPONENTS_dm6467 = "\
+    ti-linux-driver-examples-src \
+    "
+
+BSP_COMPONENTS_dm3730-am3715-evm = "\
+    linux-omap3-src \
+    "
+
+RRECOMMENDS_${PN} = "\
+    ${BSP_COMPONENTS_COMMON} \
+    ${BSP_COMPONENTS} \
+    "
+
