@@ -6,7 +6,6 @@ inherit task
 
 # install gstreamer ti plugin on supported platforms
 GST_TI_PLUGIN  ?= ""
-GST_TI_PLUGIN_omap3    = "gstreamer-ti"
 GST_TI_PLUGIN_dm6446   = "gstreamer-ti"
 GST_TI_PLUGIN_dm6467   = "gstreamer-ti"
 GST_TI_PLUGIN_dm355    = "gstreamer-ti"
