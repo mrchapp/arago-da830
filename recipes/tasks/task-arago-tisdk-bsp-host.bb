@@ -1,5 +1,5 @@
 DESCRIPTION = "Task to build and install Board Support Package sources (or development header) packages on host"
-PR = "r22"
+PR = "r23"
 LICENSE="MIT"
 ALLOW_EMPTY = "1"
 
@@ -26,7 +26,7 @@ BSP_COMPONENTS_dm6467 = "\
     ti-linux-driver-examples-src \
     "
 
-BSP_COMPONENTS_dm3730-am3715-evm = "\
+BSP_COMPONENTS_omap3 = "\
     linux-omap3-src \
     "
 

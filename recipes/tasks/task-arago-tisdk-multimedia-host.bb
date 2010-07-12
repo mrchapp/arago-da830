@@ -1,11 +1,22 @@
 DESCRIPTION = "Task to build and install multimedia source (or development header) packages on host"
-PR = "r13"
+PR = "r14"
 LICENSE="MIT"
 
 inherit task
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 MULTIMEDIA_SOURCETREE = ""
+
+MULTIMEDIA_SOURCETREE_dm37x-evm = " \
+    ti-framework-components-sourcetree \
+    ti-codec-engine-sourcetree \
+    ti-codecs-omap3530-sourcetree \
+    ti-linuxutils-sourcetree \
+    ti-xdctools-sourcetree \
+    ti-dmai-sourcetree \
+    ti-xdais-sourcetree \
+    ti-local-power-manager-sourcetree \
+    "
 
 MULTIMEDIA_SOURCETREE_dm355 = " \
     ti-framework-components-src \
