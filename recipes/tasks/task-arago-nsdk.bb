@@ -61,6 +61,7 @@ RDEPENDS_${PN} = "\
     gst-plugin-autodetect \
     gst-plugin-mad \
     thttpd \
+    log4cplus \
     "
 
 # Work around needed for some srctree based recipes
