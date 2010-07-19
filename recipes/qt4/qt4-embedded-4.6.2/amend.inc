@@ -8,10 +8,24 @@ DEPENDS := "${@oe_filter_out('postgresql', bb.data.getVar('DEPENDS', d, 1), d)}"
 QT_CONFIG_FLAGS := "${@oe_filter_out('-plugin-sql-mysql', bb.data.getVar('QT_CONFIG_FLAGS', d, 1), d)}"
 QT_CONFIG_FLAGS := "${@oe_filter_out('-plugin-sql-psql', bb.data.getVar('QT_CONFIG_FLAGS', d, 1), d)}"
 
+# Disable unneeded/unsupported build options to speed build time and limit
+# packages installed to supported set.
+DEPENDS := "${@oe_filter_out('directfb', bb.data.getVar('DEPENDS', d, 1), d)}"
+DEPENDS := "${@oe_filter_out('openssl', bb.data.getVar('DEPENDS', d, 1), d)}"
+DEPENDS := "${@oe_filter_out('sqlite', bb.data.getVar('DEPENDS', d, 1), d)}"
+DEPENDS := "${@oe_filter_out('sqlite3', bb.data.getVar('DEPENDS', d, 1), d)}"
+QT_CONFIG_FLAGS := "${@oe_filter_out('-plugin-gfx-directfb', bb.data.getVar('QT_CONFIG_FLAGS', d, 1), d)}"
+QT_CONFIG_FLAGS := "${@oe_filter_out('-no-sql-ibase', bb.data.getVar('QT_CONFIG_FLAGS', d, 1), d)}"
+QT_CONFIG_FLAGS := "${@oe_filter_out('-no-sql-odbc', bb.data.getVar('QT_CONFIG_FLAGS', d, 1), d)}"
+QT_CONFIG_FLAGS := "${@oe_filter_out('-plugin-sql-sqlite', bb.data.getVar('QT_CONFIG_FLAGS', d, 1), d)}"
+QT_CONFIG_FLAGS := "${@oe_filter_out('-plugin-sql-sqlite2', bb.data.getVar('QT_CONFIG_FLAGS', d, 1), d)}"
+
+
 QT_CONFIG_FLAGS += " \
     -no-sql-mysql \
     -no-sql-psql \
     -qt-mouse-linuxinput \
+    -no-gtkstyle \
 "
 
 # Change the default decoration style
