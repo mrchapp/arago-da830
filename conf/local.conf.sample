@@ -68,6 +68,9 @@ PREFERRED_PROVIDER_ti-dsplink-module = "ti-dsplink"
 PREFERRED_PROVIDER_qt4-embedded = "qt4-embedded"
 PREFERRED_VERSION_iperf = "1.7.0"
 
+# Need earlier version due to bug in 3.3.9 which prevents discovery
+PREFERRED_VERSION_samba	= "3.3.0"
+
 # Disable DropBear for now due to export restrictions
 DISTRO_SSH_DAEMON = ""
 

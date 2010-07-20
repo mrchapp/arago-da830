@@ -3,6 +3,9 @@ PR = "r1"
 
 inherit task
 
+# Work around needed for some srctree based recipes
+DEPENDS += "cmake-native"
+
 # Trimmed from task-arago-base
 # ideally a python way to just remove selected pacakges from the RDEPENDS
 # list and include in the image recipe. For some things BAD_RECOMMENDATIONS works
@@ -28,15 +31,6 @@ ARAGO_BASE_SUBSET ="\
     module-init-tools \
     "
 
-# Removed for now
-#    gst-plugin-rtp \
-#    gst-plugin-udp \
-#    gst-plugin-rtpmanager \
-#    gst-plugin-rtsp \
-#..
-#     gst-plugin-app \
-#     gst-plugin-tcp \
-
 RDEPENDS_${PN} = "\
     ${ARAGO_BASE_SUBSET} \
     directfb \
@@ -60,20 +54,8 @@ RDEPENDS_${PN} = "\
     gst-plugin-souphttpsrc \
     gst-plugin-autodetect \
     gst-plugin-mad \
+    smbnetfs \
     thttpd \
     log4cplus \
     "
-
-# Work around needed for some srctree based recipes
-DEPENDS += "cmake-native"
-
-# Need earlier version due to bug in 3.3.9 which prevents discovery
-PREFERRED_VERSION_samba	= "3.3.0"
-
-# I am not sure what all the meta stuff is about but
-# seems to pull in a whole host of stuff. E.g. gdk-pixbuf which pulls in gtk
-# gst-plugins-base-meta \
-# gst-plugins-bad-meta \
-# gst-plugins-good-meta \
-# gst-plugins-ugly-meta \
  
