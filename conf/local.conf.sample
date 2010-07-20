@@ -39,6 +39,9 @@ require conf/toolchain-csl.conf
 # Enable following line to use MontaVista Pro 5, which should be in PATH
 #require conf/toolchain-mvl5.conf
 
+# Enable generation of source packages for SDKs
+require conf/arago-source-ipk.conf
+
 # Black magic to automatically set SDK_PATH out of PATH - don't touch this!
 # Works with pretty much any external toolchain, like CS Lite or MV Pro 5
 # Handles cross-toolchain vs. native toolchain
