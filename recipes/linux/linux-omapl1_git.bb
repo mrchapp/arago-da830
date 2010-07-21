@@ -1,4 +1,4 @@
-require linux.inc
+require multi-kernel.inc
 
 DESCRIPTION = "Linux kernel for OMAPL1 processors"
 KERNEL_IMAGETYPE = "uImage"
