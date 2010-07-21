@@ -6,3 +6,6 @@ DEPENDS := "${@oe_filter_out('libsm-native', bb.data.getVar('DEPENDS', d, 1), d)
 EXTRA_OECONF += " \
     -no-openssl -no-x11 \
 "
+
+# Set the suffix to specify amended packages
+PR_append = "-arago1"

@@ -20,7 +20,6 @@ QT_CONFIG_FLAGS := "${@oe_filter_out('-no-sql-odbc', bb.data.getVar('QT_CONFIG_F
 QT_CONFIG_FLAGS := "${@oe_filter_out('-plugin-sql-sqlite', bb.data.getVar('QT_CONFIG_FLAGS', d, 1), d)}"
 QT_CONFIG_FLAGS := "${@oe_filter_out('-plugin-sql-sqlite2', bb.data.getVar('QT_CONFIG_FLAGS', d, 1), d)}"
 
-
 QT_CONFIG_FLAGS += " \
     -no-sql-mysql \
     -no-sql-psql \
@@ -37,17 +36,5 @@ QT_CONFIG_FLAGS := "${@oe_filter_out('-plugin-decoration-windows', bb.data.getVa
 # For our distribution purposes we only use LGPLv2.1
 LICENSE = "LGPLv2.1"
 
-# Set necessary variables in the profile
-SRC_URI += " \
-    file://qte.sh \
-"
-
-do_install_append() {
-	install -d ${D}${sysconfdir}/profile.d/
-	install -m 0755 ${WORKDIR}/qte.sh ${D}${sysconfdir}/profile.d/
-}
-
-FILES_qt4-embedded += " ${sysconfdir}/profile.d/qte.sh"
-
 # Set the suffix to specify amended packages
-PR_append = "-arago2"
+PR_append = "-arago3"
