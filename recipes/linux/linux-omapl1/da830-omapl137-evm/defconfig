@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.33-rc4
-# Mon Jun 28 11:08:56 2010
+# Wed Jul 21 12:49:04 2010
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -244,8 +244,10 @@ CONFIG_ARCH_DAVINCI_DA8XX=y
 # DaVinci Board Type
 #
 CONFIG_MACH_DAVINCI_DA830_EVM=y
-CONFIG_DA830_DVI=y
-# CONFIG_DA830_UI_EXPANDER is not set
+# CONFIG_DA830_DVI is not set
+CONFIG_DA830_UI_EXPANDER=y
+CONFIG_DA830_UI_LCD=y
+# CONFIG_DA830_UI_NAND is not set
 CONFIG_DAVINCI_MUX=y
 # CONFIG_DAVINCI_MUX_DEBUG is not set
 # CONFIG_DAVINCI_MUX_WARNINGS is not set
