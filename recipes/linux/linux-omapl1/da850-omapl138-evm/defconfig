@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.33-rc4
-# Mon Jun 28 11:03:33 2010
+# Wed Jul 21 12:55:43 2010
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -1284,7 +1284,7 @@ CONFIG_SND_SOC_TLV320AIC3X=y
 # CONFIG_SOUND_PRIME is not set
 CONFIG_HID_SUPPORT=y
 CONFIG_HID=y
-# CONFIG_HIDRAW is not set
+CONFIG_HIDRAW=y
 
 #
 # USB Input Devices
