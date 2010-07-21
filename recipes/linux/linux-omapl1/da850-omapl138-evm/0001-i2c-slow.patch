@@ -1,0 +1,12 @@
+diff -ru a/arch/arm/mach-davinci/board-da850-evm.c b/git/arch/arm/mach-davinci/board-da850-evm.c
+--- a/arch/arm/mach-davinci/board-da850-evm.c	2010-07-02 17:56:56.000000000 +0200
++++ b/arch/arm/mach-davinci/board-da850-evm.c	2010-07-09 12:52:58.849910368 +0200
+@@ -1064,7 +1064,7 @@
+ static struct i2c_gpio_platform_data da850_gpio_i2c_pdata = {
+ 	.sda_pin	= GPIO_TO_PIN(1, 4),
+ 	.scl_pin	= GPIO_TO_PIN(1, 5),
+-	.udelay		= 2,			/* 250 KHz */
++	.udelay		= 9,			/* 250 KHz */
+ };
+ 
+ static struct platform_device da850_gpio_i2c = {

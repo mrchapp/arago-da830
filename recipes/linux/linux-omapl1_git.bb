@@ -18,4 +18,7 @@ PV = "${KVER}-${PR}+gitr${SRCREV}"
 SRC_URI = "git://arago-project.org/git/people/martin/linux-da830.git;protocol=git;branch=${BRANCH} \
            file://defconfig"
 
+SRC_URI_append_da850-omapl138-evm = " \
+          file://0001-i2c-slow.patch;patch=1 "
+
 S = "${WORKDIR}/git"
