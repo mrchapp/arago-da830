@@ -1,0 +1,18 @@
+DESCRIPTION = "Additional packages beyond console packages shared by TI SDKs"
+LICENSE = "MIT"
+PR = "r1"
+
+inherit task
+
+RDEPENDS_${PN} = "\
+    dbus \
+    dbus-x11 \
+    expat \
+    glib-2.0 \
+    libxml2 \
+    libpcre \
+    iptables \
+    iperf \
+    ksymoops \
+    psplash-ti \
+    "
