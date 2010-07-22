@@ -18,7 +18,6 @@ ROOTFS_SIZE_overo = "81920"
 IMAGE_INSTALL += "\
     task-arago-base \
     task-arago-console \
-    psplash-ti \
     "
 
 export IMAGE_BASENAME = "arago-console-image"
