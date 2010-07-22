@@ -1,5 +1,5 @@
 DESCRIPTION = "Task to install graphics binaries on ${MACHINE}"
-PR = "r6"
+PR = "r7"
 LICENSE="MIT"
 
 inherit task
@@ -11,15 +11,15 @@ QTWIDGET_DEMO_omapl138 = "qt-embedded-widgets-demo"
 
 MATRIX_APPS = " libxml2 \
  matrix-gui-e \
- am-sysinfo \
- am-benchmarks \
  ${QTWIDGET_DEMO} \
 "
+# Install 3D graphics for all omap3 SOC_FAMILY devices
+3D_GRAPHICS = ""
+3D_GRAPHICS_omap3 = "libgles-omap3-rawdemos"
 
 RDEPENDS_${PN} = "\
-    qt4-embedded \
+    task-arago-qte \
     qt4-embedded-plugin-phonon-backend-gstreamer \
-    qt4-embedded-plugin-mousedriver-tslib \
-    qt4-embedded-plugin-gfxdriver-gfxtransformed \    
     ${MATRIX_APPS} \
+    ${3D_GRAPHICS} \
     "
