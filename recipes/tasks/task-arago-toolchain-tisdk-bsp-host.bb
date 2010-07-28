@@ -1,5 +1,5 @@
 DESCRIPTION = "Task to build and install Board Support Package sources (or development header) packages on host"
-PR = "r25"
+PR = "r26"
 LICENSE = "MIT"
 ALLOW_EMPTY = "1"
 
@@ -7,6 +7,7 @@ inherit task
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 BSP_COMPONENTS_COMMON = "\
+    ti-tisdk-licenses-src \
     u-boot-src \
     "
 
