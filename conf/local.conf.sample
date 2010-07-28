@@ -39,6 +39,9 @@ require conf/toolchain-csl.conf
 # Enable following line to use MontaVista Pro 5, which should be in PATH
 #require conf/toolchain-mvl5.conf
 
+# Enable capturing license files from sources
+INHERIT += "distribute_license"
+
 # Enable generation of source packages for SDKs
 require conf/arago-source-ipk.conf
 
