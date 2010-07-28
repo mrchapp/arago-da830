@@ -20,8 +20,32 @@ do_populate_sdk_append() {
     echo 'export AR=${TARGET_PREFIX}ar' >> $script	
     echo 'export OBJDUMP=${TARGET_PREFIX}objdump' >> $script	
     echo 'export PKG_CONFIG_ALLOW_SYSTEM_LIBS=1' >> $script
-       
-    # Repack SDK with new environment-setup
+
+    # Copy licenses that were found during build if any to
+    # the SDK directory.
+    if [ -e ${DEPLOY_DIR}/licenses ]
+    then
+        cp -rf ${DEPLOY_DIR}/licenses ${SDK_OUTPUT}/${SDKPATH}/
+
+        # Add a README in the licenses directory about what these
+        # licenses are for.
+        readme="${SDK_OUTPUT}/${SDKPATH}/licenses/README"
+        touch $readme
+
+        echo "This directory contains a subdirectory for each" >> $readme
+        echo "package used during the creation of this SDK that" >> $readme
+        echo "defined its own license or copying terms within its" >> $readme
+        echo "sources.  By default this is any file(s) matching the" >> $readme
+        echo "pattern COPYING* or LICENSE*." >> $readme
+        echo "" >> $readme
+        echo "This directory may contain more packages than are" >> $readme
+        echo "actually installed in your SDK.  You can verify the" >> $readme
+        echo "packages installed in your SDK and their corresponding" >> $readme
+        echo "licenses by viewing the software manifest in the" >> $readme
+        echo "top-level docs directory of the TI SDK." >> $readme
+    fi
+
+    # Repack SDK with new environment-setup and licenses
     cd ${SDK_OUTPUT}
     fakeroot tar cfz ${SDK_DEPLOY}/${TOOLCHAIN_OUTPUTNAME}.tar.gz .
 }
