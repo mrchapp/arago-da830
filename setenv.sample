@@ -1,4 +1,6 @@
 # Set OEBASE to where Arago overlay and OpenEmbedded repositories reside
+# NOTE: Do NOT place a trailing / on the end of OEBASE.  Doing so will
+#       cause the amend class to not find its files.
 export OEBASE=$HOME/oe
 
 # Set SCRATCH variable accordingly if you want to use scratch area
