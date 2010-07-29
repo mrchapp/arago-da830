@@ -1,4 +1,4 @@
-TOOLCHAIN_HOST_TASK ?= "task-arago-toolchain-host"
+TOOLCHAIN_HOST_TASK ?= "task-arago-base-tisdk-toolchain-host"
 TOOLCHAIN_TARGET_TASK ?= "task-arago-base-tisdk-toolchain-target"
 
 require meta-toolchain-arago.bb
