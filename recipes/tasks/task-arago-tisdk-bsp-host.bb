@@ -1,5 +1,5 @@
 DESCRIPTION = "Task to build and install Board Support Package sources (or development header) packages on host"
-PR = "r23"
+PR = "r24"
 LICENSE="MIT"
 ALLOW_EMPTY = "1"
 
@@ -28,6 +28,7 @@ BSP_COMPONENTS_dm6467 = "\
 
 BSP_COMPONENTS_omap3 = "\
     linux-omap3-src \
+    x-load-src \
     "
 
 RRECOMMENDS_${PN} = "\
