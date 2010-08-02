@@ -16,6 +16,7 @@ ARAGO_BASE_SUBSET ="\
     alsa-utils-alsactl \
     alsa-utils-aplay \
     alsa-state \
+    i2c-tools \
     ldd \
     mtd-utils \
     curl \
