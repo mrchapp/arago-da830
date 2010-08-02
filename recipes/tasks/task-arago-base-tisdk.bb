@@ -1,6 +1,6 @@
 DESCRIPTION = "Additional packages beyond console packages shared by TI SDKs"
 LICENSE = "MIT"
-PR = "r1"
+PR = "r2"
 
 inherit task
 
@@ -13,6 +13,5 @@ RDEPENDS_${PN} = "\
     libpcre \
     iptables \
     iperf \
-    ksymoops \
     psplash-ti \
     "

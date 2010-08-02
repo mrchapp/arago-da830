@@ -1,6 +1,6 @@
 DESCRIPTION = "Target packages for a standalone Arago SDK or external toolchain"
 ALLOW_EMPTY = "1"
-PR = "r1"
+PR = "r2"
 
 PACKAGES = "${PN}"
 
@@ -14,5 +14,4 @@ RDEPENDS_${PN} += " \
     libpcre-dev \
     iptables-dev \
     libstdc++-dev \
-    ksymoops-dev \
     "
