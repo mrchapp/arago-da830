@@ -57,6 +57,7 @@ RDEPENDS_${PN} = "\
     gst-plugin-mad \
     smbnetfs \
     lighttpd \
+    lighttpd-module-fastcgi \
     log4cplus \
     "
  
