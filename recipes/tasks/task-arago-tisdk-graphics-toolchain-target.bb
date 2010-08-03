@@ -1,13 +1,13 @@
 DESCRIPTION = "Task to install graphics binaries on sdk target"
-PR = "r3"
+PR = "r4"
 LICENSE="MIT"
 
 inherit task
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 # Install 3D graphics for all omap3 SOC_FAMILY devices
-3D_GRAPHICS = ""
-3D_GRAPHICS_omap3 = "libgles-omap3-dev"
+GRAPHICS_3D = ""
+GRAPHICS_3D_omap3 = "libgles-omap3-dev"
 
 RDEPENDS_${PN} = "\
     qt4-embedded-dev \
@@ -30,6 +30,5 @@ RDEPENDS_${PN} = "\
     libqt-embeddedtest4-dev \
     libqt-embeddedwebkit4-dev \
     libqt-embeddedxml4-dev \
-    ${3D_GRAPHICS} \
+    ${GRAPHICS_3D} \
     "
-
