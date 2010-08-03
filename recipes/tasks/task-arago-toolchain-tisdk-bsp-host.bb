@@ -1,5 +1,5 @@
 DESCRIPTION = "Task to build and install Board Support Package sources (or development header) packages on host"
-PR = "r26"
+PR = "r27"
 LICENSE = "MIT"
 ALLOW_EMPTY = "1"
 
@@ -13,6 +13,7 @@ BSP_COMPONENTS_COMMON = "\
 
 BSP_COMPONENTS_dm365 = "\
     ti-linux-driver-examples-src \
+    ti-tisdk-setup \
     "
 
 BSP_COMPONENTS_dm355 = "\
@@ -30,6 +31,16 @@ BSP_COMPONENTS_dm6467 = "\
 BSP_COMPONENTS_omap3 = "\
     linux-omap3-src \
     x-load-src \
+    "
+
+# Add components to omap3 components
+BSP_COMPONENTS_append_am37x-evm = "\
+    ti-tisdk-setup \
+    "
+
+# Add components to omap3 components
+BSP_COMPONENTS_append_dm37x-evm = "\
+    ti-tisdk-setup \
     "
 
 RRECOMMENDS_${PN} = "\
