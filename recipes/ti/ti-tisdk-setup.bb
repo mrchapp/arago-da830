@@ -1,6 +1,8 @@
 DESCRIPTION = "Package containing scripts to setup the development host and target board"
 LICENSE = "TI"
 
+COMPATIBLE_MACHINE = "(omap3evm|am37x-evm|dm37x-evm|dm365-evm|da830-omapl138-evm)"
+
 require ti-paths.inc
 
 SRC_URI = "\
@@ -14,7 +16,7 @@ SRC_URI = "\
   	file://setup/setup-uboot-env.sh \
 "
 
-PR = "r10"
+PR = "r11"
 
 do_install () {
 	install -d ${D}/${installdir}/bin
