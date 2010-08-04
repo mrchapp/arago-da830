@@ -1,4 +1,4 @@
-PR = "r10"
+PR = "r11"
 
 SDK_DISTRO = "arago"
 TOOLCHAIN_OUTPUTNAME = "${SDK_DISTRO}-${DISTRO_VERSION}-${FEED_ARCH}-${TARGET_OS}-${SDK_SUFFIX}"
@@ -93,7 +93,7 @@ TOOLCHAIN_TARGET_EXCLUDE += "\
 
 TOOLCHAIN_TARGET_EXCLUDE += "\
     curl \
-    opkg-nogpg-nocurl \
+    opkg \
     alsa-utils \
     alsa-conf-base \
     update-rc.d \
