@@ -1,8 +1,9 @@
 DESCRIPTION = "Task to install additional utilities/demos for SDKs"
-PR = "r1"
-LICENSE="MIT"
+PR = "r2"
+LICENSE = "MIT"
 
 inherit task
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 UTILS = ""
 

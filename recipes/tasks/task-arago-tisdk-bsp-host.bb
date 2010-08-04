@@ -1,6 +1,6 @@
 DESCRIPTION = "Task to build and install Board Support Package sources (or development header) packages on host"
-PR = "r24"
-LICENSE="MIT"
+PR = "r25"
+LICENSE = "MIT"
 ALLOW_EMPTY = "1"
 
 inherit task
@@ -35,4 +35,3 @@ RRECOMMENDS_${PN} = "\
     ${BSP_COMPONENTS_COMMON} \
     ${BSP_COMPONENTS} \
     "
-

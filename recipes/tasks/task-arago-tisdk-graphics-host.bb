@@ -1,8 +1,9 @@
 DESCRIPTION = "Task to install graphics application sources on host"
-PR = "r1"
-LICENSE="MIT"
+PR = "r2"
+LICENSE = "MIT"
 
 inherit task
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 GRAPHICS_APPS = ""
 

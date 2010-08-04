@@ -1,6 +1,6 @@
 DESCRIPTION = "Task to install multimedia binaries on ${MACHINE}"
-PR = "r23"
-LICENSE="MIT"
+PR = "r24"
+LICENSE = "MIT"
 
 inherit task
 PACKAGE_ARCH = "${MACHINE_ARCH}"
@@ -46,7 +46,7 @@ MULTIMEDIA_da850-omapl138-evm = " \
     task-arago-gst \
     gstreamer-ti \
     ti-data \
-	showoff \
+    showoff \
     "
 
 MULTIMEDIA_dm6467-evm = " \
@@ -73,4 +73,3 @@ MULTIMEDIA_am37x-evm = " \
 RDEPENDS_${PN} = "\
     ${MULTIMEDIA} \
     "
-

@@ -1,6 +1,6 @@
 DESCRIPTION = "Task to build and install multimedia source (or development header) packages on host"
-PR = "r14"
-LICENSE="MIT"
+PR = "r15"
+LICENSE = "MIT"
 
 inherit task
 PACKAGE_ARCH = "${MACHINE_ARCH}"
@@ -89,4 +89,3 @@ MULTIMEDIA_SOURCETREE_da850-omapl138-evm = " \
 RRECOMMENDS_${PN} = "\
     ${MULTIMEDIA_SOURCETREE} \
     "
-

@@ -1,8 +1,9 @@
 DESCRIPTION = "Task to add base gstreamer and TI plugins"
 LICENSE = "MIT"
-PR = "r17"
+PR = "r18"
 
 inherit task
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 # install gstreamer ti plugin on supported platforms
 GST_TI_PLUGIN  ?= ""

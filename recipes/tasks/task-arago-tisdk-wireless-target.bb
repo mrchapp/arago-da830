@@ -1,9 +1,8 @@
 DESCRIPTION = "Task to install wireless packages into target FS"
-PR = "r0"
-LICENSE="MIT"
+PR = "r1"
+LICENSE = "MIT"
 
 inherit task
-PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 WLAN_SUPPORT = "\
     openssl \
@@ -25,4 +24,3 @@ RDEPENDS_${PN} = "\
     ${WLAN_SUPPORT} \
     ${BLUETOOTH_SUPPORT} \
     "
-

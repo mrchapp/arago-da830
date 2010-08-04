@@ -1,6 +1,6 @@
 DESCRIPTION = "Task to install graphics binaries on sdk target"
-PR = "r4"
-LICENSE="MIT"
+PR = "r5"
+LICENSE = "MIT"
 
 inherit task
 PACKAGE_ARCH = "${MACHINE_ARCH}"

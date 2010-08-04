@@ -1,6 +1,6 @@
 DESCRIPTION = "Task to install Board Support Package binaries on $MACHINE"
-PR = "r12"
-LICENSE="MIT"
+PR = "r13"
+LICENSE = "MIT"
 ALLOW_EMPTY = "1"
 
 inherit task
@@ -37,5 +37,4 @@ RRECOMMENDS_${PN} = "\
     kernel-image \
     kernel-vmlinux \
     u-boot \
-	"
-
+    "
