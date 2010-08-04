@@ -1,5 +1,5 @@
-DESCRIPTION = "Task to install Board Support Package binaries on $MACHINE"
-PR = "r13"
+DESCRIPTION = "Task to install Board Support Package binaries on ${MACHINE}"
+PR = "r14"
 LICENSE = "MIT"
 ALLOW_EMPTY = "1"
 
