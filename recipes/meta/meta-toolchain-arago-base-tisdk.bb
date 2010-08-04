@@ -1,9 +1,9 @@
-TOOLCHAIN_HOST_TASK ?= "task-arago-base-tisdk-toolchain-host"
-TOOLCHAIN_TARGET_TASK ?= "task-arago-base-tisdk-toolchain-target"
+TOOLCHAIN_HOST_TASK ?= "task-arago-toolchain-base-tisdk-host"
+TOOLCHAIN_TARGET_TASK ?= "task-arago-toolchain-base-tisdk-target"
 
 require meta-toolchain-arago.bb
 
-PR = "r1"
+PR = "r2"
 SDK_SUFFIX = "sdk"
 
 do_populate_sdk_append() {
