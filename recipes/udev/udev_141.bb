@@ -39,7 +39,7 @@ SRC_URI_append_bug = " \
 
 PACKAGE_ARCH_bug = "bug"
 
-inherit update-rc.d autotools_stage
+inherit update-rc.d autotools
 
 # Put stuff in /lib and /sbin
 export sbindir="${base_sbindir}"
