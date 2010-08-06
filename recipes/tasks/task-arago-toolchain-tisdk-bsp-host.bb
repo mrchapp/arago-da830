@@ -41,6 +41,7 @@ BSP_COMPONENTS_append_omap3evm = "\
 # Add components to omap3 components
 BSP_COMPONENTS_append_am37x-evm = "\
     ti-tisdk-setup \
+    flash-utility \
     "
 
 # Add components to omap3 components
