@@ -168,6 +168,14 @@ SRC_URI_da850-omapl138-evm = "git://arago-project.org/git/projects/u-boot-omapl1
 SRCREV_da850-omapl138-evm  = "5f16b8551b125f16cd8d58f278cb25b94272fd9f"
 PV_da850-omapl138-evm      = "2009.11+${PR}+gitr${SRCREV}"
 
+# da850-sdi - 2009.08
+
+SRC_URI_da850-sdi          = "git://arago-project.org/git/projects/u-boot-omapl1.git;protocol=git \
+                              file://0001-da850-Add-SDI-Spectrum-Digital-board.patch;apply=yes \
+                             "
+SRCREV_da850-sdi           = "17a083a2bdfc84cc9c9894c7a5c8156d6d4d1e62"
+PV_da850-omapl138-evm      = "2009.08+${PR}+gitr${SRCREV}"
+
 # hawkboard - master branch (hawk still .07beta)
 
 SRC_URI_hawkboard          = "git://arago-project.org/git/people/sekhar/u-boot-omapl1.git;protocol=git;branch=master"

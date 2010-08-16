@@ -3,7 +3,7 @@ require multi-kernel.inc
 DESCRIPTION = "Linux kernel for OMAPL1 processors"
 KERNEL_IMAGETYPE = "uImage"
 
-COMPATIBLE_MACHINE = "(da830-omapl137-evm|da850-omapl138-evm)"
+COMPATIBLE_MACHINE = "(da830-omapl137-evm|da850-omapl138-evm|da850-sdi)"
 
 DEFAULT_PREFERENCE = "1"
 
