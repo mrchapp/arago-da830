@@ -6,9 +6,8 @@ require conf/distro/include/angstrom-codec-engine-${CE_VERSION}-preferred-versio
 PREFERRED_VERSION_autoconf = "2.65"
 PREFERRED_VERSION_autoconf-native = "2.65"
 
-# gettext 0.18 would require automake 1.11
-PREFERRED_VERSION_automake = "1.10.3"
-PREFERRED_VERSION_automake-native = "1.10.3"
+PREFERRED_VERSION_automake = "1.11.1"
+PREFERRED_VERSION_automake-native = "1.11.1"
 
 # arago-specific gstreamer does not work with gettext 0.18
 PREFERRED_VERSION_gettext = "0.17"
