@@ -69,7 +69,8 @@ PREFERRED_PROVIDER_qt4-embedded = "qt4-embedded"
 PREFERRED_VERSION_iperf = "1.7.0"
 
 # Need earlier version due to bug in 3.3.9 which prevents discovery
-PREFERRED_VERSION_samba	= "3.3.0"
+# Also 3.3.x is GPLv3 and we want GPLv2 or similar
+PREFERRED_VERSION_samba	= "3.0.37"
 
 # Disable DropBear for now due to export restrictions
 DISTRO_SSH_DAEMON = ""
