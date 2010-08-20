@@ -5,7 +5,7 @@ It supports a wide range of formats including mp3, ogg, avi, mpeg and quicktime.
 
 DEPENDS = "glib-2.0"
 
-SRC_URI = "http://gstreamer.freedesktop.org/src/gstreamer/gstreamer-${PV}.tar.bz2"
+SRC_URI = "http://gstreamer.freedesktop.org/src/gstreamer/gstreamer-${PV}.tar.bz2;name=archive"
 EXTRA_OECONF = "--disable-docs-build --disable-dependency-tracking --with-check=no"
 
 FILES_${PN} += " ${libdir}/gstreamer-0.10/*.so"
