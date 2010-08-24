@@ -1,8 +1,11 @@
 DESCRIPTION = "Additional packages beyond console packages shared by TI SDKs"
 LICENSE = "MIT"
-PR = "r2"
+PR = "r3"
 
 inherit task
+
+SECONDARY_BOOTLOADER = ""
+SECONDARY_BOOTLOADER_omap3 = "x-load"
 
 RDEPENDS_${PN} = "\
     dbus \
@@ -14,4 +17,6 @@ RDEPENDS_${PN} = "\
     iptables \
     iperf \
     psplash-ti \
+    u-boot \
+    ${SECONDARY_BOOTLOADER} \
     "
