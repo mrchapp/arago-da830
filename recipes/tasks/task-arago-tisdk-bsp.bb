@@ -1,5 +1,5 @@
 DESCRIPTION = "Task to install Board Support Package binaries on ${MACHINE}"
-PR = "r14"
+PR = "r15"
 LICENSE = "MIT"
 ALLOW_EMPTY = "1"
 
@@ -28,8 +28,22 @@ BSP_COMPONENTS_omap3 = "\
     x-load \
     "
 
+BLUETOOTH_SUPPORT = ""
+
+BLUETOOTH_SUPPORT_omap3 = "\
+    bluez4 \
+    bluez4-agent \
+    libasound-module-bluez \
+    bluez-hcidump \
+    openobex \
+    openobex-apps \
+    obexftp \
+    ussp-push \
+    "
+
 RDEPENDS_${PN} = "\
     ${BSP_COMPONENTS} \
+    ${BLUETOOTH_SUPPORT} \
     "
 
 RRECOMMENDS_${PN} = "\
