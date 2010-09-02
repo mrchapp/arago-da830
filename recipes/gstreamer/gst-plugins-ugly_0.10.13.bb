@@ -10,10 +10,9 @@ SRC_URI += "\
 "
 EXTRA_OECONF += "ac_cv_openssldir=no --enable-lame --enable-mad" 
 
+DEPENDS += "lame libmad"
 SRC_URI[md5sum] = "1619365247ef9cd7da1cd890285bf87a"
 SRC_URI[sha256sum] = "39f07a60739f5dfa4f5574a02db15de69fd05b9ea63239488338ec3491bf69a8"
-
-DEPENDS += "lame libmad"
 
 python() {
 	# Don't build, if we are building an ENTERPRISE distro
