@@ -1,8 +1,10 @@
 DESCRIPTION = "Additional packages beyond console packages shared by TI SDKs"
 LICENSE = "MIT"
-PR = "r3"
+PR = "r4"
 
 inherit task
+
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 SECONDARY_BOOTLOADER = ""
 SECONDARY_BOOTLOADER_omap3 = "x-load"
