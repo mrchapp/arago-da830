@@ -25,6 +25,8 @@ SRC_URI = "svn://gforge.ti.com/svn/dmai/;module=${DMAIBRANCH};proto=https;user=a
 		file://loadmodules-ti-dmai-dm365_al.sh \
 		file://loadmodules-ti-dmai-ol137_al.sh \
 		file://loadmodules-ti-dmai-ol138_al.sh \
+	    file://doxygen_templates.tar.gz \
+        file://arago-tdox \
 	"
 
 DEPENDS = "virtual/kernel alsa-lib ti-framework-components ti-codec-engine ti-xdctools"
@@ -68,9 +70,19 @@ do_prepsources() {
     unset DMAI_INSTALL_DIR
     cd ${S}
     make XDC_INSTALL_DIR="${XDC_INSTALL_DIR}" PLATFORM="${DMAIPLATFORM}" clean
+    
+    # run the release steps - this will delete .svn file and run doxygen to
+    # generate proper documentation of the source etc.
+    find ${S} -name .svn -type d | xargs rm -rf
+    cp -pPrf ${WORKDIR}/doxygen_templates ${S}
+    cp -pPrf ${WORKDIR}/arago-tdox ${S}/tdox
+    chmod a+x ${S}/release.sh
+    chmod a+x ${S}/tdox
+    ${S}/release.sh ${PV}
 }
 
-addtask prepsources after do_configure before do_compile
+# run prepare sources before do_patch to ensure that sourceipk picks the right sources.
+addtask prepsources after do_unpack before do_patch
 
 do_compile () {
 
