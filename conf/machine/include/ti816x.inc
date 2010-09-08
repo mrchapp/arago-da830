@@ -5,7 +5,6 @@ require conf/machine/include/tune-cortexa8.inc
 
 PREFERRED_PROVIDER_virtual/kernel = "linux-omap3"
 PREFERRED_PROVIDER_virtual/bootloader = "u-boot"
-PREFERRED_VERSION_virtual/bootloader = "git"
 
 # Increase this everytime you change something in the kernel
 MACHINE_KERNEL_PR = "r0"
@@ -13,7 +12,7 @@ MACHINE_KERNEL_PR = "r0"
 KERNEL_IMAGETYPE = "uImage"
 
 UBOOT_ARCH = "arm"
-UBOOT_MACHINE = "ti816x_evm_config"
+UBOOT_MACHINE = "ti8168_evm_config"
 UBOOT_ENTRYPOINT = "0x80008000"
 UBOOT_LOADADDRESS = "0x80008000"
 
