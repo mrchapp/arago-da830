@@ -8,14 +8,14 @@ LICENSE = "BSD"
 require ti-paths.inc
 require ti-staging.inc
 
-PROVIDES += "ti-dmai-apps ti-dmai-tests"
+PROVIDES += "ti-dmai-apps"
 
 PE = "1"
 
 SRCREV               ?= "<UNDEFINED_SRCREV>"
 DMAIBRANCH           ?= "<UNDEFINED_DMAIBRANCH>"
 
-S = "${WORKDIR}/${DMAIBRANCH}/davinci_multimedia_application_interface"
+S = "${WORKDIR}/${DMAIBRANCH}/davinci_multimedia_application_interface/dmai_${PV}"
 
 SRC_URI = "svn://gforge.ti.com/svn/dmai/;module=${DMAIBRANCH};proto=https;user=anonymous;pswd='' \
 		file://loadmodules-ti-dmai-dm6446_al.sh \
@@ -66,31 +66,28 @@ USER_XDC_PATH = "${CE_INSTALL_DIR}/examples"
 PARALLEL_MAKE = ""
 
 do_prepsources() {
-    # TODO :: Why do we do this?
-    unset DMAI_INSTALL_DIR
-    cd ${S}
-    make XDC_INSTALL_DIR="${XDC_INSTALL_DIR}" PLATFORM="${DMAIPLATFORM}" clean
-    
     # run the release steps - this will delete .svn file and run doxygen to
     # generate proper documentation of the source etc.
-    find ${S} -name .svn -type d | xargs rm -rf
-    cp -pPrf ${WORKDIR}/doxygen_templates ${S}
-    cp -pPrf ${WORKDIR}/arago-tdox ${S}/tdox
-    chmod a+x ${S}/release.sh
-    chmod a+x ${S}/tdox
-    ${S}/release.sh ${PV}
+    find ${WORKDIR}/${DMAIBRANCH} -name .svn -type d | xargs rm -rf
+    cp -pPrf ${WORKDIR}/doxygen_templates ${WORKDIR}/${DMAIBRANCH}/davinci_multimedia_application_interface
+    cp -pPrf ${WORKDIR}/arago-tdox ${WORKDIR}/${DMAIBRANCH}/davinci_multimedia_application_interface/tdox
+    chmod a+x ${WORKDIR}/${DMAIBRANCH}/davinci_multimedia_application_interface/release.sh
+    chmod a+x ${WORKDIR}/${DMAIBRANCH}/davinci_multimedia_application_interface/tdox
+    sed -i 's|tdox|./tdox|g' ${WORKDIR}/${DMAIBRANCH}/davinci_multimedia_application_interface/release.sh
+    (cd ${WORKDIR}/${DMAIBRANCH}/davinci_multimedia_application_interface; ./release.sh ${PV})
 }
 
 # run prepare sources before do_patch to ensure that sourceipk picks the right sources.
 addtask prepsources after do_unpack before do_patch
 
 do_compile () {
-
     # TODO :: Why do we do this?
     unset DMAI_INSTALL_DIR
     cd ${S}
 
-    for dir in ${S}/dmai ${S}/tests ; do
+    make XDC_INSTALL_DIR="${XDC_INSTALL_DIR}" PLATFORM="${DMAIPLATFORM}" clean
+
+    for dir in ${S}; do
         cd $dir
         #  TODO: Figure out how to pass the alsa require location, currently 
         #  LINUXLIBS_INSTALL_DIR is hard-coded for armv5te
@@ -121,17 +118,12 @@ do_install () {
     unset DMAI_INSTALL_DIR
 
     install -d ${D}/${installdir}/ti-dmai-apps
-    cd ${S}/dmai
+    cd ${S}
     make PLATFORM="${DMAIPLATFORM}" EXEC_DIR=${D}/${installdir}/ti-dmai-apps install 
     install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${DMAIPLATFORM}.sh ${D}/${installdir}/ti-dmai-apps/loadmodules.sh 
 
-    install -d ${D}/${installdir}/ti-dmai-tests
-    cd ${S}/tests
-    make PLATFORM="${DMAIPLATFORM}" EXEC_DIR=${D}/${installdir}/ti-dmai-tests install 
-    install -m 0755 ${WORKDIR}/loadmodules-ti-dmai-${DMAIPLATFORM}.sh ${D}/${installdir}/ti-dmai-tests/loadmodules.sh 
-
     install -d ${D}${DMAI_INSTALL_DIR_RECIPE}
-    cp -pPrf ${S}/dmai/* ${D}${DMAI_INSTALL_DIR_RECIPE}
+    cp -pPrf ${S}/* ${D}${DMAI_INSTALL_DIR_RECIPE}
 }
 
 PACKAGES += "ti-dmai-apps"
@@ -147,15 +139,6 @@ RDEPENDS_ti-dmai-apps_omapl137  += "ti-codecs-omapl137-server ti-cmem-module ti-
 RDEPENDS_ti-dmai-apps_omapl138  += "ti-codecs-omapl138-server ti-cmem-module ti-dsplink-module"
 
 pkg_postinst_ti-dmai-apps () {
-	if [ -f ${installdir}/ti-codecs-server/*.${DSPSUFFIX} ]; then
 	ln -sf ${installdir}/ti-codecs-server/*.${DSPSUFFIX} ${installdir}/ti-dmai-apps/
-	fi
 }
-
-PACKAGES += "ti-dmai-tests"
-FILES_ti-dmai-tests = "${installdir}/ti-dmai-tests/*"
-INSANE_SKIP_ti-dmai-tests = True
-
-# To make dependency more simpler we just depend on ti-dmai-apps
-RDEPENDS_ti-dmai-tests   += "ti-dmai-apps"
 
