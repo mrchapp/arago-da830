@@ -27,8 +27,6 @@ COLLECTIONS = "${OEBASE}/arago/ ${OEBASE}/arago-oe-dev/"
 COLLECTIONS =. "${@['', bb.data.getVar('OEBASE', d, 1)+'/arago-custom/ '][os.path.exists(bb.data.getVar('OEBASE', d, 1)+'/arago-custom/')]}"
 COLLECTIONS =. "${@['', bb.data.getVar('OEBASE', d, 1)+'/arago-bom/ '][os.path.exists(bb.data.getVar('OEBASE', d, 1)+'/arago-bom/')]}"
 
-include conf/arago-bom.conf
-
 # Use the BBMASK below to instruct BitBake to _NOT_ consider some .bb files
 # This is a regular expression, so be sure to get your parenthesis balanced.
 BBMASK = "(nonworking|obsolete)"
@@ -73,6 +71,8 @@ PREFERRED_PROVIDER_ti-lpm-module = "ti-local-power-manager"
 PREFERRED_PROVIDER_ti-dsplink-module = "ti-dsplink"
 PREFERRED_PROVIDER_qt4-embedded = "qt4-embedded"
 PREFERRED_VERSION_iperf = "1.7.0"
+
+include conf/arago-bom.conf
 
 # Disable DropBear for now due to export restrictions
 DISTRO_SSH_DAEMON = ""
