@@ -11,6 +11,8 @@ BSP_COMPONENTS_COMMON = "\
     u-boot-src \
     "
 
+BSP_COMPONENTS = ""
+
 BSP_COMPONENTS_dm365 = "\
     ti-linux-driver-examples-src \
     ti-tisdk-setup \
