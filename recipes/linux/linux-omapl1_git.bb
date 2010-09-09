@@ -11,7 +11,7 @@ BRANCH = "fbdev_sekhar"
 BRANCH_da850-sdi = "da850sdi"
 
 SRCREV = "57e7a8185d842a2cafa742ad8b7fb57d8826ed8e"
-SRCREV_da850-sdi = "5df947cc35e5916b569033868ceb6c4c9918f8ea"
+SRCREV_da850-sdi = "e9a4580372f7ff3821ac76bf78b6d5d0d5696cc8"
 
 KVER = "2.6.32+2.6.33-rc4"
 
