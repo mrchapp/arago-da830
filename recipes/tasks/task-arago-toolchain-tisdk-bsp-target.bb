@@ -1,5 +1,5 @@
 DESCRIPTION = "Task to build and install corresponding development packages for Board Support Package"
-PR = "r1"
+PR = "r2"
 LICENSE = "MIT"
 ALLOW_EMPTY = "1"
 
@@ -9,6 +9,11 @@ inherit task
 BLUETOOTH_SUPPORT = ""
 
 BLUETOOTH_SUPPORT_omap3 = "\
+    bluez4-dev \
+    openobex-dev \
+    "
+
+BLUETOOTH_SUPPORT_ti816x = "\
     bluez4-dev \
     openobex-dev \
     "
