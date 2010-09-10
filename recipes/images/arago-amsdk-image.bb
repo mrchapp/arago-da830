@@ -10,7 +10,10 @@ IMAGE_INSTALL += "\
     task-arago-base \
     task-arago-console \
     task-arago-base-tisdk \
-    task-arago-amsdk \
+    task-arago-tisdk-bsp \
+    task-arago-tisdk-graphics \
+    task-arago-tisdk-wireless \
+    task-arago-tisdk-addons \
     "
 
 export IMAGE_BASENAME = "arago-amsdk-image"
