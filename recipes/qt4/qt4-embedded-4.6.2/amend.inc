@@ -37,4 +37,4 @@ QT_CONFIG_FLAGS := "${@oe_filter_out('-plugin-decoration-windows', bb.data.getVa
 LICENSE = "LGPLv2.1"
 
 # Set the suffix to specify amended packages
-PR_append = "-arago3"
+PR_append = "-arago4"
