@@ -1,7 +1,7 @@
-require u-boot-omap3.inc
+require u-boot-omap3_psp2.inc
 
 UVER = "1.3.4"
-PSPREL = "2.1.0.5"
+PSPREL = "02.01.00.05"
 PV = "${UVER}"
 PR ="psp${PSPREL}-r1"
 
