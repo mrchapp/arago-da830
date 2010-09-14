@@ -5,8 +5,9 @@ KERNEL_IMAGETYPE = "uImage"
 
 FILESDIR = "${@os.path.dirname(bb.data.getVar('FILE',d,1))}/linux-omap3-psp/${MACHINE}/${PSPREL}"
 
-PV = "${KVER}"
-PR = "psp${PSPREL}"
+SRC_URI = "git://arago-project.org/git/projects/linux-omap3.git;protocol=git"
+
+PV = "${KVER}-psp${PSPREL}"
 
 COMPATIBLE_MACHINE = "omap3evm"
 

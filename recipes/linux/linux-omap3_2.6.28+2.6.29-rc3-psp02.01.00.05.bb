@@ -3,8 +3,6 @@ PSPREL = "02.01.00.05"
 
 require linux-omap3_psp2.inc
 
-PR = "psp${PSPREL}-r1"
-
 SRCREV = "c40ce00e32082c57070fdba39c7d7cba3228d440"
 
 SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git;protocol=git"

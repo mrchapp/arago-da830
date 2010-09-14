@@ -3,8 +3,5 @@ require linux-omap3_psp2.inc
 KVER = "2.6.31+2.6.32-rc5"
 PSPREL = "03.00.00.03"
 
-PV = "${KVER}-psp${PSPREL}"
-
+# Use this commit ID for a fix made after v2.6.32-rc5_OMAPPSP_03.00.00.03
 SRCREV = "a73318ee3672f46c3d463d9a5f2c75f028a406f3"
-
-SRC_URI = "git://arago-project.org/git/projects/linux-omap3.git;protocol=git;branch=OMAPPSP_03.00.00.03"
