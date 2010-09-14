@@ -5,11 +5,11 @@ require recipes/x-load/x-load.inc
 
 COMPATIBLE_MACHINE = "omap3"
 
-TAG = "fc6d5be15c703d21aef0ae0b8c02177721f0445f"
+SRCREV = "fc6d5be15c703d21aef0ae0b8c02177721f0445f"
 
 PR = "r0"
 
-SRC_URI = "git://arago-project.org/git/projects/x-load-omap3.git;protocol=git;tag=${TAG}"
+SRC_URI = "git://arago-project.org/git/projects/x-load-omap3.git;protocol=git"
 
 S = "${WORKDIR}/git"
 
