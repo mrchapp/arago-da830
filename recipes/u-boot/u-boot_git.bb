@@ -1,5 +1,5 @@
 require u-boot.inc
-PR ="r46"
+PR ="r47"
 
 FILESPATHPKG =. "u-boot-git:"
 
