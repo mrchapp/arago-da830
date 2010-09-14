@@ -9,4 +9,4 @@ PV = "${KVER}-psp${PSPREL}"
 
 SRCREV = "00b5086b79e58ee8e9aa5dde15fd6a44a8d65fe3"
 
-SRC_URI = "git://arago-project.org/git/people/sriram/ti-psp-omap.git;protocol=git;branch=OMAPPSP_03.00.01.06"
+SRC_URI = "git://arago-project.org/git/projects/linux-omap3.git;protocol=git;branch=OMAPPSP_03.00.01.06"
