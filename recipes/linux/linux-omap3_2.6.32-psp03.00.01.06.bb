@@ -1,6 +1,4 @@
-require linux-omap3_psp2.inc
-
-COMPATIBLE_MACHINE = "(omap3evm|dm37x-evm|am37x-evm)"
+require linux-omap3.inc
 
 KVER = "2.6.32"
 PSPREL = "03.00.01.06"
