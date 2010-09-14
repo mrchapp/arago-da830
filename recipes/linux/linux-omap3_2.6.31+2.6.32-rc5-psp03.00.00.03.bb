@@ -1,7 +1,7 @@
 require linux-omap3_psp2.inc
 
 KVER = "2.6.31+2.6.32-rc5"
-PSPREL = "3.0.0.3"
+PSPREL = "03.00.00.03"
 
 PV = "${KVER}-psp${PSPREL}"
 

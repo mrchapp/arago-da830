@@ -1,5 +1,5 @@
 SECTION = "kernel"
-DESCRIPTION = "Linux kernel for OMAP3 EVM from PSP, based on linux-omap2 kernel"
+DESCRIPTION = "Linux kernel for OMAP3 EVM from PSP, based on linux-omap3 kernel"
 LICENSE = "GPLv2"
 KERNEL_IMAGETYPE = "uImage"
 
