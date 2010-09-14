@@ -1,0 +1,52 @@
+From 6c45b964ba88348fac6b83215e05f8d74bed0a20 Mon Sep 17 00:00:00 2001
+From: Graeme Smecher <graeme.smecher@mail.mcgill.ca>
+Date: Tue, 14 Sep 2010 16:00:33 -0500
+Subject: [PATCH 2/2] winbond: add support W25Q64 parts
+
+Adds support for Winbond's W25Q64 SPI flash. These devices are used on
+(among others) Xilinx' SP601 and SP605 Spartan-6 evaluation boards.
+Tested with "sf" commands.
+
+Signed-off-by: Martin Ambrose <martin@ti.com>
+---
+ drivers/mtd/spi/winbond.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/mtd/spi/winbond.c b/drivers/mtd/spi/winbond.c
+index 1e2b36f..e9d243c 100644
+--- a/drivers/mtd/spi/winbond.c
++++ b/drivers/mtd/spi/winbond.c
+@@ -27,6 +27,7 @@
+ #define WINBOND_ID_W25X16	      0x3015
+ #define WINBOND_ID_W25X32	      0x3016
+ #define WINBOND_ID_W25X64	      0x3017
++#define WINBOND_ID_W25Q64	      0x4017 
+ 
+ #define WINBOND_SR_WIP	 (1 << 0)	/* Write-in-Progress */
+ 
+@@ -76,6 +77,14 @@ static const struct winbond_spi_flash_params winbond_spi_flash_table[] = {
+ 	       .nr_blocks	      = 128,
+ 	       .name		   = "W25X64",
+        },
++       { 
++	   .id = WINBOND_ID_W25Q64, 
++	   .l2_page_size = 8, 
++	   .pages_per_sector= 16, 
++	   .sectors_per_block= 16, 
++	   .nr_blocks = 128, 
++	   .name = "W25Q64", 
++       }, 
+ };
+ 
+ static int wait_state;
+@@ -299,6 +308,7 @@ struct spi_flash *spi_flash_probe_winbond(struct spi_slave *spi, u8 *idcode)
+        struct winbond_spi_flash *stm;
+        unsigned int i;
+ 
++
+        for (i = 0; i < ARRAY_SIZE(winbond_spi_flash_table); i++) {
+ 	       params = &winbond_spi_flash_table[i];
+ 	       if (params->id == ((idcode[1] << 8) | idcode[2]))
+-- 
+1.7.0.1
+
