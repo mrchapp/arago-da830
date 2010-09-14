@@ -1,9 +1,9 @@
-KVER = "2.6.28+2.6.29rc3"
-PSPREL = "2.1.0.5"
-
 require linux-omap3_psp2.inc
 
-PR = "psp${PSPREL}-r1"
+KVER = "2.6.28+2.6.29-rc3"
+PSPREL = "02.01.02.09"
+
+PV = "${KVER}-psp${PSPREL}"
 
 SRCREV = "c40ce00e32082c57070fdba39c7d7cba3228d440"
 
@@ -374,4 +374,66 @@ file://0361-PM-cpuidle-Update-statistics-for-correct-state.patch \
 file://0362-PM-cpuidle-fix-compile-warnings.patch \
 file://0363-Transition-to-C2-via-omap3_idle_bm_check.patch \
 file://0364-Change-default-configuration-for-OMAP3-EVM.patch \
+file://0365-Fbdev-timeout-bug-fixed.patch \
+file://0366-V4L2-Added-support-for-the-static-allocation-of-VRF.patch \
+file://0367-V4L2-Added-support-to-pass-the-physicall-address-to.patch \
+file://0368-DSS2-DVI-480P-Timing-parameters-changed.patch \
+file://0369-V4L2-V4L2-was-breaking-when-two-framebuffer-interfa.patch \
+file://0370-V4L2-Pixel-format-was-selected-wrong-when-two-frame.patch \
+file://0371-Update-PSP-version-string.patch \
+file://0372-Update-PSP-version-string-for-02.01.01.07-build.patch \
+file://0373-Update-psp-version-string-for-release-02.01.01.08.patch \
+file://0374-OMAP35x-Migrate-to-smsc911x-ethernet-driver-for-OM.patch \
+file://0375-smsc911x-ethernet-driver-save-MAC-address-before-s.patch \
+file://0376-DSS2-FBDEV-Panning-supported-with-rotation-on-Frame.patch \
+file://0377-DSS2-Timing-parameters-of-LCD-changed-to-get-exact.patch \
+file://0378-DSS2-Changed-omap3_evm_deconfig-to-select-DSI-as-th.patch \
+file://0379-Audio-Rebasing-the-include-sound-folder-from-l-o-ti.patch \
+file://0380-Audio-Rebasing-the-sound-folder-from-l-o-tip.patch \
+file://0381-Audio-Rebasing-misc-kernel-files-from-l-o-tip.patch \
+file://0382-ASoC-TWL4030-Fix-for-the-constraint-handling.patch \
+file://0383-ASoC-TWL4030-Add-support-Voice-DAI.patch \
+file://0384-ASoC-TWL4030-Add-VDL-path-support.patch \
+file://0385-ASoC-TWL4030-Add-4-channel-TDM-support.patch \
+file://0386-ASoC-TWL4030-Add-VDL-analog-bypass.patch \
+file://0387-ASoC-TWL4030-Add-voice-digital-loopback-sidetone.patch \
+file://0388-ASoC-TWL4030-Add-VIBRA-output.patch \
+file://0389-ASoC-TWL4030-Fix-typo-in-twl4030_codec_mute-functi.patch \
+file://0390-ASoC-TWL4030-change-DAPM-for-analog-microphone-sel.patch \
+file://0391-ASoC-TWL4030-Enable-disable-voice-digital-filters.patch \
+file://0392-ASoC-TWL4030-Fix-Analog-capture-path-for-AUXR.patch \
+file://0393-ASoC-TWL4030-Add-control-for-selecting-codec-opera.patch \
+file://0394-ASoC-TWL4030-Change-DAPM-routings-and-controls-for.patch \
+file://0395-ASoC-TWL4030-Move-the-Headset-pop-attenuation-code.patch \
+file://0396-ASoC-TWL4030-Add-support-for-platform-dependent-co.patch \
+file://0397-ASoC-TWL4030-Differentiate-the-playback-streams.patch \
+file://0398-ASoC-TWL4030-Handsfree-pop-removal-redesign.patch \
+file://0399-ASoC-Display-return-code-when-failing-to-add-a-DAPM.patch \
+file://0400-ASoC-Factor-out-application-of-power-for-generic-wi.patch \
+file://0401-ASoC-Support-DAPM-events-for-DACs-and-ADCs.patch \
+file://0402-ASoC-Factor-out-generic-widget-power-checks.patch \
+file://0403-ASoC-Factor-out-DAPM-power-checks-for-DACs-and-ADCs.patch \
+file://0404-ASoC-Make-the-DAPM-power-check-an-operation-on-the.patch \
+file://0405-ASoC-Add-power-supply-widget-to-DAPM.patch \
+file://0406-ASoC-Split-DAPM-power-checks-from-sequencing-of-pow.patch \
+file://0407-ASoC-Make-DAPM-sysfs-entries-non-optional.patch \
+file://0408-ASoC-Integrate-bias-management-with-DAPM-power-mana.patch \
+file://0409-ASoC-Add-debug-trace-for-bias-level-transitions.patch \
+file://0410-ASoC-SDP3430-Connect-twl4030-voice-DAI-to-McBSP3.patch \
+file://0411-ASoC-SDP4030-Use-the-twl4030_setup_data-for-headse.patch \
+file://0412-ASoC-Provide-core-support-for-symmetric-sample-rate.patch \
+file://0413-ASoC-add-SOC_DOUBLE_EXT-macro.patch \
+file://0414-AsoC-Make-snd_soc_read-and-snd_soc_write-functi.patch \
+file://0415-ASoC-Remove-unused-DAI-format-defines.patch \
+file://0416-ASoC-Remove-redundant-codec-pointer-from-DAIs.patch \
+file://0417-ASoC-OMAP-Add-checking-to-detect-bufferless-pcms.patch \
+file://0418-ASoC-TWL4030-Add-shadow-register.patch \
+file://0419-ASoC-TWL4030-HandsfreeL-R-mute-DAPM-switch.patch \
+file://0420-ASoC-TWL4030-Use-reg_cache-in-twl4030_init_chip.patch \
+file://0421-ASoC-TWL4030-Check-the-interface-format-for-4-chan.patch \
+file://0422-ASoC-Fix-build-error-in-twl4030.c.patch \
+file://0423-ASoC-OMAP3EVM-Use-the-twl4030_setup_data-for-heads.patch \
+file://0424-Audio-Adding-PM-code-in-audio-driver.patch \
+file://0425-Update-psp-version-string-for-release-02.01.02.09.patch \
+file://0426-smsc911x-ethernet-driver-save-MAC-address-before-s.patch \
 "

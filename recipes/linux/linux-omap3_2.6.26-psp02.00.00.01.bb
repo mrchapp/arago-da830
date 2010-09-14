@@ -1,5 +1,5 @@
 KVER = "2.6.26"
-PSPREL = "2.0.0.1"
+PSPREL = "02.00.00.01"
 
 require linux-omap3_psp2.inc
 
