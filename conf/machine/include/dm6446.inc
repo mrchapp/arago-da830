@@ -1,2 +1,1 @@
 SOC_FAMILY = "dm6446"
-

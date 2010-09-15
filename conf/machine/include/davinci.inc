@@ -20,6 +20,4 @@ EXTRA_IMAGEDEPENDS += "u-boot"
 SERIAL_CONSOLE ?= "115200 ttyS0"
 EXTRA_IMAGECMD_jffs2 = "--pad --little-endian --eraseblock=0x20000 -n"
 
-#ROOT_FLASH_SIZE = "29"
-
 MACHINE_FEATURES = "kernel26 serial ethernet usbhost usbgadget mmc alsa"
