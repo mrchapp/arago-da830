@@ -3,7 +3,7 @@
 # than just within the current directory.
 require recipes/u-boot/u-boot.inc
 
-DESCRIPTION = "u-boot bootloader for TI816X devices"
+DESCRIPTION = "u-boot bootloader for OMAP3 devices"
 
 COMPATIBLE_MACHINE = "omap3"
 

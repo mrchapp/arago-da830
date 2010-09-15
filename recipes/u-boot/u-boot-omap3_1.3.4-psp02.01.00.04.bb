@@ -3,7 +3,7 @@ require u-boot-omap3_psp2.inc
 UVER = "1.3.4"
 PSPREL = "02.01.00.04"
 PV = "${UVER}"
-PR ="psp${PSPREL}-r1"
+PR = "psp${PSPREL}-r1"
 
 FILESDIR = "${@os.path.dirname(bb.data.getVar('FILE',d,1))}/u-boot-omap3-psp/${MACHINE}/${PSPREL}"
 
