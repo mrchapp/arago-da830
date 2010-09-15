@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.33-rc4
-# Thu Sep  9 13:24:30 2010
+# Wed Sep 15 15:12:54 2010
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -1290,7 +1290,7 @@ CONFIG_SND_SOC_TLV320AIC3X=y
 # CONFIG_SOUND_PRIME is not set
 CONFIG_HID_SUPPORT=y
 CONFIG_HID=y
-# CONFIG_HIDRAW is not set
+CONFIG_HIDRAW=y
 
 #
 # USB Input Devices
@@ -1582,7 +1582,8 @@ CONFIG_INOTIFY_USER=y
 # CONFIG_QUOTA is not set
 # CONFIG_AUTOFS_FS is not set
 CONFIG_AUTOFS4_FS=m
-# CONFIG_FUSE_FS is not set
+CONFIG_FUSE_FS=m
+# CONFIG_CUSE is not set
 
 #
 # Caches
