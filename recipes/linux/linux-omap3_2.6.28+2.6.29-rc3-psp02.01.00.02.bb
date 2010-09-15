@@ -1,7 +1,7 @@
 KVER = "2.6.28+2.6.29-rc3"
 PSPREL = "02.01.00.02"
 
-require linux-omap3_psp2.inc
+require linux-omap3-psp2.inc
 
 SRCREV = "c40ce00e32082c57070fdba39c7d7cba3228d440"
 

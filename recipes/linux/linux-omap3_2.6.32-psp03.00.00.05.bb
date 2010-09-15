@@ -1,4 +1,4 @@
-require linux-omap3_psp2.inc
+require linux-omap3-psp2.inc
 
 COMPATIBLE_MACHINE = "(omap3evm|dm37x-evm|am37x-evm)"
 

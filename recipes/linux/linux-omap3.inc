@@ -16,6 +16,7 @@ COMPATIBLE_MACHINE = "omap3"
 S = "${WORKDIR}/git"
 
 # Do not include generic linux.inc, but copy defconfig in place
-do_configure_prepend() {
+addtask setup_defconfig before do_configure after do_patch
+do_setup_defconfig() {
 	cp ${WORKDIR}/defconfig ${S}/.config
 }

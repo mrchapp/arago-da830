@@ -1,4 +1,4 @@
-require linux-omap3_psp2.inc
+require linux-omap3-psp2.inc
 
 KVER = "2.6.28+2.6.29-rc3"
 PSPREL = "02.01.02.09"
