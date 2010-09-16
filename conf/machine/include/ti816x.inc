@@ -4,7 +4,7 @@ SOC_FAMILY = "ti816x"
 require conf/machine/include/tune-cortexa8.inc
 
 PREFERRED_PROVIDER_virtual/kernel = "linux-omap3"
-PREFERRED_PROVIDER_virtual/bootloader = "u-boot-omap3"
+PREFERRED_PROVIDER_virtual/bootloader = "u-boot"
 
 # Increase this everytime you change something in the kernel
 MACHINE_KERNEL_PR = "r1"

@@ -9,7 +9,7 @@ KERNEL_IMAGETYPE = "uImage"
 
 PREFERRED_PROVIDER_virtual/kernel = "linux-davinci"
 
-PREFERRED_PROVIDER_virtual/bootloader = "u-boot-davinci"
+PREFERRED_PROVIDER_virtual/bootloader = "u-boot"
 UBOOT_MACHINE = "davinci_dvevm_config"
 
 UBOOT_ENTRYPOINT = "0x80008000"
