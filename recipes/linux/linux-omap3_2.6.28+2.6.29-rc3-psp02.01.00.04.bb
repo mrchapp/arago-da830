@@ -1,4 +1,4 @@
-KVER = "2.6.28+2.6.29-rc3"
+KVER = "2.6.29-rc3"
 PSPREL = "02.01.00.04"
 
 require linux-omap3-psp2.inc

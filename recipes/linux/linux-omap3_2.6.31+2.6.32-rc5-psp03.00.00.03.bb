@@ -1,6 +1,6 @@
 require linux-omap3-psp2.inc
 
-KVER = "2.6.31+2.6.32-rc5"
+KVER = "2.6.32-rc5"
 PSPREL = "03.00.00.03"
 
 # Use this commit ID for a fix made after v2.6.32-rc5_OMAPPSP_03.00.00.03
