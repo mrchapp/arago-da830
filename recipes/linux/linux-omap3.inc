@@ -8,8 +8,6 @@ inherit kernel
 SRC_URI = "git://arago-project.org/git/projects/linux-omap3.git;protocol=git \
 	file://defconfig"
 
-PV = "${KVER}-psp${PSPREL}"
-
 # Requires support for SOC_FAMILY matching in COMPATIBLE_MACHINE
 COMPATIBLE_MACHINE = "omap3"
 
