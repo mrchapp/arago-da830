@@ -41,10 +41,11 @@ python ti_bin_do_unpack() {
     # Run the InstallJammer binary and accept the EULA
     filename = "HOME=%s ./%s --mode console" % (workdir, binfile)
     
-    # Test executable by printing installer version
-    if os.system(filename + " --version") != 0:
-        print "ERROR: ti-eula-unpack: failed to execute binary installer"
-        raise bb.build.FuncFailed()
+    # Test executable by printing installer version or help screen (--version currently broken for some installers) 
+    # - this is currently broken in some IJ installers - comment out for now
+    #if os.system(filename + " --version") != 0:
+    #   print "ERROR: ti-eula-unpack: failed to execute binary installer"
+    #   raise bb.build.FuncFailed()
  
     f = os.popen(filename,'w')
     for cmd in cmd_list:
@@ -59,7 +60,7 @@ python ti_bin_do_unpack() {
     tarfile  = bb.data.getVar('TARFILE', localdata)    
     if bool(tarfile) == True:
         tarfile  = bb.data.expand(tarfile, localdata)
-        tcmd = 'tar xz --no-same-owner -f %s -C %s' % (tarfile, workdir)
+        tcmd = 'tar x --no-same-owner -f %s -C %s' % (tarfile, workdir)
         if os.system(tcmd) != 0:
             print "ERROR: ti-eula-unpack: failed to extract tarfile"
             raise bb.build.FuncFailed()

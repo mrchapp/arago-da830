@@ -33,8 +33,6 @@ COLLECTIONS =+ "${@' '.join(map(lambda x: x if os.path.exists(x) else '', (bb.da
 # Optionally postpend any space separated existent paths defined in OEBASE_PST environment variable.
 COLLECTIONS += "${@' '.join(map(lambda x: x if os.path.exists(x) else '', (bb.data.getVar('OEBASE_PST', d, 1) or '').split()))}"
 
-include conf/arago-bom.conf
-
 # Use the BBMASK below to instruct BitBake to _NOT_ consider some .bb files
 # This is a regular expression, so be sure to get your parenthesis balanced.
 BBMASK = "(nonworking|obsolete)"
@@ -44,6 +42,12 @@ require conf/toolchain-csl.conf
 
 # Enable following line to use MontaVista Pro 5, which should be in PATH
 #require conf/toolchain-mvl5.conf
+
+# Enable capturing license files from sources
+INHERIT += "distribute_license"
+
+# Enable generation of source packages for SDKs
+require conf/arago-source-ipk.conf
 
 # Black magic to automatically set SDK_PATH out of PATH - don't touch this!
 # Works with pretty much any external toolchain, like CS Lite or MV Pro 5
@@ -68,7 +72,7 @@ PREFERRED_PROVIDER_gdbserver = "gdbserver"
 PREFERRED_VERSION_gdbserver = "6.6"
 PREFERRED_VERSION_gdb = "6.6"
 PREFERRED_VERSION_gdb-cross-sdk = "6.6"
-PREFERRED_PROVIDER_libopkg-dev = "opkg-nogpg-nocurl"
+PREFERRED_PROVIDER_libopkg-dev = "opkg"
 PREFERRED_PROVIDER_ti-lpm-module = "ti-local-power-manager"
 PREFERRED_PROVIDER_ti-dsplink-module = "ti-dsplink"
 PREFERRED_PROVIDER_qt4-embedded = "qt4-embedded"
@@ -77,6 +81,8 @@ PREFERRED_VERSION_iperf = "1.7.0"
 # Need earlier version due to bug in 3.3.9 which prevents discovery
 # Also 3.3.x is GPLv3 and we want GPLv2 or similar
 PREFERRED_VERSION_samba	= "3.0.37"
+
+include conf/arago-bom.conf
 
 # Disable DropBear for now due to export restrictions
 DISTRO_SSH_DAEMON = ""
@@ -115,7 +121,7 @@ DISTRO = "angstrom-2008.1"
 
 # Set the distro name and version, since we now produce own SDK
 DISTRO_NAME = "Arago"
-DISTRO_VERSION = "2010.05"
+DISTRO_VERSION = "2010.07"
 BUILDNAME = "${DISTRO_NAME} ${DISTRO_VERSION}"
 
 # Add own mirrors

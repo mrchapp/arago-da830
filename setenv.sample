@@ -1,4 +1,6 @@
 # Set OEBASE to where Arago overlay and OpenEmbedded repositories reside
+# NOTE: Do NOT place a trailing / on the end of OEBASE.  Doing so will
+#       cause the amend class to not find its files.
 export OEBASE=$HOME/oe
 
 # Set SCRATCH variable accordingly if you want to use scratch area
@@ -6,7 +8,7 @@ export OEBASE=$HOME/oe
 
 # Set the paths...
 export BBPATH=$OEBASE/arago:$OEBASE/arago-oe-dev
-export PATH=$OEBASE/arago-bitbake/bin/:$PATH
+export PATH=$OEBASE/arago-bitbake/bin/:$OEBASE/arago-utils/:$PATH
 
 # The whitelist seems to be broken for now, thus preserve all the vars
 export BB_PRESERVE_ENV=1

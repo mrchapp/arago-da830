@@ -10,7 +10,7 @@ SDK_SUFFIX = "qte-sdk"
 QT_DIR_NAME = "qtopia"
 
 do_populate_sdk_append() {
-       script = "${SDK_OUTPUT}/${SDKPATH}/environment-setup"
+       script="${SDK_OUTPUT}/${SDKPATH}/environment-setup"
        touch $script
        echo 'export OE_QMAKE_CC=${TARGET_SYS}-gcc' >> $script
        echo 'export OE_QMAKE_CXX=${TARGET_SYS}-g++' >> $script

@@ -7,8 +7,8 @@ DEPENDS = "openssl"
 PR = "r1-arago1"
 
 SRC_URI = "http://hostap.epitest.fi/releases/wpa_supplicant-${PV}.tar.gz \
-	file://wpa-0.5.7-libc-types.patch;patch=1 \
-	file://wpa_suppl.diff;patch=1 \
+	file://wpa-0.5.7-libc-types.patch \
+	file://wpa_suppl.diff \
 	file://defconfig-openssl \
 	file://ifupdown.sh \
 	file://functions.sh \

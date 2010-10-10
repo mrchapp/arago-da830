@@ -16,7 +16,7 @@ PR = "r5"
 
 S = "${WORKDIR}/codec_engine_${PV}"
 
-SRC_URI = "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/ce/${PV}/exports/codec_engine_${PV},lite.tar.gz;name=cetarball"
+SRC_URI = "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/targetcontent/ce/${PV}/exports/codec_engine_${PV},lite.tar.gz;name=cetarball "
 
 DEPENDS = "ti-framework-components ti-xdais ti-xdctools ti-linuxutils"
 DEPENDS_append_dm6446 	= " ti-dspbios ti-dsplink ti-local-power-manager ti-cgt6x ti-biosutils ti-edma3lld"
@@ -86,6 +86,10 @@ do_prepsources() {
                      CGTOOLS_C64P="${CODEGEN_INSTALL_DIR}" \
                      CGTOOLS_C674="${CODEGEN_INSTALL_DIR}" \
                      clean
+		     # '.make' target was used in CE < 2.26, but its no longer
+		     # supported in CE >= 2.26. Now we are moved to >=2.26 
+		     # hence commenting out the .make target.
+                     # .make clean
         done
 }
 

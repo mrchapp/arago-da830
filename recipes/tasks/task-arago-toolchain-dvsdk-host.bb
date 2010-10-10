@@ -1,8 +1,9 @@
 DESCRIPTION = "Host packages for a standalone Arago SDK or external toolchain"
-PR = "r18"
+PR = "r19"
 ALLOW_EMPTY = "1"
 
 inherit sdk
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 PACKAGES = "${PN}"
 
