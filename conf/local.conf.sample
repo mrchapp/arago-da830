@@ -21,11 +21,17 @@ TMPDIR = "${SCRATCH}/arago-tmp"
 
 # Set the collections
 require conf/collections.inc
-COLLECTIONS = "${NSDK}/build/oe ${OEBASE}/arago/ ${OEBASE}/arago-oe-dev/"
+COLLECTIONS = "${OEBASE}/arago/ ${OEBASE}/arago-oe-dev/"
 
 # Optionally add BOM and Custom collections
 COLLECTIONS =. "${@['', bb.data.getVar('OEBASE', d, 1)+'/arago-custom/ '][os.path.exists(bb.data.getVar('OEBASE', d, 1)+'/arago-custom/')]}"
 COLLECTIONS =. "${@['', bb.data.getVar('OEBASE', d, 1)+'/arago-bom/ '][os.path.exists(bb.data.getVar('OEBASE', d, 1)+'/arago-bom/')]}"
+
+# Optionally prepend any space separated existent paths defined in OEBASE_PRE environment variable.
+COLLECTIONS =+ "${@' '.join(map(lambda x: x if os.path.exists(x) else '', (bb.data.getVar('OEBASE_PRE', d, 1) or '').split()))}"
+
+# Optionally postpend any space separated existent paths defined in OEBASE_PST environment variable.
+COLLECTIONS += "${@' '.join(map(lambda x: x if os.path.exists(x) else '', (bb.data.getVar('OEBASE_PST', d, 1) or '').split()))}"
 
 include conf/arago-bom.conf
 
