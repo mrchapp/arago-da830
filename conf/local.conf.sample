@@ -82,6 +82,10 @@ PREFERRED_VERSION_iperf = "1.7.0"
 # Also 3.3.x is GPLv3 and we want GPLv2 or similar
 PREFERRED_VERSION_samba	= "3.0.37"
 
+# Later versions of gnutls require gettext 0.18 but pinned version
+# of gstreamer requires 0.17. So, for now, use older gnutls.
+PREFERRED_VERSION_gnutls = "2.8.5"
+
 include conf/arago-bom.conf
 
 # Disable DropBear for now due to export restrictions
