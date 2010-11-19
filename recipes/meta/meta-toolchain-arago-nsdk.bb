@@ -1,6 +1,8 @@
 TOOLCHAIN_HOST_TASK ?= "task-arago-toolchain-nsdk-host"
 TOOLCHAIN_TARGET_TASK ?= "task-arago-toolchain-nsdk-target"
 
+require meta-toolchain.bb
+
 PR = "r1"
 SDK_SUFFIX = "nsdk"
 
@@ -132,8 +134,6 @@ TOOLCHAIN_TARGET_EXCLUDE += "\
     omap3-sgx-modules \
     update-modules \
     "
-
-require meta-toolchain.bb
 
 # Shamelessly stolen and modified from cmake.bbclass
 # If there is a better way for re-use in an SDK environ, I don't know it
