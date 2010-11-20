@@ -56,6 +56,7 @@ RDEPENDS_${PN} = "\
     gst-plugin-autodetect \
     gst-plugin-mad \
     smbnetfs \
+    libnl \
     lighttpd \
     lighttpd-module-fastcgi \
     log4cplus \
