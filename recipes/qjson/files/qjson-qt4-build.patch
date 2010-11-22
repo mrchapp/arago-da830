@@ -1,0 +1,109 @@
+diff -Naur git.orig/CMakeLists.txt git/CMakeLists.txt
+--- git.orig/CMakeLists.txt	2010-10-05 17:23:33.000000000 +0200
++++ git/CMakeLists.txt	2010-10-06 09:12:56.000000000 +0200
+@@ -2,8 +2,8 @@
+ 
+ set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DQT_NO_CAST_FROM_ASCII -DQT_NO_CAST_TO_ASCII" )
+ 
+-# Stop cmake 2.6 from whining
+-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
++# Stop cmake 2.8.1 from whining
++CMAKE_MINIMUM_REQUIRED(VERSION 2.8.1)
+ IF(COMMAND cmake_policy)
+   CMAKE_POLICY(SET CMP0003 NEW)
+ ENDIF(COMMAND cmake_policy)
+@@ -31,7 +31,10 @@
+ endif(QJSON_VERBOSE_DEBUG_OUTPUT)
+ 
+ # Find Qt4
+-FIND_PACKAGE( Qt4 REQUIRED )
++# FIND_PACKAGE( Qt4 REQUIRED )
++include(Qt4Macros)
++set(QT_INCLUDES ${QT_INCLUDE_DIR} ${QT_QTCORE_INCLUDE_DIR})
++include_directories(${QT_INCLUDES})
+ 
+ SET( QT_DONT_USE_QTGUI TRUE )
+ 
+@@ -53,14 +56,14 @@
+ # pkg-config
+ IF (NOT WIN32)
+   CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/QJson.pc.in
+-                  ${CMAKE_CURRENT_BINARY_DIR}/QJson.pc
++                  ${CMAKE_CURRENT_BINARY_DIR}/QJson-hash.pc
+                   @ONLY)
+-  INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/QJson.pc
++  INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/QJson-hash.pc
+            DESTINATION lib${LIB_SUFFIX}/pkgconfig)
+ ENDIF (NOT WIN32)
+ 
+ # Include the cmake file needed to use qt4
+-INCLUDE( ${QT_USE_FILE} )
++# INCLUDE( ${QT_USE_FILE} )
+ 
+ # Subdirs
+ ADD_SUBDIRECTORY(src)
+@@ -72,10 +75,10 @@
+ add_subdirectory(cmake/modules)
+ 
+ 
+-CONFIGURE_FILE(
+-  "${CMAKE_MODULE_PATH}/cmake_uninstall.cmake.in"
+-  "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+-  IMMEDIATE @ONLY)
++# CONFIGURE_FILE(
++#   "${CMAKE_MODULE_PATH}/cmake_uninstall.cmake.in"
++#   "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
++#   IMMEDIATE @ONLY)
+ 
+ ADD_CUSTOM_TARGET(uninstall
+   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+diff -Naur git.orig/QJson.pc.in git/QJson.pc.in
+--- git.orig/QJson.pc.in	2010-10-06 09:14:25.000000000 +0200
++++ git/QJson.pc.in	2010-10-06 09:13:49.000000000 +0200
+@@ -3,9 +3,9 @@
+ libdir=@LIB_INSTALL_DIR@
+ includedir=@INCLUDE_INSTALL_DIR@
+ 
+-Name: QJson
+-Description: QJson is a qt-based library that maps JSON data to QVariant objects
++Name: QJson-Hash
++Description: QJson is a qt-based library that maps JSON data to QVariant objects (QVariantHash mod)
+ Version: @QJSON_LIB_MAJOR_VERSION@.@QJSON_LIB_MINOR_VERSION@.@QJSON_LIB_PATCH_VERSION@
+ Requires: QtCore
+-Libs: -L${libdir} -lqjson
++Libs: -L${libdir} -lqjson-hash
+ Cflags: -I${includedir}
+\ No newline at end of file
+diff -Naur git.orig/src/CMakeLists.txt git/src/CMakeLists.txt
+--- git.orig/src/CMakeLists.txt	2010-10-06 09:12:16.000000000 +0200
++++ git/src/CMakeLists.txt	2010-10-06 09:11:57.000000000 +0200
+@@ -14,7 +14,7 @@
+         serializer.h
+         serializerrunnable.h
+         qjson_export.h
+-        DESTINATION ${INCLUDE_INSTALL_DIR}/qjson COMPONENT Devel
++        DESTINATION ${INCLUDE_INSTALL_DIR}/qjson-hash COMPONENT Devel
+ )
+ 
+ set(qjson_MOC_HDRS
+@@ -26,16 +26,16 @@
+ 
+ set (qjson_SRCS parser.cpp qobjecthelper.cpp json_scanner.cpp json_parser.cc parserrunnable.cpp serializer.cpp serializerrunnable.cpp)
+ 
+-add_library (qjson SHARED ${qjson_SRCS} ${qjson_MOC_SRCS})
+-target_link_libraries( qjson ${QT_LIBRARIES})
++add_library (qjson-hash SHARED ${qjson_SRCS} ${qjson_MOC_SRCS})
++target_link_libraries( qjson-hash ${QT_LIBRARIES})
+ 
+-set_target_properties(qjson PROPERTIES
++set_target_properties(qjson-hash PROPERTIES
+                       VERSION ${QJSON_LIB_MAJOR_VERSION}.${QJSON_LIB_MINOR_VERSION}.${QJSON_LIB_PATCH_VERSION}
+                       SOVERSION ${QJSON_LIB_MAJOR_VERSION}
+                       DEFINE_SYMBOL QJSON_MAKEDLL
+                       )
+ 
+-INSTALL(TARGETS qjson
++INSTALL(TARGETS qjson-hash
+    LIBRARY DESTINATION ${LIB_INSTALL_DIR}
+    RUNTIME DESTINATION bin
+    ARCHIVE DESTINATION  ${LIB_INSTALL_DIR}

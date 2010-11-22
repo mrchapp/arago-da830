@@ -1,0 +1,121 @@
+diff -Naur qjson-git/src/json_parser.cc qjson/src/json_parser.cc
+--- qjson-git/src/json_parser.cc	2010-10-05 17:01:25.000000000 +0200
++++ qjson/src/json_parser.cc	2010-07-23 09:32:46.000000000 +0200
+@@ -412,36 +412,36 @@
+ 
+   case 7:
+ #line 96 "json_parser.yy"
+-    { (yyval) = QVariant (QVariantMap()); ;}
++    { (yyval) = QVariant (QVariantHash()); ;}
+     break;
+ 
+   case 8:
+ #line 97 "json_parser.yy"
+     {
+-            QVariantMap members = (yysemantic_stack_[(2) - (2)]).toMap();
+-            (yysemantic_stack_[(2) - (2)]) = QVariant(); // Allow reuse of map
+-            (yyval) = QVariant(members.unite ((yysemantic_stack_[(2) - (1)]).toMap()));
++            QVariantHash members = (yysemantic_stack_[(2) - (2)]).toHash();
++            (yysemantic_stack_[(2) - (2)]) = QVariant(); // Allow reuse of hash
++            (yyval) = QVariant(members.unite ((yysemantic_stack_[(2) - (1)]).toHash()));
+           ;}
+     break;
+ 
+   case 9:
+ #line 103 "json_parser.yy"
+-    { (yyval) = QVariant (QVariantMap()); ;}
++    { (yyval) = QVariant (QVariantHash()); ;}
+     break;
+ 
+   case 10:
+ #line 104 "json_parser.yy"
+     {
+-          QVariantMap members = (yysemantic_stack_[(3) - (3)]).toMap();
+-          (yysemantic_stack_[(3) - (3)]) = QVariant(); // Allow reuse of map
+-          (yyval) = QVariant(members.unite ((yysemantic_stack_[(3) - (2)]).toMap()));
++          QVariantHash members = (yysemantic_stack_[(3) - (3)]).toHash();
++          (yysemantic_stack_[(3) - (3)]) = QVariant(); // Allow reuse of hash
++          (yyval) = QVariant(members.unite ((yysemantic_stack_[(3) - (2)]).toHash()));
+           ;}
+     break;
+ 
+   case 11:
+ #line 110 "json_parser.yy"
+     {
+-            QVariantMap pair;
++            QVariantHash pair;
+             pair.insert ((yysemantic_stack_[(3) - (1)]).toString(), QVariant((yysemantic_stack_[(3) - (3)])));
+             (yyval) = QVariant (pair);
+           ;}
+diff -Naur qjson-git/src/json_parser.hh qjson/src/json_parser.hh
+--- qjson-git/src/json_parser.hh	2010-10-05 17:01:25.000000000 +0200
++++ qjson/src/json_parser.hh	2010-07-23 09:32:46.000000000 +0200
+@@ -55,7 +55,7 @@
+   #include "qjson_debug.h"
+ 
+   #include <QtCore/QByteArray>
+-  #include <QtCore/QMap>
++  #include <QtCore/QHash>
+   #include <QtCore/QString>
+   #include <QtCore/QVariant>
+ 
+diff -Naur qjson-git/src/json_parser.yy qjson/src/json_parser.yy
+--- qjson-git/src/json_parser.yy	2010-10-05 17:01:25.000000000 +0200
++++ qjson/src/json_parser.yy	2010-07-23 09:32:46.000000000 +0200
+@@ -28,7 +28,7 @@
+   #include "qjson_debug.h"
+ 
+   #include <QtCore/QByteArray>
+-  #include <QtCore/QMap>
++  #include <QtCore/QHash>
+   #include <QtCore/QString>
+   #include <QtCore/QVariant>
+ 
+@@ -93,22 +93,22 @@
+ 
+ object: CURLY_BRACKET_OPEN members CURLY_BRACKET_CLOSE { $$ = $2; };
+ 
+-members: /* empty */ { $$ = QVariant (QVariantMap()); }
++members: /* empty */ { $$ = QVariant (QVariantHash()); }
+         | pair r_members {
+-            QVariantMap members = $2.toMap();
+-            $2 = QVariant(); // Allow reuse of map
+-            $$ = QVariant(members.unite ($1.toMap()));
++            QVariantHash members = $2.toHash();
++            $2 = QVariant(); // Allow reuse of hash
++            $$ = QVariant(members.unite ($1.toHash()));
+           };
+ 
+-r_members: /* empty */ { $$ = QVariant (QVariantMap()); }
++r_members: /* empty */ { $$ = QVariant (QVariantHash()); }
+         | COMMA pair r_members {
+-          QVariantMap members = $3.toMap();
+-          $3 = QVariant(); // Allow reuse of map
+-          $$ = QVariant(members.unite ($2.toMap()));
++          QVariantHash members = $3.toHash();
++          $3 = QVariant(); // Allow reuse of hash
++          $$ = QVariant(members.unite ($2.toHash()));
+           };
+ 
+ pair:   string COLON value {
+-            QVariantMap pair;
++            QVariantHash pair;
+             pair.insert ($1.toString(), QVariant($3));
+             $$ = QVariant (pair);
+           };
+diff -Naur qjson-git/src/serializer.cpp qjson/src/serializer.cpp
+--- qjson-git/src/serializer.cpp	2010-10-05 17:01:25.000000000 +0200
++++ qjson/src/serializer.cpp	2010-07-23 09:32:46.000000000 +0200
+@@ -134,9 +134,9 @@
+       values << serializedValue;
+     }
+     str = "[ " + join( values, ", " ) + " ]";
+-  } else if ( v.type() == QVariant::Map ) { // variant is a map?
+-    const QVariantMap vmap = v.toMap();
+-    QMapIterator<QString, QVariant> it( vmap );
++  } else if ( v.type() == QVariant::Hash ) { // variant is a hash?
++    const QVariantHash vhash = v.toHash();
++    QHashIterator<QString, QVariant> it( vhash );
+     str = "{ ";
+     QList<QByteArray> pairs;
+     while ( it.hasNext() ) {
