@@ -18,6 +18,7 @@ my $machine;
 my $index = 0;
 
 my $sdkpath_default = "sdk-cdrom";
+my $label_default   = "nover";
 my $machine_default = "da850-sdi";
 
 my %machines = (
@@ -60,11 +61,19 @@ get_input();
 
 validate_input();
 
-#build_image();
+build_image();
 
 copy_output();
 
-print "\nBuild of Arago completed\n";
+print "\nCreating tarball\n";
+$cmd = "tar -czf nsdk_$label.tar.gz -C $sdkpath .";
+$result = system($cmd);
+if ($result) {
+    print "\nERROR: Failed to create tarball\n";
+    exit 1;
+}
+
+print "\nBuild of nSDK completed\n";
 
 ################################################################################
 # build_image
@@ -323,6 +332,22 @@ sub get_input
         $sdkpath = "$arago_dir/$sdkpath_default";
     }
 
+    if (!$label) {
+        print "\nWhat label do you want to append to the tarball (nsdk_label.tar.gz)?\n";
+        $input = <STDIN>;
+        $input =~ s/\s+$//;
+
+        if ($input) {
+            $label = "$input";
+        }
+        else {
+            $label = "$label_default";
+        }
+    }
+    if ($label =~ m/default/i) {
+        $label = "$label_default";
+    }
+
     $packages[$index++] = $bsp_source;
     $packages[$index++] = $bsp_binary;
     $packages[$index++] = $image;
@@ -340,15 +365,21 @@ sub parse_args
             exit 0;
         }
 
-        if ($ARGV[0] eq '-m' || $ARGV[0] eq '--machine') {
-            shift(@ARGV);
-            $machine = shift(@ARGV);
-            next;
-        }
-
         if ($ARGV[0] eq '-i' || $ARGV[0] eq '--image') {
             shift(@ARGV);
             $image = shift(@ARGV);
+            next;
+        }
+
+        if ($ARGV[0] eq '-l' || $ARGV[0] eq '--label') {
+            shift(@ARGV);
+            $label = shift(@ARGV);
+            next;
+        }
+
+        if ($ARGV[0] eq '-m' || $ARGV[0] eq '--machine') {
+            shift(@ARGV);
+            $machine = shift(@ARGV);
             next;
         }
 
@@ -370,8 +401,9 @@ sub display_help
 {
     print "Usage: perl sdk-build.pl [options]\n\n";
     print "    -h | --help         Display this help message.\n";
-    print "    -m | --machine      Machine type to build for.\n";
     print "    -i | --image        Image to build.\n";
+    print "    -l | --label        Label to append tarball (nsdk_label.tar.gz)\n";
+    print "    -m | --machine      Machine type to build for.\n";
     print "    -p | --sdkpath      Where to generate the SDK\n";
     print "\nIf an option is not given it will be queried interactively.\n";
     print "If the value \"default\" is given for any parameter, the\n";
