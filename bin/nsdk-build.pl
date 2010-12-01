@@ -66,7 +66,7 @@ build_image();
 copy_output();
 
 print "\nCreating tarball\n";
-$cmd = "tar -czf nsdk_$label.tar.gz -C $sdkpath .";
+$cmd = "tar -czf nsdk\_$machine\_$label.tar.gz -C $sdkpath .";
 $result = system($cmd);
 if ($result) {
     print "\nERROR: Failed to create tarball\n";
