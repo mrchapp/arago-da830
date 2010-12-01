@@ -61,5 +61,6 @@ RDEPENDS_${PN} = "\
     lighttpd-module-fastcgi \
     log4cplus \
     qjson-hash \
+    u-boot \
     "
  
