@@ -7,11 +7,9 @@ COMPATIBLE_MACHINE = "(da830-omapl137-evm|da850-omapl138-evm|da850-sdi)"
 
 DEFAULT_PREFERENCE = "1"
 
-BRANCH = "fbdev_sekhar"
-BRANCH_da850-sdi = "da850sdi"
+BRANCH = "da850sdi"
 
-SRCREV = "57e7a8185d842a2cafa742ad8b7fb57d8826ed8e"
-SRCREV_da850-sdi = "4f0ff67bc698259ac5b511cbc1be397e9270a441"
+SRCREV = "4043c639fb7419542b73e782152e17f5acd02428"
 
 KVER = "2.6.32+2.6.33-rc4"
 
