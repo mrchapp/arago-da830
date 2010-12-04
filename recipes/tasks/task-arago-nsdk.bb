@@ -1,5 +1,5 @@
 DESCRIPTION = "Arago based rootfs for nSDK development"
-PR = "r2"
+PR = "r3"
 
 inherit task
 
@@ -51,10 +51,12 @@ RDEPENDS_${PN} = "\
     gst-plugin-volume \
     gst-plugin-audiotestsrc \
     gst-plugin-decodebin \
+    gst-plugin-decodebin2 \
     gst-plugin-playbin \
     gst-plugin-souphttpsrc \
     gst-plugin-autodetect \
     gst-plugin-mad \
+    gst-plugin-rtsp \
     smbnetfs \
     libnl \
     lighttpd \
