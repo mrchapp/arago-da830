@@ -86,6 +86,10 @@ PREFERRED_VERSION_samba	= "3.0.37"
 # of gstreamer requires 0.17. So, for now, use older gnutls.
 PREFERRED_VERSION_gnutls = "2.8.5"
 
+# Pinning version since using BBCLASSEXTEND which
+# seems to ignore the overlay priorities.
+PREFERRED_VERSION_cmake-native = "2.8.1"
+
 include conf/arago-bom.conf
 
 # Disable DropBear for now due to export restrictions
