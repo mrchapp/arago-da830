@@ -159,6 +159,8 @@ generate_cmake_toolchain_file () {
     echo 'set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fpermissive" CACHE STRING "CXXFLAGS" )' >> ${outFile}
     echo 'set( CMAKE_C_FLAGS_RELEASE "'"${SELECTED_OPTIMIZATION} -DNDEBUG"'" CACHE STRING "CFLAGS for release" )' >> ${outFile}
     echo 'set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}" CACHE STRING "CXXFLAGS for release" )' >> ${outFile}
+
+    echo 'set( CMAKE_INSTALL_PREFIX $ENV{TARGET_FS}/usr CACHE FILEPATH "" )' >> ${outFile}
     
     # only search in the paths provided (from openembedded) so cmake doesnt pick
     # up libraries and tools from the native build machine
