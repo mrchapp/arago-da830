@@ -135,6 +135,12 @@ TOOLCHAIN_TARGET_EXCLUDE += "\
     update-modules \
     "
 
+# GPLv3 components exluded
+TOOLCHAIN_TARGET_EXCLUDE += "\
+    libgnutls-extra26 \
+    libgnutls-extra-dev \
+    "
+
 # Shamelessly stolen and modified from cmake.bbclass
 # If there is a better way for re-use in an SDK environ, I don't know it
 # Moreover parts of this are application specific but don't know how to re-use from the app recipe.
