@@ -33,6 +33,7 @@ $machine nSDK Installation Summary
 # $3 = license
 # $4 = source
 # $5 = location
+# $6 = maintainer
 
 gen_row()
 {
@@ -84,15 +85,17 @@ gen_row()
 
     # ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
+    # if source is empty then refer to Arago
     highobt=""
     if [ "x${lsrc}" = "x" ]; then
         # turn on highlighting for debug
         #highobt="bgcolor=yellow"
-        
-        # if source is empty assume it is just a set of
-        # files that are colocated with the bb file and
-        # so use the generic arago site as the source loc
-	lsrc="http://arago-project.org"
+	lsrc="http://arago-project.org"	    
+    fi
+
+    # if package is commercially licensed then refer to the maintainer
+    if [[ $llic =~ (C|c)ommercial ]] || [[ $llic =~ (P|p)roprietary ]] ; then
+	lsrc=$6
     fi
 
     echo "<tr>" \
@@ -133,12 +136,13 @@ generate_sw_manifest()
 
     manifest_count=0
     for i in $2/usr/lib/opkg/info/*.control; do
-	package="`cat $i | grep Package: | awk {'print $2'}`"
-	version="`cat $i | grep Version: | awk {'print $2'} | cut -f1-2 -d-`"
-	license="`cat $i | grep License: | awk {'print $2,$3,$4'} `"
-	source="`cat $i | grep Source: | awk {'print $2'}`"
+	package=$(cat $i | grep Package:    | awk {'print $2'})
+	version=$(cat $i | grep Version:    | awk {'print $2'} | cut -f1-2 -d-)
+	license=$(cat $i | grep License:    | awk {'print $2,$3,$4'})
+	source=$(cat $i  | grep Source:     | awk {'print $2'})
+	maint=$(cat $i   | grep Maintainer: | sed 's/Maintainer:[[:space:]]*//')
 
-	gen_row "${package}" "${version}" "${license}" "${source}" "$2"
+	gen_row "${package}" "${version}" "${license}" "${source}" "$2" "${maint}"
     done
 
 #    gen_row "FastCGiQt" "gb1061d89" "ISC" "git://gitorious.org/fastcgiqt/fastcgiqt.git" "targetfs/home/root/nSDK"
