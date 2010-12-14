@@ -245,6 +245,15 @@ sub copy_output
         exit 1;
     }
 
+    # copy manifest helper script
+    print "\nCopying $arago_dir/arago/bin/manifest.sh ...";
+    $cmd = "cp $arago_dir/arago/bin/manifest.sh $sdkpath";
+    $result = system($cmd);
+    if ($result) {
+        print "\n ERROR: failed to execute $cmd\n";
+        exit 1;
+    }
+
     # copy opkg.conf needed during opkg installation.
     print "\nCopying $arago_staging/etc/opkg.conf  ...";
     $cmd = "cp $arago_staging/etc/opkg*.conf $sdkpath/config/$machine/";
