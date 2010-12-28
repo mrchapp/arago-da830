@@ -218,7 +218,7 @@ host_install
 iplist=''
 for file in $(find . -iname "*.ipk"); do
     lic=$(ipkg-list-fields $file 2>/dev/null | grep 'license' | sed 's/^.*, //')
-    if [[ $lic =~ (C|c)ommercial ]] || [[ $lic =~ (P|p)roprietary ]] ; then 
+    if [[ $lic =~ (C|c)ommercial ]] || [[ $lic =~ (P|p)roprietary ]] || [[ $file =~ streamapp ]]; then 
 	pkg=$(basename $file | sed 's/_.*//')
 	iplist=${iplist}" $pkg"
     fi
