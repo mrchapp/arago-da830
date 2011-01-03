@@ -22,6 +22,7 @@ ROOTFS_SIZE_overo = "81920"
 IMAGE_INSTALL += "\
     task-arago-base \
     task-arago-console \
+    wl1271-wlan-cli \
     "
 
 export IMAGE_BASENAME = "arago-console-image"
