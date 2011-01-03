@@ -1,0 +1,390 @@
+From 9d75166595c4b234b3ad08cbc89b6e92a95817ea Mon Sep 17 00:00:00 2001
+From: Sanjay Kumar Champati <csanjay@mistralsolutions.com>
+Date: Fri, 10 Dec 2010 10:18:19 -0800
+Subject: [PATCH 1/5] Supported MMC2 interface on AM1808 board
+
+This patch added support  for MMC2 interface on the AM1808 EVM
+and WL1271 DC interfaces with AM1808 EVM over MMC2 interface.
+
+In the previous code only MMC1 was supported, and with this patch
+MMC2 will support on AM1808 EVM for WL1271 DC.
+
+Signed-off-by: Sanjay Kumar Champati <csanjay@mistralsolutions.com>
+---
+ arch/arm/mach-davinci/Kconfig              |   11 +++
+ arch/arm/mach-davinci/board-da850-evm.c    |   42 ++++++++---
+ arch/arm/mach-davinci/da850.c              |   26 +++++++
+ arch/arm/mach-davinci/devices-da8xx.c      |  108 ++++++++++++++++++++--------
+ arch/arm/mach-davinci/dma.c                |    7 +-
+ arch/arm/mach-davinci/include/mach/da8xx.h |    4 +-
+ arch/arm/mach-davinci/include/mach/mux.h   |   10 +++
+ arch/arm/mach-davinci/include/mach/psc.h   |    1 +
+ 8 files changed, 164 insertions(+), 45 deletions(-)
+
+diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
+index c6d89c9..9d3ce1f 100644
+--- a/arch/arm/mach-davinci/Kconfig
++++ b/arch/arm/mach-davinci/Kconfig
+@@ -163,6 +163,17 @@ config MACH_DAVINCI_DA850_EVM
+ 	help
+ 	  Say Y here to select the TI DA850/OMAP-L138/AM18xx Evaluation Module.
+ 
++choice DA850_MMC_CONTROLLER
++	prompt "Select MMC host controller to be used on board"
++	depends on MMC_DAVINCI
++
++config DA850_USE_MMC0
++	bool "USE MMC0 host controller"
++
++config DA850_USE_MMC1
++	bool "Use MMC0 & MMC1 host controller"
++endchoice
++
+ choice
+ 	prompt "Select peripherals connected to expander on UI board"
+ 	depends on MACH_DAVINCI_DA850_EVM
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 009e9b5..3b408c9 100755
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -616,13 +616,26 @@ static int da850_evm_mmc_get_cd(int index)
+ 	return !gpio_get_value(DA850_MMCSD_CD_PIN);
+ }
+ 
+-static struct davinci_mmc_config da850_mmc_config = {
+-	.get_ro		= da850_evm_mmc_get_ro,
+-	.get_cd		= da850_evm_mmc_get_cd,
+-	.wires		= 4,
+-	.max_freq	= 50000000,
+-	.caps		= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED,
+-	.version	= MMC_CTLR_VERSION_2,
++static struct davinci_mmc_config da850_mmc_config[] = {
++	{
++		.get_ro		= da850_evm_mmc_get_ro,
++		.get_cd		= da850_evm_mmc_get_cd,
++		.wires		= 4,
++		.max_freq	= 50000000,
++		.caps		= MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED,
++		.version	= MMC_CTLR_VERSION_2,
++	},
++#ifdef CONFIG_DA850_USE_MMC1
++	{
++		.get_ro         = da850_evm_mmc_get_ro,
++		.get_cd         = -1,
++		.wires          = 4,
++		.max_freq       = 50000000,
++		.caps           = MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED,
++		.version        = MMC_CTLR_VERSION_2,
++	},
++#endif
++	{}
+ };
+ 
+ static void da850_panel_power_ctrl(int val)
+@@ -1076,6 +1089,7 @@ static __init void da850_evm_init(void)
+ 				ret);
+ 
+ 	if (HAS_MMC) {
++		int i;
+ 		ret = davinci_cfg_reg(DA850_GPIO0_11);
+ 		if (ret)
+ 			pr_warning("da850_evm_init:GPIO(0,11) mux setup "
+@@ -1106,10 +1120,18 @@ static __init void da850_evm_init(void)
+ 					DA850_MMCSD_WP_PIN);
+ 		gpio_direction_input(DA850_MMCSD_WP_PIN);
+ 
+-		ret = da8xx_register_mmcsd0(&da850_mmc_config);
++#ifdef CONFIG_DA850_USE_MMC1
++		ret = da8xx_pinmux_setup(da850_mmcsd1_pins);
+ 		if (ret)
+-			pr_warning("da850_evm_init: mmcsd0 registration failed:"
+-					" %d\n", ret);
++			pr_warning("da850_evm_init: mmcsd1 mux setup failed:"
++					"%d\n", ret);
++#endif
++		for (i = 0; i < ARRAY_SIZE(da850_mmc_config); i++) {
++			ret = da8xx_register_mmcsd(i, &da850_mmc_config[i]);
++			if (ret)
++				pr_warning("da850_evm_init: mmcsd%d"
++					" registration failed: %d", i, ret);
++		}
+ 	}
+ 
+ 	davinci_serial_init(&da850_evm_uart_config);
+diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
+index 513ae85..fcce577 100755
+--- a/arch/arm/mach-davinci/da850.c
++++ b/arch/arm/mach-davinci/da850.c
+@@ -330,6 +330,13 @@ static struct clk mmcsd_clk = {
+ 	.lpsc		= DA8XX_LPSC0_MMC_SD,
+ };
+ 
++static struct clk mmcsd_clk1 = {
++	.name		= "mmcsd1",
++	.parent		= &pll0_sysclk2,
++	.lpsc		= DA8XX_LPSC1_MMC_SD,
++	.gpsc		= 1,
++};
++
+ static struct clk aemif_clk = {
+ 	.name		= "aemif",
+ 	.parent		= &pll0_sysclk3,
+@@ -432,6 +439,7 @@ static struct clk_lookup da850_clks[] = {
+ 	CLK("davinci-mcasp.0",	NULL,		&mcasp_clk),
+ 	CLK("da8xx_lcdc.0",	NULL,		&lcdc_clk),
+ 	CLK("davinci_mmc.0",	NULL,		&mmcsd_clk),
++	CLK("davinci_mmc.1",	NULL,		&mmcsd_clk1),
+ 	CLK(NULL,		"aemif",	&aemif_clk),
+ 	CLK("spi_davinci.0",	NULL,		&spi0_clk),
+ 	CLK("spi_davinci.1",	NULL,		&spi1_clk),
+@@ -672,9 +680,27 @@ static const struct mux_config da850_pins[] = {
+ 	MUX_CFG(DA850, VPIF_DOUT15,	17,	8,	15,	1,	false)
+ 	MUX_CFG(DA850, VPIF_CLKO2,	19,	12,	15,	1,	false)
+ 	MUX_CFG(DA850, VPIF_CLKO3,	19,	20,	15,	1,	false)
++	/* WL1271 pin muxing*/
++	MUX_CFG(DA850, GPIO6_9,		13,	24,	15,	8,	false)
++	MUX_CFG(DA850, GPIO6_10,	13,	20,	15,	8,	false)
++	MUX_CFG(DA850, MMCSD1_DAT_0,	18,	8,	15,	2,	false)
++	MUX_CFG(DA850, MMCSD1_DAT_1,	19,	16,	15,	2,	false)
++	MUX_CFG(DA850, MMCSD1_DAT_2,	19,	12,	15,	2,	false)
++	MUX_CFG(DA850, MMCSD1_DAT_3,	19,	8,	15,	2,	false)
++	MUX_CFG(DA850, MMCSD1_CLK,	18,	12,	15,	2,	false)
++	MUX_CFG(DA850, MMCSD1_CMD,	18,	16,	15,	2,	false)
+ #endif
+ };
+ 
++#ifdef CONFIG_DA850_USE_MMC1
++const short da850_mmcsd1_pins[] __initdata = {
++	DA850_GPIO6_9, DA850_GPIO6_10, DA850_MMCSD1_DAT_0,
++	DA850_MMCSD1_DAT_1, DA850_MMCSD1_DAT_2, DA850_MMCSD1_DAT_3,
++	DA850_MMCSD1_CLK, DA850_MMCSD1_CMD,
++	-1
++};
++#endif
++
+ const short da850_uart0_pins[] __initdata = {
+ 	DA850_NUART0_CTS, DA850_NUART0_RTS, DA850_UART0_RXD, DA850_UART0_TXD,
+ 	-1
+diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
+index 0842590..c8d7a35 100755
+--- a/arch/arm/mach-davinci/devices-da8xx.c
++++ b/arch/arm/mach-davinci/devices-da8xx.c
+@@ -186,6 +186,7 @@ static struct edma_soc_info da850_edma_info[] = {
+ 		.n_cc			= 1,
+ 		.queue_tc_mapping	= da8xx_queue_tc_mapping,
+ 		.queue_priority_mapping	= da8xx_queue_priority_mapping,
++		.default_queue		= EVENTQ_0,
+ 	},
+ 	{
+ 		.n_channel		= 32,
+@@ -599,40 +600,85 @@ int __init da8xx_register_lcdc(struct da8xx_lcdc_platform_data *pdata)
+ 	return platform_device_register(&da8xx_lcdc_device);
+ }
+ 
+-static struct resource da8xx_mmcsd0_resources[] = {
+-	{		/* registers */
+-		.start	= DA8XX_MMCSD0_BASE,
+-		.end	= DA8XX_MMCSD0_BASE + SZ_4K - 1,
+-		.flags	= IORESOURCE_MEM,
+-	},
+-	{		/* interrupt */
+-		.start	= IRQ_DA8XX_MMCSDINT0,
+-		.end	= IRQ_DA8XX_MMCSDINT0,
+-		.flags	= IORESOURCE_IRQ,
+-	},
+-	{		/* DMA RX */
+-		.start	= EDMA_CTLR_CHAN(0, 16),
+-		.end	= EDMA_CTLR_CHAN(0, 16),
+-		.flags	= IORESOURCE_DMA,
++static struct resource da8xx_mmcsd_resources[][4] = {
++	{
++		{		/* registers */
++			.start	= DA8XX_MMCSD0_BASE,
++			.end	= DA8XX_MMCSD0_BASE + SZ_4K - 1,
++			.flags	= IORESOURCE_MEM,
++		},
++		{		/* interrupt */
++			.start	= IRQ_DA8XX_MMCSDINT0,
++			.end	= IRQ_DA8XX_MMCSDINT0,
++			.flags	= IORESOURCE_IRQ,
++		},
++		{		/* DMA RX */
++			.start	= EDMA_CTLR_CHAN(0, 16),
++			.end	= EDMA_CTLR_CHAN(0, 16),
++			.flags	= IORESOURCE_DMA,
++		},
++		{		/* DMA TX */
++			.start	= EDMA_CTLR_CHAN(0, 17),
++			.end	= EDMA_CTLR_CHAN(0, 17),
++			.flags	= IORESOURCE_DMA,
++		},
+ 	},
+-	{		/* DMA TX */
+-		.start	= EDMA_CTLR_CHAN(0, 17),
+-		.end	= EDMA_CTLR_CHAN(0, 17),
+-		.flags	= IORESOURCE_DMA,
++	{
++		{	/* registers */
++			.start	= DA8XX_MMCSD1_BASE,
++			.end	= DA8XX_MMCSD1_BASE + SZ_4K - 1,
++			.flags	= IORESOURCE_MEM,
++		},
++		{	/* interrupt */
++			.start  = IRQ_DA850_MMCSDINT0_1,
++			.end    = IRQ_DA850_MMCSDINT0_1,
++			.flags  = IORESOURCE_IRQ,
++		},
++		{	/* DMA RX */
++			.start  = EDMA_CTLR_CHAN(1, 28),
++			.end    = EDMA_CTLR_CHAN(1, 28),
++			.flags  = IORESOURCE_DMA,
++		},
++		{	/* DMA TX */
++			.start  = EDMA_CTLR_CHAN(1, 29),
++			.end    = EDMA_CTLR_CHAN(1, 29),
++			.flags  = IORESOURCE_DMA,
++		}
+ 	},
+-};
+ 
+-static struct platform_device da8xx_mmcsd0_device = {
+-	.name		= "davinci_mmc",
+-	.id		= 0,
+-	.num_resources	= ARRAY_SIZE(da8xx_mmcsd0_resources),
+-	.resource	= da8xx_mmcsd0_resources,
+ };
+ 
+-int __init da8xx_register_mmcsd0(struct davinci_mmc_config *config)
++static int prepare_mmc_platform_device(
++			struct platform_device *mmc_platform_device,
++			int index, struct davinci_mmc_config *config)
++{
++	if (index >= ARRAY_SIZE(da8xx_mmcsd_resources))
++		return -EINVAL;
++
++	mmc_platform_device->name = "davinci_mmc";
++	mmc_platform_device->id = index;
++	mmc_platform_device->num_resources =
++			ARRAY_SIZE(da8xx_mmcsd_resources[index]);
++	mmc_platform_device->resource = da8xx_mmcsd_resources[index];
++	return 0;
++}
++
++static struct platform_device
++	mmc_platform_devices[ARRAY_SIZE(da8xx_mmcsd_resources)];
++
++int __init da8xx_register_mmcsd(int index, struct davinci_mmc_config *config)
+ {
+-	da8xx_mmcsd0_device.dev.platform_data = config;
+-	return platform_device_register(&da8xx_mmcsd0_device);
++	int rc;
++	if (index >= ARRAY_SIZE(mmc_platform_devices))
++		return -1;
++
++	rc = prepare_mmc_platform_device(&mmc_platform_devices[index],
++								index, config);
++	if (0 != rc)
++		return rc;
++
++	mmc_platform_devices[index].dev.platform_data = config;
++	return platform_device_register(&mmc_platform_devices[index]);
+ }
+ 
+ static struct resource da8xx_rtc_resources[] = {
+diff --git a/arch/arm/mach-davinci/dma.c b/arch/arm/mach-davinci/dma.c
+index d3e1702..32e9da7 100644
+--- a/arch/arm/mach-davinci/dma.c
++++ b/arch/arm/mach-davinci/dma.c
+@@ -1447,8 +1447,8 @@ static int __init edma_probe(struct platform_device *pdev)
+ 							EDMA_MAX_CC);
+ 
+ 		edma_info[j]->default_queue = info[j].default_queue;
+-		if (!edma_info[j]->default_queue)
+-			edma_info[j]->default_queue = EVENTQ_1;
++		/*if (!edma_info[j]->default_queue)
++			edma_info[j]->default_queue = EVENTQ_1;*/
+ 
+ 		dev_dbg(&pdev->dev, "DMA REG BASE ADDR=%p\n",
+ 			edmacc_regs_base[j]);
+@@ -1508,7 +1508,8 @@ static int __init edma_probe(struct platform_device *pdev)
+ 		 * started by the codec engine will not cause audio defects.
+ 		 */
+ 		for (i = 0; i < edma_info[j]->num_channels; i++)
+-			map_dmach_queue(j, i, EVENTQ_1);
++			/*map_dmach_queue(j, i, EVENTQ_1);*/
++			map_dmach_queue(j, i, edma_info[j]->default_queue);
+ 
+ 		queue_tc_mapping = info[j].queue_tc_mapping;
+ 		queue_priority_mapping = info[j].queue_priority_mapping;
+diff --git a/arch/arm/mach-davinci/include/mach/da8xx.h b/arch/arm/mach-davinci/include/mach/da8xx.h
+index f76433f..9fce4f6 100755
+--- a/arch/arm/mach-davinci/include/mach/da8xx.h
++++ b/arch/arm/mach-davinci/include/mach/da8xx.h
+@@ -66,6 +66,7 @@ extern void __iomem *da8xx_syscfg1_base;
+ #define DA8XX_LCD_CNTRL_BASE	0x01e13000
+ #define DA8XX_PLL1_BASE		0x01e1a000
+ #define DA8XX_MMCSD0_BASE	0x01c40000
++#define DA8XX_MMCSD1_BASE	0x01e1b000
+ #define DA8XX_AEMIF_CS2_BASE	0x60000000
+ #define DA8XX_AEMIF_CS3_BASE	0x62000000
+ #define DA8XX_AEMIF_CTL_BASE	0x68000000
+@@ -142,7 +143,7 @@ int da8xx_register_usb20(unsigned mA, unsigned potpgt);
+ int da8xx_register_usb11(struct da8xx_ohci_root_hub *pdata);
+ int da8xx_register_emac(void);
+ int da8xx_register_lcdc(struct da8xx_lcdc_platform_data *pdata);
+-int da8xx_register_mmcsd0(struct davinci_mmc_config *config);
++int da8xx_register_mmcsd(int index, struct davinci_mmc_config *config);
+ void __init da8xx_register_mcasp(int id, struct snd_platform_data *pdata);
+ int da8xx_register_rtc(void);
+ int da850_register_cpufreq(void);
+@@ -205,6 +206,7 @@ extern const short da850_rmii_pins[];
+ extern const short da850_mcasp_pins[];
+ extern const short da850_lcdcntl_pins[];
+ extern const short da850_mmcsd0_pins[];
++extern const short da850_mmcsd1_pins[];
+ extern const short da850_nand_pins[];
+ extern const short da850_nor_pins[];
+ extern const short da850_spi1_pins[];
+diff --git a/arch/arm/mach-davinci/include/mach/mux.h b/arch/arm/mach-davinci/include/mach/mux.h
+index 909ceac..bedeadf 100644
+--- a/arch/arm/mach-davinci/include/mach/mux.h
++++ b/arch/arm/mach-davinci/include/mach/mux.h
+@@ -746,6 +746,7 @@ enum davinci_da850_index {
+ 	DA850_NUART1_RTS,
+ 	DA850_UART1_RXD,
+ 	DA850_UART1_TXD,
++	DA850_GPIO0_15,
+ 
+ 	/* UART2 function */
+ 	DA850_NUART2_CTS,
+@@ -972,6 +973,15 @@ enum davinci_da850_index {
+ 	DA850_VPIF_DOUT15,
+ 	DA850_VPIF_CLKO2,
+ 	DA850_VPIF_CLKO3,
++	/* WL1271 pin mux */
++	DA850_GPIO6_9,
++	DA850_GPIO6_10,
++	DA850_MMCSD1_DAT_0,
++	DA850_MMCSD1_DAT_1,
++	DA850_MMCSD1_DAT_2,
++	DA850_MMCSD1_DAT_3,
++	DA850_MMCSD1_CLK,
++	DA850_MMCSD1_CMD,
+ };
+ 
+ #ifdef CONFIG_DAVINCI_MUX
+diff --git a/arch/arm/mach-davinci/include/mach/psc.h b/arch/arm/mach-davinci/include/mach/psc.h
+index a11d414..cc381a3 100644
+--- a/arch/arm/mach-davinci/include/mach/psc.h
++++ b/arch/arm/mach-davinci/include/mach/psc.h
+@@ -175,6 +175,7 @@
+ #define DA850_LPSC1_MCBSP1		15
+ #define DA8XX_LPSC1_LCDC		16
+ #define DA8XX_LPSC1_PWM			17
++#define DA8XX_LPSC1_MMC_SD		18
+ #define DA8XX_LPSC1_ECAP		20
+ #define DA830_LPSC1_EQEP		21
+ #define DA850_LPSC1_TPTC2		21
+-- 
+1.7.0.4
+

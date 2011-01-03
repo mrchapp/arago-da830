@@ -1,0 +1,402 @@
+From cf9a1d34668d49da28c0d9e0140fd37208d2aa0b Mon Sep 17 00:00:00 2001
+From: Sanjay Kumar Champati <csanjay@mistralsolutions.com>
+Date: Fri, 10 Dec 2010 10:19:44 -0800
+Subject: [PATCH 2/5] Supporting Standard SDIO For WL1271 DC on AM1808 EVM
+
+This patch supporting standard SDIO for WL1271 DC, which interfaced over
+MMC2 expansion connector on AM1808 platform.
+
+Signed-off-by: Sanjay Kumar Champati <csanjay@mistralsolutions.com>
+---
+ arch/arm/mach-davinci/Kconfig            |    4 +
+ arch/arm/mach-davinci/board-da850-evm.c  |  117 +++++++++++++++++++++++++++++-
+ arch/arm/mach-davinci/da850.c            |    5 ++
+ arch/arm/mach-davinci/include/mach/mmc.h |    6 ++
+ drivers/mmc/core/sdio_ops.c              |    3 +
+ drivers/mmc/host/davinci_mmc.c           |   22 ++++++
+ include/linux/mmc/card.h                 |    3 +
+ include/linux/mmc/sdio_ids.h             |    4 +
+ include/linux/wifi_tiwlan.h              |   32 ++++++++
+ 9 files changed, 195 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/wifi_tiwlan.h
+
+diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
+index 9d3ce1f..e9fd1b1 100644
+--- a/arch/arm/mach-davinci/Kconfig
++++ b/arch/arm/mach-davinci/Kconfig
+@@ -163,6 +163,10 @@ config MACH_DAVINCI_DA850_EVM
+ 	help
+ 	  Say Y here to select the TI DA850/OMAP-L138/AM18xx Evaluation Module.
+ 
++config WIFI_CONTROL_FUNC
++	bool "Wireless Card Support"
++	depends on MACH_DAVINCI_DA850_EVM
++
+ choice DA850_MMC_CONTROLLER
+ 	prompt "Select MMC host controller to be used on board"
+ 	depends on MMC_DAVINCI
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 3b408c9..edad3eb 100755
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -29,7 +29,9 @@
+ #include <linux/spi/flash.h>
+ #include <linux/usb/musb.h>
+ #include <linux/i2c-gpio.h>
+-
++#ifdef CONFIG_WIFI_CONTROL_FUNC
++#include <linux/wifi_tiwlan.h>
++#endif
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+ 
+@@ -54,6 +56,12 @@
+ #define DA850_MII_MDIO_CLKEN_PIN	GPIO_TO_PIN(2, 6)
+ 
+ #define DA850_SD_ENABLE_PIN		GPIO_TO_PIN(0, 11)
++#ifdef CONFIG_WIFI_CONTROL_FUNC
++/*WLAN GPIO PIN*/
++#define DA850_WLAN_EN			GPIO_TO_PIN(6, 9)
++#define DA850_WLAN_IRQ			GPIO_TO_PIN(6, 10)
++#define DA850_BT_EN			GPIO_TO_PIN(0, 15)
++#endif
+ 
+ #define TVP5147_CH0		"tvp514x-0"
+ #define TVP5147_CH1		"tvp514x-1"
+@@ -270,6 +278,90 @@ static struct spi_board_info da850_spi_board_info[] = {
+ 
+ static u32 ui_card_detected;
+ 
++/* ---- WIFI ---- */
++#ifdef CONFIG_WIFI_CONTROL_FUNC
++static void (*wifi_status_cb)(void *dev_id, int card_present);
++static void *wifi_status_cb_devid;
++/* WIFI virtual 'card detect' status */
++static int am1808_wifi_cd;
++static int am1808_wifi_status_register(
++	void (*callback)(void *dev_id, int card_present), void *dev_id)
++{
++	if (wifi_status_cb)
++		return -EAGAIN;
++	wifi_status_cb = callback;
++	wifi_status_cb_devid = dev_id;
++	return 0;
++}
++
++static int am1808_wifi_status(int index)
++{
++	return am1808_wifi_cd;
++}
++
++static int am1808_wifi_set_carddetect(int val)
++{
++	am1808_wifi_cd = val;
++	if (wifi_status_cb)
++		wifi_status_cb(wifi_status_cb_devid, val);
++	else
++		printk(KERN_WARNING "%s: Nobody to notify\n", __func__);
++
++	return 0;
++}
++
++static int am1808_wifi_power(int on)
++{
++	gpio_set_value(DA850_WLAN_EN, on);
++	return 0;
++}
++
++struct wifi_platform_data am1808_wifi_control = {
++	.set_power		= am1808_wifi_power,
++	.set_carddetect		= am1808_wifi_set_carddetect,
++};
++
++static struct resource am1808_wifi_resources[] = {
++	[0] = {
++		.name		= "device_wifi_irq",
++		.start		= -1,
++		.end		= -1,
++		.flags		= IORESOURCE_IRQ | IORESOURCE_IRQ_LOWEDGE,
++	},
++};
++
++static struct platform_device am1808_wifi = {
++	.name		= "device_wifi",
++	.id		= 1,
++	.num_resources	= 1,
++	.resource	= am1808_wifi_resources,
++	.dev		= {
++		.platform_data = &am1808_wifi_control,
++	},
++};
++
++static void __init wifi_power_init(void)
++{
++	if (gpio_request(DA850_WLAN_EN, "wlan_en")) {
++		printk(KERN_ERR "Failed to request gpio DA850_WLAN_EN\n");
++		return;
++	}
++
++	gpio_direction_output(DA850_WLAN_EN, 1);
++	if (gpio_request(DA850_WLAN_IRQ, "wlan_irq")) {
++		printk(KERN_ERR "Failed to request gpio DA850_WLAN_IRQ_GPIO\n");
++		gpio_free(DA850_WLAN_EN);
++		return;
++	}
++	am1808_wifi_resources[0].start = am1808_wifi_resources[0].end =
++					gpio_to_irq(DA850_WLAN_IRQ);
++	/* In order to ensure order of PM functions */
++	am1808_wifi.dev.parent = NULL;
++	platform_device_register(&am1808_wifi);
++}
++#endif
++
++
+ #if defined(CONFIG_MMC_DAVINCI) || \
+     defined(CONFIG_MMC_DAVINCI_MODULE)
+ #define HAS_MMC 1
+@@ -628,11 +720,22 @@ static struct davinci_mmc_config da850_mmc_config[] = {
+ #ifdef CONFIG_DA850_USE_MMC1
+ 	{
+ 		.get_ro         = da850_evm_mmc_get_ro,
++#ifdef CONFIG_WIFI_CONTROL_FUNC
++		/* using the virtual carddetect function -
++		* so ifconfig up/down will reset the board
++		*/
++		.get_cd         = am1808_wifi_status,
++#else
+ 		.get_cd         = -1,
++#endif
+ 		.wires          = 4,
+ 		.max_freq       = 50000000,
+ 		.caps           = MMC_CAP_MMC_HIGHSPEED | MMC_CAP_SD_HIGHSPEED,
+ 		.version        = MMC_CTLR_VERSION_2,
++#ifdef CONFIG_WIFI_CONTROL_FUNC
++		.status         = am1808_wifi_status,
++		.register_status_notify = am1808_wifi_status_register,
++#endif
+ 	},
+ #endif
+ 	{}
+@@ -1134,6 +1237,16 @@ static __init void da850_evm_init(void)
+ 		}
+ 	}
+ 
++#ifdef CONFIG_WIFI_CONTROL_FUNC
++	ret = gpio_request(DA850_BT_EN, "WL1271_BT_EN");
++	if (ret)
++		pr_warning("da850_evm_init: can not open BT GPIO %d\n",
++					DA850_BT_EN);
++	gpio_direction_output(DA850_BT_EN, 1);
++	udelay(1000);
++	gpio_direction_output(DA850_BT_EN, 0);
++	wifi_power_init();
++#endif
+ 	davinci_serial_init(&da850_evm_uart_config);
+ 
+ 	i2c_register_board_info(1, da850_evm_i2c_devices,
+@@ -1176,6 +1289,7 @@ static __init void da850_evm_init(void)
+ 					" failed: %d\n", ret);
+ 	}
+ 
++#ifndef CONFIG_WIFI_CONTROL_FUNC
+ 	if (HAS_MCASP) {
+ 		if ((HAS_MCBSP0 || HAS_MCBSP1))
+ 			pr_warning("WARNING: both McASP and McBSP are enabled, "
+@@ -1189,6 +1303,7 @@ static __init void da850_evm_init(void)
+ 
+ 		da8xx_register_mcasp(0, &da850_evm_snd_data);
+ 	}
++#endif
+ 
+ 	ret = da8xx_pinmux_setup(da850_lcdcntl_pins);
+ 	if (ret)
+diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
+index fcce577..bea825e 100755
+--- a/arch/arm/mach-davinci/da850.c
++++ b/arch/arm/mach-davinci/da850.c
+@@ -469,6 +469,7 @@ static const struct mux_config da850_pins[] = {
+ 	/* UART1 function */
+ 	MUX_CFG(DA850, UART1_RXD,	4,	24,	15,	2,	false)
+ 	MUX_CFG(DA850, UART1_TXD,	4,	28,	15,	2,	false)
++	MUX_CFG(DA850, GPIO0_15,	0,	0,	15,	8,	false)
+ 	/* UART2 function */
+ 	MUX_CFG(DA850, UART2_RXD,	4,	16,	15,	2,	false)
+ 	MUX_CFG(DA850, UART2_TXD,	4,	20,	15,	2,	false)
+@@ -743,12 +744,14 @@ const short da850_rmii_pins[] __initdata = {
+ 	-1
+ };
+ 
++#ifndef CONFIG_WIFI_CONTROL_FUNC
+ const short da850_mcasp_pins[] __initdata = {
+ 	DA850_AHCLKX, DA850_ACLKX, DA850_AFSX,
+ 	DA850_ACLKR, DA850_AFSR, DA850_AMUTE,
+ 	DA850_AXR_11, DA850_AXR_12,
+ 	-1
+ };
++#endif
+ 
+ const short da850_lcdcntl_pins[] __initdata = {
+ 	DA850_LCD_D_0, DA850_LCD_D_1, DA850_LCD_D_2, DA850_LCD_D_3,
+@@ -808,6 +811,7 @@ const short da850_mcbsp1_pins[] __initdata = {
+ 	-1
+ };
+ 
++#ifndef CONFIG_WIFI_CONTROL_FUNC
+ const short da850_vpif_capture_pins[] __initdata = {
+ 	DA850_VPIF_DIN0, DA850_VPIF_DIN1, DA850_VPIF_DIN2, DA850_VPIF_DIN3,
+ 	DA850_VPIF_DIN4, DA850_VPIF_DIN5, DA850_VPIF_DIN6, DA850_VPIF_DIN7,
+@@ -817,6 +821,7 @@ const short da850_vpif_capture_pins[] __initdata = {
+ 	DA850_VPIF_CLKIN3,
+ 	-1
+ };
++#endif
+ 
+ const short da850_vpif_display_pins[] __initdata = {
+ 	DA850_VPIF_DOUT0, DA850_VPIF_DOUT1, DA850_VPIF_DOUT2, DA850_VPIF_DOUT3,
+diff --git a/arch/arm/mach-davinci/include/mach/mmc.h b/arch/arm/mach-davinci/include/mach/mmc.h
+index 5a85e24..e9565b5 100644
+--- a/arch/arm/mach-davinci/include/mach/mmc.h
++++ b/arch/arm/mach-davinci/include/mach/mmc.h
+@@ -22,6 +22,12 @@ struct davinci_mmc_config {
+ 
+ 	/* Version of the MMC/SD controller */
+ 	u8	version;
++#ifdef CONFIG_WIFI_CONTROL_FUNC
++	int     (*status)(int module);
++	int     (*register_status_notify)
++		(void (*callback)(void *dev_id, int card_present),
++						void *dev_id);
++#endif
+ };
+ void davinci_setup_mmc(int module, struct davinci_mmc_config *config);
+ 
+diff --git a/drivers/mmc/core/sdio_ops.c b/drivers/mmc/core/sdio_ops.c
+index 4eb7825..452851c 100644
+--- a/drivers/mmc/core/sdio_ops.c
++++ b/drivers/mmc/core/sdio_ops.c
+@@ -114,6 +114,9 @@ int mmc_io_rw_direct(struct mmc_card *card, int write, unsigned fn,
+ 
+ 	return 0;
+ }
++#ifdef CONFIG_WIFI_CONTROL_FUNC
++EXPORT_SYMBOL(mmc_io_rw_direct);
++#endif
+ 
+ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
+ 	unsigned addr, int incr_addr, u8 *buf, unsigned blocks, unsigned blksz)
+diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
+index d60f648..2d9b8c6 100644
+--- a/drivers/mmc/host/davinci_mmc.c
++++ b/drivers/mmc/host/davinci_mmc.c
+@@ -1120,6 +1120,21 @@ static void __init init_mmcsd_host(struct mmc_davinci_host *host)
+ 	mmc_davinci_reset_ctrl(host, 0);
+ }
+ 
++#ifdef CONFIG_WIFI_CONTROL_FUNC
++static void davinci_mmcsd_virtual_detect(void *dev_id, int carddetect)
++{
++	struct mmc_davinci_host *host = dev_id;
++
++	printk(KERN_DEBUG "%s: card detect %d\n", mmc_hostname(host->mmc),
++					carddetect);
++
++	if (carddetect)
++		mmc_detect_change(host->mmc, (HZ * 200) / 1000);
++	else
++		mmc_detect_change(host->mmc, (HZ * 50) / 1000);
++}
++#endif
++
+ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
+ {
+ 	struct davinci_mmc_config *pdata = pdev->dev.platform_data;
+@@ -1183,12 +1198,19 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
+ 	if (host->use_dma && davinci_acquire_dma_channels(host) != 0)
+ 		host->use_dma = 0;
+ 
++#ifndef CONFIG_WIFI_CONTROL_FUNC
+ 	/* REVISIT:  someday, support IRQ-driven card detection.  */
+ 	mmc->caps |= MMC_CAP_NEEDS_POLL;
++#endif
+ 
+ 	if (!pdata || pdata->wires == 4 || pdata->wires == 0)
+ 		mmc->caps |= MMC_CAP_4_BIT_DATA;
+ 
++#ifdef CONFIG_WIFI_CONTROL_FUNC
++	if (pdata->register_status_notify)
++		pdata->register_status_notify(davinci_mmcsd_virtual_detect,
++								host);
++#endif
+ 	host->version = pdata->version;
+ 
+ 	mmc->ops = &mmc_davinci_ops;
+diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+index 2ee22e8..c5870b8 100644
+--- a/include/linux/mmc/card.h
++++ b/include/linux/mmc/card.h
+@@ -139,6 +139,9 @@ static inline int mmc_card_lenient_fn0(const struct mmc_card *c)
+ 	return c->quirks & MMC_QUIRK_LENIENT_FN0;
+ }
+ 
++#ifdef CONFIG_WIFI_CONTROL_FUNC
++#define mmc_card_set_lenient_fn0(c) ((c)->quirks |= MMC_QUIRK_LENIENT_FN0)
++#endif
+ #define mmc_card_name(c)	((c)->cid.prod_name)
+ #define mmc_card_id(c)		(dev_name(&(c)->dev))
+ 
+diff --git a/include/linux/mmc/sdio_ids.h b/include/linux/mmc/sdio_ids.h
+index 33b2ea0..4f5bbc9 100644
+--- a/include/linux/mmc/sdio_ids.h
++++ b/include/linux/mmc/sdio_ids.h
+@@ -34,6 +34,10 @@
+ #define SDIO_DEVICE_ID_MARVELL_LIBERTAS		0x9103
+ #define SDIO_DEVICE_ID_MARVELL_8688WLAN		0x9104
+ #define SDIO_DEVICE_ID_MARVELL_8688BT		0x9105
++#ifdef CONFIG_WIFI_CONTROL_FUNC
++#define SDIO_VENDOR_ID_TI			0x0097
++#define SDIO_DEVICE_ID_TI_WL12xx		0x4076
++#endif
+ 
+ #define SDIO_VENDOR_ID_SIANO			0x039a
+ #define SDIO_DEVICE_ID_SIANO_NOVA_B0		0x0201
+diff --git a/include/linux/wifi_tiwlan.h b/include/linux/wifi_tiwlan.h
+new file mode 100644
+index 0000000..1f4f9b0
+--- /dev/null
++++ b/include/linux/wifi_tiwlan.h
+@@ -0,0 +1,32 @@
++/* plat/wifi_tiwlan.h
++ *
++ * This file contains the WLAN CHIP specific data.
++ *
++ * Copyright (C) 2009 Texas Instruments.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#ifndef _LINUX_WIFI_TIWLAN_H_
++#define _LINUX_WIFI_TIWLAN_H_
++
++struct wifi_platform_data {
++	int (*set_power) (int val);
++	int (*set_reset) (int val);
++	int (*set_carddetect) (int val);
++	void *(*mem_prealloc) (int section, unsigned long size);
++};
++
++#endif
+-- 
+1.7.0.4
+
