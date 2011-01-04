@@ -10,7 +10,7 @@ DEFAULT_PREFERENCE = "1"
 BRANCH = "wifi/logic/nsdk"
 BRANCH_da850-sdi = "da850sdi"
 
-SRCREV = "528ee7b978e340084bcb7dfcebdbe27bd81265ea"
+SRCREV = "315b36ad8942380313da2cabd8ac53f6ed79eb77"
 SRCREV_da850-sdi = "cda18ec52268133c977e38a81c8a18b1351945e4"
 
 KVER = "2.6.32+2.6.33-rc4"
