@@ -8,7 +8,7 @@ PR = "r1"
 
 PACKAGE_ARCH = ${MACHINE_ARCH}
 
-COMPATIBLE_MACHINE = "am37x-evm|am180x-evm|da850-omapl138-evm"
+COMPATIBLE_MACHINE = "am37x-evm|am180x-evm|da850-omapl138-evm|da850-sdi"
 
 SRC_URI = "http://software-dl.ti.com/dsps/dsps_public_sw/sdo_sb/ecs/WL1271_Linux_SDK/Demos/wl1271-demos_v1.tar"
 
@@ -17,6 +17,7 @@ S = "${WORKDIR}/wl1271-demos"
 PLATFORM_am37x-evm = "omap3evm"
 PLATFORM_am180x-evm = "am1808"
 PLATFORM_da850-omapl138-evm = "am1808"
+PLATFORM_da850-sdi = "am1808"
 PLATFORM ?= "UNKNOWN"
 
 do_compile() {
