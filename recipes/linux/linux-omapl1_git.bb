@@ -8,10 +8,10 @@ COMPATIBLE_MACHINE = "(da830-omapl137-evm|da850-omapl138-evm|da850-sdi)"
 DEFAULT_PREFERENCE = "1"
 
 BRANCH = "wifi/logic/nsdk"
-BRANCH_da850-sdi = "da850sdi"
+BRANCH_da850-sdi = "wifi/sdi/nsdk"
 
 SRCREV = "315b36ad8942380313da2cabd8ac53f6ed79eb77"
-SRCREV_da850-sdi = "cda18ec52268133c977e38a81c8a18b1351945e4"
+SRCREV_da850-sdi = "ac689ebe82b06e1deb4f0b012b3df082b8ef1daf"
 
 KVER = "2.6.32+2.6.33-rc4"
 
