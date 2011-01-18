@@ -94,7 +94,12 @@ host_install ()
     execute "opkg-cl --cache $install_dir/deploy/cache -o $install_dir -f ${opkg_conf} update"
     execute "opkg-cl --cache $install_dir/deploy/cache -o $install_dir -f ${opkg_conf} install $bsp_src"
 
-  generate_sw_manifest "Packages installed on the host machine:" "$install_dir" >> ${install_dir}/docs/software_manifest.htm;
+    # Install any -src packages separate from the base devkit
+    for file in $(find . -iname "*-src*.ipk"); do
+	execute "opkg-cl --cache $install_dir/deploy/cache -o $install_dir -f ${opkg_conf} install $file -force-depends"
+    done
+
+    generate_sw_manifest "Packages installed on the host machine:" "$install_dir" >> ${install_dir}/docs/software_manifest.htm;
 
     move_to_install_dir
 }
@@ -123,19 +128,19 @@ install_arago_sdk ()
       fi
   done
 
-  execute "opkg-cl --cache $install_dir/deploy/cache -o $install_dir/linux-devkit/arm-none-linux-gnueabi -f ${opkg_conf}  update"
+  execute "opkg-cl --cache $install_dir/deploy/cache -o $install_dir/linux-devkit/arm-none-linux-gnueabi -f ${opkg_conf} update"
 
-#  ! test -z $graphics && execute "opkg-cl --cache $install_dir/deploy/cache -o $install_dir/linux-devkit/arm-none-linux-gnueabi -f ${opkg_conf}  install $graphics_sdk_target "
-#  ! test -z $multimedia && execute "opkg-cl --cache $install_dir/deploy/cache -o $install_dir/linux-devkit/arm-none-linux-gnueabi -f ${opkg_conf}  install $multimedia_sdk_target "
+  # Install any -dev packages separate from the base devkit
+  # Assume that parent package should also be installed
+  for file in $(find . -iname "*-dev*.ipk"); do
+      parent=$(echo $file | sed -e 's/-dev//')
+      execute "opkg-cl --cache $install_dir/deploy/cache -o $install_dir/linux-devkit/arm-none-linux-gnueabi -f ${opkg_conf} install $parent -force-depends"
+      execute "opkg-cl --cache $install_dir/deploy/cache -o $install_dir/linux-devkit/arm-none-linux-gnueabi -f ${opkg_conf} install $file -force-depends"
+  done
 
   # remove these packages (see arago/meta/meta-toolchain-target.bb)
-  execute "opkg-cl  --cache ${install_dir}/deploy/cache -o ${install_dir}/linux-devkit/arm-none-linux-gnueabi -f ${opkg_conf} remove  -force-depends  libc6 libc6-dev glibc-extra-nss libgcc1 linux-libc-headers-dev libthread-db1 sln gettext gettext-dev  libgettextlib libgettextsrc"
+  execute "opkg-cl --cache ${install_dir}/deploy/cache -o ${install_dir}/linux-devkit/arm-none-linux-gnueabi -f ${opkg_conf} remove  -force-depends  libc6 libc6-dev glibc-extra-nss libgcc1 linux-libc-headers-dev libthread-db1 sln gettext gettext-dev libgettextlib libgettextsrc"
 
-#  ! test -z $graphics && install_graphics_sdk_host 
-
-#  echo "Running demangle_libtool.sh to fix *.la files"
-#  execute "demangle_libtool.sh $install_dir/linux-devkit/arm-none-linux-gnueabi/usr/lib/*.la" 2> /dev/null
-  
   echo "Updating SDK_PATH env"        
   sed -i "1{s|SDK_PATH\(..*\)|SDK_PATH=$install_dir/linux-devkit/|g}" $install_dir/linux-devkit/environment-setup
   sed -i "2{s|TOOLCHAIN_PATH\(..*\)|TOOLCHAIN_PATH=${TOOLCHAIN_PATH}|g}" $install_dir/linux-devkit/environment-setup
@@ -218,7 +223,7 @@ host_install
 iplist=''
 for file in $(find . -iname "*.ipk"); do
     lic=$(ipkg-list-fields $file 2>/dev/null | grep 'license' | sed 's/^.*, //')
-    if [[ $lic =~ (C|c)ommercial ]] || [[ $lic =~ (P|p)roprietary ]] || [[ $file =~ streamapp ]]; then 
+    if [[ $lic =~ (C|c)ommercial ]] || [[ $lic =~ (P|p)roprietary ]] || [[ $file =~ streamapp ]] && [[ ! $file =~ '-dev' ]]; then 
 	pkg=$(basename $file | sed 's/_.*//')
 	iplist=${iplist}" $pkg"
     fi
