@@ -1,6 +1,6 @@
 DESCRIPTION = "Target packages nSDK"
 ALLOW_EMPTY = "1"
-PR = "r5"
+PR = "r6"
 
 PACKAGES = "${PN}"
 
@@ -43,6 +43,7 @@ RDEPENDS_${PN} += " \
 
 RDEPENDS_${PN} += " \
     directfb-dev \
+    libnl-dev \
     log4cplus-dev \
     qjson-hash-dev \
     "
