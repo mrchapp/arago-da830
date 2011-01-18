@@ -3,7 +3,7 @@ TOOLCHAIN_TARGET_TASK ?= "task-arago-toolchain-nsdk-target"
 
 require meta-toolchain.bb
 
-PR = "r1"
+PR = "r2"
 SDK_SUFFIX = "nsdk"
 
 # Taken from meta-toolchain-arago.bb but modified to include gstreamer and gstreamer-dev
@@ -206,6 +206,9 @@ do_populate_sdk_append() {
     echo 'export OE_QMAKE_QDBUSXML2CPP=$SDK_PATH/bin/qdbusxml2cpp4' >> $script
     echo 'export OE_QMAKE_QT_CONFIG=$SDK_PATH/$TARGET_SYS${datadir}/${QT_DIR_NAME}/mkspecs/qconfig.pri' >> $script
     echo 'export QMAKESPEC=$SDK_PATH/$TARGET_SYS${datadir}/${QT_DIR_NAME}/mkspecs/linux-g++' >> $script
+    echo 'if [ "x${TARGET_FS}" == "x" ]; then' >> $script
+    echo '    echo "Reminder: Set TARGET_FS environment variable before running cmake if you want make install"'
+    echo 'fi'
 
 # TODO: are these needed (they are in tisdk-install.sh.)
 #       echo 'export OE_QMAKE_LDFLAGS="-L${SDK_PATH}/${TARGET_SYS}/usr/lib -Wl,-rpath-link,${SDK_PATH}/${TARGET_SYS}/usr/lib -Wl,-O1 -Wl,--hash-style=gnu"' >> $script
