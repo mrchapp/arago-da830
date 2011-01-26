@@ -13,7 +13,7 @@ $machine nSDK Installation Summary
 </TITLE>
 </HEAD>
 <BODY>
-<h1><CENTER> $machine nSDK Software Manifest </CENTER></h1>
+<h1><CENTER> nSDK Software Manifest ($machine)</CENTER></h1>
 <h2><b><u>Legend</u></b></h2>
 <table border=1 width=45%>
 <tr><td>Package Name</td><td>The name of the application or files</td></tr>
@@ -24,6 +24,16 @@ $machine nSDK Installation Summary
 <tr><td>Modified </td><td>This field will either be &ldquo;Yes&rdquo; or &ldquo;No&rdquo;. A &ldquo;Yes&rdquo; means TI had made changes to the Package. A &ldquo;No&rdquo; means TI has not made any changes.</td></tr>
 <tr><td>Obtained from</td><td>This field specifies where TI obtained the Package from. It may be a URL to an Open Source site, a 3rd party company name or TI. If this field contains a link to an Open Source package, the date it was downloaded is also recorded.</td></tr>
 </table>
+
+<h2><b><u>Disclaimers</u></b></h2>
+<h3><b><u>Export Control Classification Number (ECCN)</u></b></h3>
+Any use of ECCNs listed in the Manifest is at the user's risk and without recourse to TI. Your company, as the exporter of record, is responsible for determining the correct classification of any item at the time of export. Any export classification by TI of Software is for TI's internal use only and shall not be construed as a representation or warranty regarding the proper export classification for such Software or whether an export license or other documentation is required for exporting such Software.  
+
+<h3><b><u>Links in the Manifest</u></b></h3>
+Any links appearing on this Manifest (for example in the &ldquo;Obtained from&rdquo; field) were verified at the time the Manifest was created. TI makes no guarantee that any listed links will remain active in the future.
+
+<h3><b><u>Open Source License References</u></b></h3>
+Your company is responsible for confirming the applicable license terms for any open source Software listed in this Manifest that was not &ldquo;Obtained from&rdquo; TI.  Any open source license specified in this Manifest for Software that was not&ldquo;Obtained from&rdquo; TI is for TI's internal use only and shall not be construed as a representation or warranty regarding the proper open source license terms for such Software.
 "
 }
 

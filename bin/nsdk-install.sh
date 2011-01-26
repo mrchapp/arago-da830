@@ -99,7 +99,7 @@ host_install ()
 	execute "opkg-cl --cache $install_dir/deploy/cache -o $install_dir -f ${opkg_conf} install $file -force-depends"
     done
 
-    generate_sw_manifest "Packages installed on the host machine:" "$install_dir" >> ${install_dir}/docs/software_manifest.htm;
+    generate_sw_manifest "Packages (host):" "$install_dir" >> ${install_dir}/docs/software_manifest.htm;
 
     move_to_install_dir
 }
@@ -237,15 +237,15 @@ echo "Installing  $install_dir $bsp_bin $iplist"
 fakeroot ./rootfs-install.sh $install_dir $bsp_bin $iplist
 
 tar zxf `ls -1 ${install_dir}/filesystem/*.tar.gz` -C $install_dir/filesystem --wildcards *.control*
-generate_sw_manifest "Packages installed on the target:" "$install_dir/filesystem" >> ${install_dir}/docs/software_manifest.htm
+generate_sw_manifest "Packages (target):" "$install_dir/filesystem" >> ${install_dir}/docs/software_manifest.htm
 rm -rf ${install_dir}/filesystem/usr
 
 # copy original image on filesystem directory.
 cp deploy/images/$machine/*.tar.gz ${install_dir}/filesystem
 
-generate_sw_manifest "Packages installed on arago-sdk host side:" "$install_dir/linux-devkit" >> ${install_dir}/docs/software_manifest.htm
+generate_sw_manifest "Development packages (host):" "$install_dir/linux-devkit" >> ${install_dir}/docs/software_manifest.htm
 
-generate_sw_manifest "Packages installed on arago-sdk target side:" "$install_dir/linux-devkit/arm-none-linux-gnueabi" >> ${install_dir}/docs/software_manifest.htm
+generate_sw_manifest "Development packages (target):" "$install_dir/linux-devkit/arm-none-linux-gnueabi" >> ${install_dir}/docs/software_manifest.htm
 
 # add manifest footer.
 sw_manifest_footer >> ${install_dir}/docs/software_manifest.htm
