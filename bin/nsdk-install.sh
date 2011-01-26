@@ -95,8 +95,9 @@ host_install ()
     execute "opkg-cl --cache $install_dir/deploy/cache -o $install_dir -f ${opkg_conf} install $bsp_src"
 
     # Install any -src packages separate from the base devkit
+    # NB: intentionally not following dependencies for tighter control
     for file in $(find . -iname "*-src*.ipk"); do
-	execute "opkg-cl --cache $install_dir/deploy/cache -o $install_dir -f ${opkg_conf} install $file -force-depends"
+	execute "opkg-cl --cache $install_dir/deploy/cache -o $install_dir -f ${opkg_conf} install $file -force-depends --nodeps"
     done
 
     generate_sw_manifest "Packages (host):" "$install_dir" >> ${install_dir}/docs/software_manifest.htm;
@@ -252,6 +253,7 @@ sw_manifest_footer >> ${install_dir}/docs/software_manifest.htm
 
 rm -rf ${opkg_conf}
 rm -rf ${opkg_sdk_conf}
+rm -rf $install_dir/usr
 rm -rf $install_dir/var
 
 # TODO: don't know which package is creating include directory on top level.
