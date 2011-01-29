@@ -9,9 +9,11 @@ DEFAULT_PREFERENCE = "1"
 
 BRANCH = "wifi/logic/nsdk"
 BRANCH_da850-sdi = "wifi/sdi/nsdk"
+BRANCH_da830-omapl137-evm = "fbdev_sekhar"
 
 SRCREV = "315b36ad8942380313da2cabd8ac53f6ed79eb77"
 SRCREV_da850-sdi = "ac689ebe82b06e1deb4f0b012b3df082b8ef1daf"
+SRCREV_da830-omapl137-evm = "24fd45a8d80ba36ce870beaf9467a188906c47bf"
 
 KVER = "2.6.32+2.6.33-rc4"
 
