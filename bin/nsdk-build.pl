@@ -221,7 +221,13 @@ sub copy_output
         print "\n ERROR: failed to execute $cmd";
     }
 
-    $cmd = "cp $arago_images_output_dir/$machine/uImage-$machine.bin $sdkpath/deploy/images/$machine";
+    # also copy over any multi-config binaries along with configs
+    $cmd = "cp $arago_images_output_dir/$machine/uImage-$machine.*bin $sdkpath/deploy/images/$machine";
+    $result = system($cmd);
+    if ($result) {
+        print "\n ERROR: failed to execute $cmd";
+    }
+    $cmd = "cp $arago_images_output_dir/$machine/config-$machine.*config $sdkpath/deploy/images/$machine";
     $result = system($cmd);
     if ($result) {
         print "\n ERROR: failed to execute $cmd";
