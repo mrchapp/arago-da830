@@ -35,14 +35,14 @@ install ()
 
   echo "Running preinst ..."
   for i in ${rootfs_dir}/usr/lib/opkg/info/*.preinst; do
-    if [ -f $i ] && ! sh $i >/dev/null 2>&1; then
+    if [ -f $i ] && ! sh -e $i >/dev/null 2>&1; then
       execute "${install_dir}/linux-devkit/bin/opkg-cl -o ${rootfs_dir} -f ${opkg_conf} flag unpacked `basename $i .preinst`"
     fi
   done 
 
   echo "Running postinst ..."
   for i in ${rootfs_dir}/usr/lib/opkg/info/*.postinst; do
-    if [ -f $i ] && ! sh $i configure >/dev/null 2>&1; then
+    if [ -f $i ] && ! sh -e $i configure >/dev/null 2>&1; then
       execute "${install_dir}/linux-devkit/bin/opkg-cl -o ${rootfs_dir} -f ${opkg_conf} flag unpacked `basename $i .postinst`"
     fi
   done 
