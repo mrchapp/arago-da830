@@ -18,7 +18,9 @@ $0 ~ pat {repl=1}
 old=$1
 new=$2
 out=old_vs_new.htm
-rm ${out}
+if [ -f ${out} ]; then
+	rm ${out}
+fi
 touch ${out}
 
 if [ "x${old}" == "x" ] || [ "x${new}" == "x" ]; then
@@ -85,6 +87,6 @@ echo "</HTML>" >> ${out}
 # need to restore IFS after done using array -- unfortunate
 IFS=$oldIFS
 
-rm tmp.old.*
-rm tmp.new.*
+#rm tmp.old*
+#rm tmp.new*
 
