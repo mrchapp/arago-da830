@@ -1,5 +1,5 @@
 DESCRIPTION = "Arago based rootfs for nSDK development"
-PR = "r4"
+PR = "r5"
 
 inherit task
 
@@ -66,4 +66,12 @@ RDEPENDS_${PN} = "\
     qjson-hash \
     u-boot \
     "
+
+# NTP-related components
+RDEPENDS_${PN} += "\
+	cron \
+	tzdata \
+	tzdata-asia \
+	ntpdate \
+	"
  
