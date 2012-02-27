@@ -1,0 +1,32 @@
+From f7076985b0407360b03f782df88dfc6b56859ce1 Mon Sep 17 00:00:00 2001
+From: Martin Ambrose <martin@ti.com>
+Date: Mon, 27 Feb 2012 12:25:25 -0600
+Subject: [PATCH 2/2] da850-sdi: Don't check link speed during eth_send_packet.
+
+This to ameliorate tftp timeouts when running on a fast link.
+Hypothesis is that the RMII PHY communication speed is quite slow and continuous
+polling violates the needed timing window for 100MBs operation.
+---
+ cpu/arm926ejs/davinci/ether.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/cpu/arm926ejs/davinci/ether.c b/cpu/arm926ejs/davinci/ether.c
+index 0522cf8..2444408 100644
+--- a/cpu/arm926ejs/davinci/ether.c
++++ b/cpu/arm926ejs/davinci/ether.c
+@@ -524,10 +524,12 @@ static int davinci_eth_send_packet (struct eth_device *dev,
+ 
+ 	/* Wait for packet to complete or link down */
+ 	while (1) {
++#ifndef CONFIG_DRIVER_TI_EMAC_USE_RMII
+ 		if (!phy.get_link_speed (active_phy_addr)) {
+ 			davinci_eth_ch_teardown (EMAC_CH_TX);
+ 			return (ret_status);
+ 		}
++#endif
+ 		if (adap_emac->TXINTSTATRAW & 0x01) {
+ 			ret_status = length;
+ 			break;
+-- 
+1.7.1
+
