@@ -12,7 +12,7 @@ BRANCH_da850-sdi = "wifi/sdi/nsdk"
 BRANCH_da830-omapl137-evm = "fbdev_sekhar"
 
 SRCREV = "315b36ad8942380313da2cabd8ac53f6ed79eb77"
-SRCREV_da850-sdi = "d925900b5062890b1da9aa672bd30494781ed718"
+SRCREV_da850-sdi = "d053223a3d5566677e537f1d26c8ec9d4be965f5"
 SRCREV_da830-omapl137-evm = "24fd45a8d80ba36ce870beaf9467a188906c47bf"
 
 KVER = "2.6.32+2.6.33-rc4"
