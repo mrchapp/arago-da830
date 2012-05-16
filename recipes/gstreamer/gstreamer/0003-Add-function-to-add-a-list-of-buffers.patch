@@ -1,0 +1,139 @@
+From 0447e72c97a28ba9c173730b8ada1960b1c9ab2f Mon Sep 17 00:00:00 2001
+From: Wim Taymans <wim.taymans@collabora.co.uk>
+Date: Fri, 17 Sep 2010 15:34:42 +0000
+Subject: bufferlist: add function to add a list of buffers
+
+Add a function to add a list of buffers to the bufferlist.
+---
+diff --git a/gst/gstbufferlist.c b/gst/gstbufferlist.c
+index 239f0ce..bfba817 100644
+--- a/gst/gstbufferlist.c
++++ b/gst/gstbufferlist.c
+@@ -527,6 +527,52 @@ gst_buffer_list_iterator_add (GstBufferListIterator * it, GstBuffer * buffer)
+ }
+ 
+ /**
++ * gst_buffer_list_iterator_add_list:
++ * @it: a #GstBufferListIterator
++ * @list: a #GList
++ *
++ * Inserts @list of buffers into the #GstBufferList iterated with @it. The list is
++ * inserted into the current group, immediately before the buffer that would be
++ * returned by gst_buffer_list_iterator_next(). The list is inserted before
++ * the implicit cursor, a subsequent call to gst_buffer_list_iterator_next()
++ * will return the buffer after the last buffer of the inserted list, if any.
++ *
++ * This function takes ownership of @list and all its buffers.
++ *
++ * Since: 0.10.31
++ */
++void
++gst_buffer_list_iterator_add_list (GstBufferListIterator * it, GList * list)
++{
++  GList *last;
++
++  g_return_if_fail (it != NULL);
++  g_return_if_fail (it->next != it->list->buffers);
++
++  if (list == NULL)
++    return;
++
++  if (it->next) {
++    last = list;
++    while (last->next)
++      last = last->next;
++
++    last->next = it->next;
++    list->prev = it->next->prev;
++    it->next->prev = last;
++    if (list->prev)
++      list->prev->next = list;
++  } else {
++    last = it->list->buffers;
++    while (last->next)
++      last = last->next;
++
++    last->next = list;
++    list->prev = last;
++  }
++}
++
++/**
+  * gst_buffer_list_iterator_add_group:
+  * @it: a #GstBufferListIterator
+  *
+diff --git a/gst/gstbufferlist.h b/gst/gstbufferlist.h
+index 635817e..f7de456 100644
+--- a/gst/gstbufferlist.h
++++ b/gst/gstbufferlist.h
+@@ -220,6 +220,7 @@ GstBuffer *              gst_buffer_list_iterator_next         (GstBufferListIte
+ gboolean                 gst_buffer_list_iterator_next_group   (GstBufferListIterator *it);
+ 
+ void                     gst_buffer_list_iterator_add          (GstBufferListIterator *it, GstBuffer *buffer);
++void                     gst_buffer_list_iterator_add_list     (GstBufferListIterator *it, GList *list);
+ void                     gst_buffer_list_iterator_add_group    (GstBufferListIterator *it);
+ void                     gst_buffer_list_iterator_remove       (GstBufferListIterator *it);
+ GstBuffer *              gst_buffer_list_iterator_steal        (GstBufferListIterator *it);
+diff --git a/tests/check/gst/gstbufferlist.c b/tests/check/gst/gstbufferlist.c
+index 76feff2..6d3d7d6 100644
+--- a/tests/check/gst/gstbufferlist.c
++++ b/tests/check/gst/gstbufferlist.c
+@@ -766,6 +766,36 @@ GST_START_TEST (test_foreach)
+ 
+ GST_END_TEST;
+ 
++GST_START_TEST (test_list)
++{
++  GstBufferListIterator *it;
++  GList *l = NULL;
++  gint i;
++
++  for (i = 0; i < 10; i++) {
++    gchar name[10];
++    g_snprintf (name, 10, "%d", i);
++    l = g_list_append (l, buffer_from_string (name));
++  }
++
++  /* add buffers to the list */
++  it = gst_buffer_list_iterate (list);
++  gst_buffer_list_iterator_add_group (it);
++  gst_buffer_list_iterator_add_list (it, l);
++
++  for (i = 0; i < 10; i++) {
++    GstBuffer *buf;
++    gchar name[10];
++
++    buf = gst_buffer_list_get (list, 0, i);
++    g_snprintf (name, 10, "%d", i);
++    fail_unless (memcmp (name, (gchar *) GST_BUFFER_DATA (buf),
++            GST_BUFFER_SIZE (buf)) == 0);
++  }
++  gst_buffer_list_iterator_free (it);
++}
++
++GST_END_TEST;
+ 
+ static Suite *
+ gst_buffer_list_suite (void)
+@@ -783,6 +813,7 @@ gst_buffer_list_suite (void)
+   tcase_add_test (tc_chain, test_do);
+   tcase_add_test (tc_chain, test_merge);
+   tcase_add_test (tc_chain, test_foreach);
++  tcase_add_test (tc_chain, test_list);
+ 
+   return s;
+ }
+diff --git a/win32/common/libgstreamer.def b/win32/common/libgstreamer.def
+index 226d189..b20e602 100644
+--- a/win32/common/libgstreamer.def
++++ b/win32/common/libgstreamer.def
+@@ -98,6 +98,7 @@ EXPORTS
+ 	gst_buffer_list_iterate
+ 	gst_buffer_list_iterator_add
+ 	gst_buffer_list_iterator_add_group
++	gst_buffer_list_iterator_add_list
+ 	gst_buffer_list_iterator_do
+ 	gst_buffer_list_iterator_free
+ 	gst_buffer_list_iterator_merge_group
+--
+cgit v0.9.0.2-2-gbebe

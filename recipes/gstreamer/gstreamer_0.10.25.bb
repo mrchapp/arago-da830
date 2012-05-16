@@ -3,9 +3,10 @@ require gstreamer.inc
 EXTRA_OECONF += "ac_cv_func_register_printf_function=no --disable-gtk-doc --disable-tests --with-checklibname=check --disable-valgrind --disable-loadsave" 
 
 SRC_URI += " file://0001-Always-return-NULL-for-the-last-buffer-property.patch \
-file://0002-Take-start_time-after-chaining-up-too.patch "
+file://0002-Take-start_time-after-chaining-up-too.patch \
+file://0003-Add-function-to-add-a-list-of-buffers.patch "
 
-PR = "r4"
+PR = "r5"
 
 do_configure_prepend() {
 	sed -i -e s:docs::g Makefile.am

@@ -1,5 +1,7 @@
 require gst-plugins.inc
-PR = "r1"
+SRC_URI += " file://001-Add-support-for-mpegtsdemux.patch "
+
+PR = "r2"
 
 DEPENDS += "gst-plugins-base gtk+"
 
