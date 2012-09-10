@@ -7,7 +7,9 @@ COMPATIBLE_MACHINE = "(?!arago)"
 IMAGE_INSTALL += "\
     task-arago-qte \
     task-arago-nsdk \
-    kernel-module-fuse"
+    kernel-module-fuse \
+    avahi-daemon \
+    "
 
 BAD_RECOMMENDATIONS += "qt4-embedded-assistant"
 BAD_RECOMMENDATIONS += "qt4-embedded-demos"
