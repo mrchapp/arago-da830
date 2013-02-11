@@ -62,7 +62,6 @@ RDEPENDS_${PN} = "\
     log4cplus \
     qjson-hash \
     u-boot \
-    wl1271-wlan-cli \
     "
 
 # NTP-related components
