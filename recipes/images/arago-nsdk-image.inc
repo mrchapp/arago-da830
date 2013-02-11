@@ -7,7 +7,6 @@ COMPATIBLE_MACHINE = "(?!arago)"
 IMAGE_INSTALL += "\
     task-arago-qte \
     task-arago-nsdk \
-    kernel-module-fuse \
     avahi-daemon \
     "
 
