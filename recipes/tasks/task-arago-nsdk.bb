@@ -57,7 +57,6 @@ RDEPENDS_${PN} = "\
     gst-plugin-mms \
     gst-plugin-rtsp \
     gst-plugin-mpegtsdemux \
-    smbnetfs \
     libnl \
     log4cplus \
     qjson-hash \
