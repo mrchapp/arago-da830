@@ -1,6 +1,8 @@
 # Arago-specific amendments to the standard OE base-files recipe
 
-PR_append = "-arago4"
+PR_append = "-arago5"
+
+DEPENDS += "qt4-embedded"
 
 EXTRA_OECONF = "\
 	--with-distro=debian \
