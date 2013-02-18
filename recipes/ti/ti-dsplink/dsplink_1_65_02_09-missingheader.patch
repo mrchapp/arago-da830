@@ -1,0 +1,10 @@
+--- dsplink_linux_1_65_02_09/dsplink/gpp/src/arch/DA8XXGEM/shmem/Linux/da8xxgem_phy_shmem.c.orig	2012-10-10 13:43:56.000000000 -0500
++++ dsplink_linux_1_65_02_09/dsplink/gpp/src/arch/DA8XXGEM/shmem/Linux/da8xxgem_phy_shmem.c	2013-02-14 15:14:27.319821112 -0600
+@@ -53,6 +53,7 @@
+ #include <da8xxgem_hal_intgen.h>
+ #include <da8xxgem_hal_pwr.h>
+ #include <da8xxgem_phy_shmem.h>
++#include <mach/hardware.h>
+ 
+ 
+ #if defined (__cplusplus)
