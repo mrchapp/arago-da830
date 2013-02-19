@@ -1,0 +1,11 @@
+--- a/src/Makefile.am	2013-02-12 10:19:23.000000000 -0600
++++ b/src/Makefile.am	2013-02-17 15:23:33.017762443 -0600
+@@ -8,7 +8,7 @@
+ # compiler and linker flags used to compile this plugin, set in configure.ac
+ libtipafsink_la_CFLAGS = $(GST_CFLAGS)
+ libtipafsink_la_LIBADD = $(GST_LIBS)
+-libtipafsink_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) -Wl,linker.cmd
++libtipafsink_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
+ #libtipafsink_la_LIBTOOLFLAGS = --tag=disable-static
+ 
+ # headers we need but don't want installed

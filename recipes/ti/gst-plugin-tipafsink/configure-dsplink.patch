@@ -1,0 +1,25 @@
+--- a/configure.ac	2013-02-17 15:12:49.552835212 -0600
++++ b/configure.ac	2013-02-17 15:17:21.177850361 -0600
+@@ -60,6 +60,22 @@
+   ])
+ ])
+ 
++dnl add DSPLink defines and includes
++AC_ARG_WITH([dsplink],
++    [AS_HELP_STRING([--with-dsplink=dir], [Use the given DSPLink directory to build and link against.])])
++
++AS_IF([test "x$with_dsplink" = "x"], [AC_MSG_ERROR([
++      DSPLink is needed. Please provide the path to the where the
++      files where deployed via --with-dsplink=path.
++  ])], [dsplinkdir="$with_dsplink"]
++)
++DSPLINK_CPPFLAGS="`cat $dsplinkdir/dsplink/gpp/export/BIN/Linux/DA8XX/RELEASE/API_defines.txt`"
++DSPLINK_CFLAGS="`cat $dsplinkdir/dsplink/gpp/export/BIN/Linux/DA8XX/RELEASE/API_defines.txt` `cat $dsplinkdir/dsplink/gpp/export/BIN/Linux/DA8XX/RELEASE/API_includes.txt`"
++DSPLINK_LDFLAGS="-Wl,$dsplinkdir/dsplink/gpp/export/BIN/Linux/DA8XX/RELEASE/dsplink.lib"
++CFLAGS="$CFLAGS $DSPLINK_CFLAGS"
++CPPFLAGS="$CPPFLAGS $DSPLINK_CPPFLAGS"
++LDFLAGS="$LDFLAGS $DSPLINK_LDFLAGS"
++
+ dnl check if compiler understands -Wall (if yes, add -Wall to GST_CFLAGS)
+ AC_MSG_CHECKING([to see if compiler understands -Wall])
+ save_CFLAGS="$CFLAGS"
