@@ -57,8 +57,10 @@ RDEPENDS_${PN} = "\
     gst-plugin-mms \
     gst-plugin-rtsp \
     gst-plugin-mpegtsdemux \
+    gst-plugin-tipafsink \
     libnl \
     log4cplus \
+    streamapp \
     qjson-hash \
     u-boot \
     "
